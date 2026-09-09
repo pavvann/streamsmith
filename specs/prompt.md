@@ -1,0 +1,3 @@
+# The one human instruction (verbatim, from docs/PROJECT.md §5)
+
+> Using the installed official Substreams skills and Streamsmith, build a reusable Base pipeline for ERC-4626 vault activity. Implement the public interface in `specs/vaultflows.proto`, using the vault addresses and sampling interval in `streamsmith.yaml`; include normalized deposit and withdrawal facts and fixed-interval `convertToAssets` observations. Do not modify the schema, tests, or gate requirements. Work autonomously until `gate.yaml` passes, then publish the package, deploy it to the configured ClickHouse sink, generate its typed MCP tools, and write a complete Deployment Receipt. If a requirement cannot be satisfied, stop with evidence rather than weakening or bypassing it.
