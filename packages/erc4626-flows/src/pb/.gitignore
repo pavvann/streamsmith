@@ -1,0 +1,6 @@
+# `substreams protogen` / `substreams build` regenerate this directory. Only the two files lib.rs include!()s are tracked;
+# the generated mod.rs and the descriptor-set side files (schema, firehose, codegen) are not referenced by the crate.
+*
+!.gitignore
+!erc4626.v1.rs
+!vaultflows.v1.rs
