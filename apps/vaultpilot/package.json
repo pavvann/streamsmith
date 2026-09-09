@@ -1,0 +1,22 @@
+{
+  "name": "@ethonline26/vaultpilot",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Vaultpilot: Privy business wallet + policy-scoped agent signer operating Privy Earn (Morpho on Base).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "spike": "tsx src/spike.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@privy-io/node": "^0.34.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}
