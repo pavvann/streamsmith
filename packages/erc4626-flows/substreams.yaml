@@ -18,7 +18,10 @@ protobuf:
   importPaths:
     - ./proto
   descriptorSets:
-    - module: buf.build/streamingfast/substreams-sink-sql
+    # Provides sf/substreams/sink/sql/schema/v1/schema.proto (the sink annotations vaultflows.proto imports).
+    # buf.build/streamingfast/substreams-sink-sql is retired (only a moved.proto); pinned to the lock commit in specs/gate.yaml.
+    - module: buf.build/streamingfast/substreams
+      version: 47ceeb6c52dd4bd2ac942a655518482b
   excludePaths:
     - sf/substreams
     - sf/ethereum
@@ -90,7 +93,7 @@ modules:
       type: proto:vaultflows.v1.Events
     doc: |
       When block_number % interval == 0, batch convertToAssets(10^shareDecimals), totalAssets(), totalSupply()
-      for every configured vault at this block's state. Failed vaults are still emitted with call_status.ok=false.
+      for every configured vault at this block's state. Failed vaults are still emitted with call_ok=false.
       Only `share_value_observations` is populated.
 
   - name: map_events

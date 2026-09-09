@@ -63,8 +63,24 @@ jobs:
           sudo install -m 0755 substreams /usr/local/bin/substreams
           substreams --version
 
-      - name: rustfmt check (advisory)
-        run: cargo fmt --all -- --check || echo "::warning::rustfmt reported differences (advisory only)"
+      - name: rustfmt check (advisory; emits a patch artifact when formatting differs)
+        run: |
+          if cargo fmt --all -- --check; then
+            echo "rustfmt clean"
+          else
+            echo "::warning::rustfmt reported differences (advisory only); see the rustfmt-patch artifact"
+            cargo fmt --all
+            git diff -- src ':!src/pb' > "${RUNNER_TEMP}/rustfmt.patch"
+            git checkout -- src
+            echo "RUSTFMT_PATCH=${RUNNER_TEMP}/rustfmt.patch" >> "${GITHUB_ENV}"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: env.RUSTFMT_PATCH != ''
+        with:
+          name: rustfmt-patch
+          path: ${{ env.RUSTFMT_PATCH }}
+          retention-days: 7
 
       - name: cargo test (native target)
         run: cargo test --all-targets -- --nocapture
