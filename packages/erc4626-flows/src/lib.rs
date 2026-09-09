@@ -31,15 +31,15 @@ pub mod pb {
 use pb::erc4626::v1 as erc4626;
 use pb::vaultflows::v1::{Events, FlowDirection, ShareValueObservation, VaultFlow, VaultMeta};
 use pure::{
-    address_bytes, bytes_to_hex, execution_rate, flow_id, is_sample_block, normalize_amount, normalize_hash,
-    normalize_rate, observation_id, or_zero, parse_params, vault_id, ZERO,
+    address_bytes, bytes_to_hex, execution_rate, flow_id, is_sample_block, normalize_amount,
+    normalize_hash, normalize_rate, observation_id, or_zero, parse_params, vault_id, ZERO,
 };
 use substreams::errors::Error;
 use substreams::pb::substreams::store_delta::Operation;
 use substreams::pb::substreams::Clock;
 use substreams::store::{
-    DeltaInt64, Deltas, StoreGet, StoreGetProto, StoreNew, StoreSetIfNotExists, StoreSetIfNotExistsInt64,
-    StoreSetIfNotExistsProto,
+    DeltaInt64, Deltas, StoreGet, StoreGetProto, StoreNew, StoreSetIfNotExists,
+    StoreSetIfNotExistsInt64, StoreSetIfNotExistsProto,
 };
 
 fn clock_seconds(clock: &Clock) -> u64 {
@@ -67,7 +67,11 @@ fn store_vault_seen(events: erc4626::Events, store: StoreSetIfNotExistsInt64) {
 /// First-sight metadata probe. One VaultMeta row per newly seen vault; `compliant=false` when any required
 /// call failed. Only `Events.vaults` is populated.
 #[substreams::handlers::map]
-fn map_vault_probe(params: String, clock: Clock, deltas: Deltas<DeltaInt64>) -> Result<Events, Error> {
+fn map_vault_probe(
+    params: String,
+    clock: Clock,
+    deltas: Deltas<DeltaInt64>,
+) -> Result<Events, Error> {
     let params = parse_params(&params).map_err(Error::msg)?;
     let mut out = Events::default();
 
@@ -159,25 +163,40 @@ fn map_flows(
                 None => continue,
             };
 
-            let (meta_valid, asset_decimals, share_decimals, call_ok, call_error) = match meta_store.get_last(&vault) {
-                Some(m) if m.compliant => (true, m.asset_decimals, m.share_decimals, m.call_ok, m.call_error.clone()),
-                Some(m) => {
-                    // Non-compliant addresses never produce VaultFlow rows (contract: VaultMeta doc).
-                    substreams::log::info!(
-                        "dropping flow on non-compliant vault={} tx={} reason={:?}",
-                        vault,
-                        tx_hash,
-                        m.call_error
-                    );
-                    continue;
-                }
-                None => (false, 0, 0, false, "meta: not available at this block".to_string()),
-            };
+            let (meta_valid, asset_decimals, share_decimals, call_ok, call_error) =
+                match meta_store.get_last(&vault) {
+                    Some(m) if m.compliant => (
+                        true,
+                        m.asset_decimals,
+                        m.share_decimals,
+                        m.call_ok,
+                        m.call_error.clone(),
+                    ),
+                    Some(m) => {
+                        // Non-compliant addresses never produce VaultFlow rows (contract: VaultMeta doc).
+                        substreams::log::info!(
+                            "dropping flow on non-compliant vault={} tx={} reason={:?}",
+                            vault,
+                            tx_hash,
+                            m.call_error
+                        );
+                        continue;
+                    }
+                    None => (
+                        false,
+                        0,
+                        0,
+                        false,
+                        "meta: not available at this block".to_string(),
+                    ),
+                };
 
             let (assets_normalized, shares_normalized, rate) = if meta_valid {
                 (
-                    normalize_amount(&assets_raw, asset_decimals).unwrap_or_else(|| ZERO.to_string()),
-                    normalize_amount(&shares_raw, share_decimals).unwrap_or_else(|| ZERO.to_string()),
+                    normalize_amount(&assets_raw, asset_decimals)
+                        .unwrap_or_else(|| ZERO.to_string()),
+                    normalize_amount(&shares_raw, share_decimals)
+                        .unwrap_or_else(|| ZERO.to_string()),
                     execution_rate(&assets_raw, asset_decimals, &shares_raw, share_decimals)
                         .unwrap_or_else(|| ZERO.to_string()),
                 )
@@ -254,7 +273,10 @@ fn map_share_value_observations(params: String, clock: Clock) -> Result<Events, 
             block_timestamp,
             vault: vault.clone(),
             sample_interval_blocks: params.interval.min(u32::MAX as u64) as u32,
-            assets_per_share_raw: obs.assets_per_share.clone().unwrap_or_else(|| ZERO.to_string()),
+            assets_per_share_raw: obs
+                .assets_per_share
+                .clone()
+                .unwrap_or_else(|| ZERO.to_string()),
             assets_per_share_normalized,
             total_assets_raw: obs.total_assets.clone().unwrap_or_else(|| ZERO.to_string()),
             total_supply_raw: obs.total_supply.clone().unwrap_or_else(|| ZERO.to_string()),

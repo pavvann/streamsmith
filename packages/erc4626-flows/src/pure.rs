@@ -312,20 +312,45 @@ mod tests {
 
     #[test]
     fn rejects_bad_params() {
-        assert!(parse_params("vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0").is_err(), "missing interval");
-        assert!(parse_params("vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&interval=0").is_err(), "zero interval");
+        assert!(
+            parse_params("vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0").is_err(),
+            "missing interval"
+        );
+        assert!(
+            parse_params("vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&interval=0").is_err(),
+            "zero interval"
+        );
         assert!(parse_params("interval=1800").is_err(), "no vaults");
-        assert!(parse_params("vaults[]=0x1234&interval=1800").is_err(), "short address");
-        assert!(parse_params("vaults[]=0xzz50ce30b927da55177a4914ec73480238bad56f0&interval=1800").is_err(), "non-hex");
-        assert!(parse_params(&format!("vaults[]={GAUNTLET}&interval=1800&foo=1")).is_err(), "unknown key");
-        assert!(parse_params(&format!("vaults[]={GAUNTLET}&interval=abc")).is_err(), "non-numeric interval");
+        assert!(
+            parse_params("vaults[]=0x1234&interval=1800").is_err(),
+            "short address"
+        );
+        assert!(
+            parse_params("vaults[]=0xzz50ce30b927da55177a4914ec73480238bad56f0&interval=1800")
+                .is_err(),
+            "non-hex"
+        );
+        assert!(
+            parse_params(&format!("vaults[]={GAUNTLET}&interval=1800&foo=1")).is_err(),
+            "unknown key"
+        );
+        assert!(
+            parse_params(&format!("vaults[]={GAUNTLET}&interval=abc")).is_err(),
+            "non-numeric interval"
+        );
     }
 
     #[test]
     fn normalizes_addresses_and_hashes() {
-        assert_eq!(normalize_address("050cE30b927Da55177A4914EC73480238BAD56f0").unwrap(), GAUNTLET);
+        assert_eq!(
+            normalize_address("050cE30b927Da55177A4914EC73480238BAD56f0").unwrap(),
+            GAUNTLET
+        );
         assert_eq!(bytes_to_hex(&[0xbe, 0xef]), "0xbeef");
-        assert_eq!(normalize_hash("E05B627F4D4C392CB2CC577AC21421B6C3D09B4F3C0B397532E292177E7BD089"), "0xe05b627f4d4c392cb2cc577ac21421b6c3d09b4f3c0b397532e292177e7bd089");
+        assert_eq!(
+            normalize_hash("E05B627F4D4C392CB2CC577AC21421B6C3D09B4F3C0B397532E292177E7BD089"),
+            "0xe05b627f4d4c392cb2cc577ac21421b6c3d09b4f3c0b397532e292177e7bd089"
+        );
         assert_eq!(normalize_hash("0xabc"), "0xabc");
         assert_eq!(address_bytes(GAUNTLET).unwrap().len(), 20);
         assert!(address_bytes("0x1234").is_err());
@@ -337,7 +362,10 @@ mod tests {
         assert_eq!(normalize_amount("1000000", 6).unwrap(), "1");
         assert_eq!(normalize_amount("0", 6).unwrap(), "0");
         assert_eq!(normalize_amount("5", 6).unwrap(), "0.000005");
-        assert_eq!(normalize_amount("189647169910852085674", 18).unwrap(), "189.647169910852085674");
+        assert_eq!(
+            normalize_amount("189647169910852085674", 18).unwrap(),
+            "189.647169910852085674"
+        );
         assert_eq!(normalize_amount("42", 0).unwrap(), "42");
         assert!(normalize_amount("-1", 6).is_none());
         assert!(normalize_amount("0x10", 6).is_none());
@@ -358,13 +386,19 @@ mod tests {
         assert!(execution_rate("1", 6, "0", 18).is_none(), "zero shares");
         assert!(execution_rate("x", 6, "1", 18).is_none(), "unparseable");
         // equal decimals, exact ratio
-        assert_eq!(execution_rate("2000", 18, "1000", 18).unwrap(), "2.000000000000000000");
+        assert_eq!(
+            execution_rate("2000", 18, "1000", 18).unwrap(),
+            "2.000000000000000000"
+        );
     }
 
     #[test]
     fn normalizes_convert_to_assets_result_as_a_rate() {
         // convertToAssets(1e18) = 1,040,742 raw USDC (6 decimals) -> 1.040742 assets per whole share.
-        assert_eq!(normalize_rate("1040742", 6).unwrap(), "1.040742000000000000");
+        assert_eq!(
+            normalize_rate("1040742", 6).unwrap(),
+            "1.040742000000000000"
+        );
         assert_eq!(normalize_rate("0", 6).unwrap(), "0.000000000000000000");
         assert!(normalize_rate("nope", 6).is_none());
     }
@@ -380,7 +414,10 @@ mod tests {
     #[test]
     fn ids_follow_the_proto_comments() {
         assert_eq!(flow_id(8453, 51_092_263, 406), "8453-51092263-406");
-        assert_eq!(observation_id(8453, 51_093_000, GAUNTLET), format!("8453-51093000-{GAUNTLET}"));
+        assert_eq!(
+            observation_id(8453, 51_093_000, GAUNTLET),
+            format!("8453-51093000-{GAUNTLET}")
+        );
         assert_eq!(vault_id(8453, GAUNTLET), format!("8453-{GAUNTLET}"));
     }
 
