@@ -1,0 +1,110 @@
+specVersion: v0.1.0
+package:
+  name: erc4626-flows
+  version: v0.1.0
+  url: https://github.com/pavvann/streamsmith
+  description: ERC-4626 deposit/withdraw flows and sampled share-value observations on Base, shaped for the ClickHouse from-proto sink.
+
+network: base
+
+imports:
+  # Pinax ERC-4626 Deposit/Withdraw extractor (topic0 match across every address on the chain).
+  # Not on substreams.dev; pinned to a commit. sha256 72e1e7fdc1977029a754deb219ed2fe954c1934cd0324bfe6be0eef16456287b
+  erc4626: https://raw.githubusercontent.com/pinax-network/substreams-evm/970a665e15619de8ad7f686bd89412a1030d46dc/spkg/erc4626-v0.1.0.spkg
+
+protobuf:
+  files:
+    - vaultflows.proto
+  importPaths:
+    - ./proto
+  descriptorSets:
+    - module: buf.build/streamingfast/substreams-sink-sql
+  excludePaths:
+    - sf/substreams
+    - sf/ethereum
+    - google
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/erc4626_flows.wasm
+
+modules:
+  - name: store_vault_seen
+    kind: store
+    initialBlock: 49276800
+    updatePolicy: set_if_not_exists
+    valueType: int64
+    inputs:
+      - map: erc4626:map_events
+    doc: |
+      Marks every address that emitted an ERC-4626 Deposit or Withdraw. set_if_not_exists means a key
+      is created exactly once, so the deltas of this store are the "first sight" signal.
+
+  - name: map_vault_probe
+    kind: map
+    initialBlock: 49276800
+    inputs:
+      - params: string
+      - source: sf.substreams.v1.Clock
+      - store: store_vault_seen
+        mode: deltas
+    output:
+      type: proto:vaultflows.v1.Events
+    doc: |
+      For each vault seen for the first time (CREATE delta), batch eth_call asset(), decimals(), totalAssets(),
+      name(), symbol(), then asset.decimals() and convertToAssets(10^shareDecimals). Emits one VaultMeta row per
+      new vault (compliant=false when any required probe fails). Only field `vaults` of Events is populated.
+
+  - name: store_vault_meta
+    kind: store
+    initialBlock: 49276800
+    updatePolicy: set_if_not_exists
+    valueType: proto:vaultflows.v1.VaultMeta
+    inputs:
+      - map: map_vault_probe
+    doc: Caches the probe result per vault (key = lowercase 0x address). Written once, ever.
+
+  - name: map_flows
+    kind: map
+    initialBlock: 49276800
+    inputs:
+      - params: string
+      - source: sf.substreams.v1.Clock
+      - map: erc4626:map_events
+      - store: store_vault_meta
+        mode: get
+    output:
+      type: proto:vaultflows.v1.Events
+    doc: |
+      One VaultFlow per Deposit/Withdraw on a vault in the configured list. Raw amounts as decimal strings;
+      normalized amounts and execution_rate only when the cached metadata is valid. Only `vault_flows` is populated.
+
+  - name: map_share_value_observations
+    kind: map
+    initialBlock: 49276800
+    inputs:
+      - params: string
+      - source: sf.substreams.v1.Clock
+    output:
+      type: proto:vaultflows.v1.Events
+    doc: |
+      When block_number % interval == 0, batch convertToAssets(10^shareDecimals), totalAssets(), totalSupply()
+      for every configured vault at this block's state. Failed vaults are still emitted with call_status.ok=false.
+      Only `share_value_observations` is populated.
+
+  - name: map_events
+    kind: map
+    initialBlock: 49276800
+    inputs:
+      - map: map_flows
+      - map: map_share_value_observations
+      - map: map_vault_probe
+    output:
+      type: proto:vaultflows.v1.Events
+    doc: Single sink module. Merges flows, observations and first-sight VaultMeta rows into vaultflows.v1.Events.
+
+params:
+  map_vault_probe: "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
+  map_flows: "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
+  map_share_value_observations: "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
