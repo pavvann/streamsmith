@@ -3,7 +3,7 @@
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**ust / **S**hould / **C**ould · owner: **P**=Pawan, **O**=orchestrator, **A1..An**=sub-agents. Deadline **Sept 13 12:00 EDT (21:30 IST)**. Freeze **Sept 11 23:59 IST**. Kill criterion **Sept 10 12:00 IST**: one custom-module row Graph Market → sink.
 
 ## 0. Accounts, access, money (Pawan; unblockers)
-- [ ] T0.1 M P · Create public GitHub repo, push `main`. Accept: first commit visible, history starts Sept 9.
+- [x] T0.1 M O · Public repo github.com/pavvann/streamsmith created and pushed Sept 9.
 - [ ] T0.2 M P · `substreams auth` device login (Graph Market streaming key) → `SUBSTREAMS_API_TOKEN` in `.env`. Accept: `substreams run` returns blocks. dep: T1.1
 - [ ] T0.3 M P · Graph Market Portal device-code login for hosted sink (via `thegraph-market-api` skill flow). Accept: `ListDeployments` succeeds. dep: T1.1
 - [ ] T0.4 M P · ClickHouse Cloud trial: service, db `vaultflows`, sink user (DDL) + read-only user; HTTPS + native endpoints in `.env`. Accept: remote `SELECT 1`, DDL, insert, read. (Local Docker ClickHouse covers dev until then.)
@@ -87,3 +87,4 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 
 ## Won't
 Bazantic, ERC-8004 module, Chainlink, Arc, Hedera, quorum ceremony, token, landing page.
+- [ ] T0.10 M P · Register the project + team on the ETHGlobal ETHOnline 2026 dashboard (title, tagline, repo link); confirm Start Fresh pool.
