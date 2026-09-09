@@ -1,0 +1,99 @@
+name: build-substreams
+
+on:
+  push:
+    branches: [main, "feat/**"]
+    paths:
+      - "packages/erc4626-flows/**"
+      - "specs/vaultflows.proto"
+      - ".github/workflows/build-substreams.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  SUBSTREAMS_VERSION: "1.22.0"
+  BUF_VERSION: "1.72.0"
+  PKG_DIR: packages/erc4626-flows
+  SPKG: erc4626-flows-v0.1.0.spkg
+
+jobs:
+  erc4626-flows:
+    name: erc4626-flows (test, build, pack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: packages/erc4626-flows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Public contract is byte-identical to specs/vaultflows.proto
+        run: cmp proto/vaultflows.proto ../../specs/vaultflows.proto
+
+      - name: Install Rust 1.88 + wasm32 target (matches rust-toolchain.toml)
+        run: |
+          rustup toolchain install 1.88 --profile minimal --component rustfmt --target wasm32-unknown-unknown
+          rustup default 1.88
+          rustc --version && cargo --version && rustup target list --installed --toolchain 1.88
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/erc4626-flows
+          cache-on-failure: true
+
+      - name: Install buf ${{ env.BUF_VERSION }}
+        working-directory: /tmp
+        run: |
+          curl -sSfL -o buf "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-x86_64"
+          sudo install -m 0755 buf /usr/local/bin/buf
+          buf --version
+
+      - name: Install substreams CLI ${{ env.SUBSTREAMS_VERSION }}
+        working-directory: /tmp
+        run: |
+          base="https://github.com/streamingfast/substreams/releases/download/v${SUBSTREAMS_VERSION}"
+          curl -sSfL -o substreams_linux_x86_64.tar.gz "${base}/substreams_linux_x86_64.tar.gz"
+          curl -sSfL -o checksums.txt "${base}/checksums.txt"
+          grep " substreams_linux_x86_64.tar.gz$" checksums.txt | sha256sum -c -
+          tar -xzf substreams_linux_x86_64.tar.gz substreams
+          sudo install -m 0755 substreams /usr/local/bin/substreams
+          substreams --version
+
+      - name: rustfmt check (advisory)
+        run: cargo fmt --all -- --check || echo "::warning::rustfmt reported differences (advisory only)"
+
+      - name: cargo test (native target)
+        run: cargo test --all-targets -- --nocapture
+
+      - name: substreams build
+        run: |
+          substreams build
+          ls -la *.spkg
+
+      - name: substreams pack
+        run: |
+          substreams pack -o "${SPKG}"
+          ls -la "${SPKG}"
+
+      - name: substreams info
+        run: substreams info "${SPKG}"
+
+      - name: Generated bindings drift vs committed src/pb (advisory)
+        run: |
+          if ! git diff --quiet -- src/pb/vaultflows.v1.rs src/pb/erc4626.v1.rs; then
+            echo "::warning::substreams build regenerated src/pb differently from the committed bindings"
+            git --no-pager diff --stat -- src/pb
+          else
+            echo "committed bindings match regeneration"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: erc4626-flows-v0.1.0-spkg
+          path: packages/erc4626-flows/erc4626-flows-v0.1.0.spkg
+          if-no-files-found: error
+          retention-days: 30
