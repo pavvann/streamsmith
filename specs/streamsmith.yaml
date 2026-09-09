@@ -1,0 +1,66 @@
+# Streamsmith configuration for the erc4626-flows package.
+# Frozen before the recorded run. Values here are hashed into the Deployment Receipt (parametersHash).
+# Sources for every number: docs/build/vaults.md and docs/build/substreams-facts.md.
+
+chainId: 8453
+network: base                      # Substreams network id (vendor/substreams-skills/skills/substreams-dev/references/networks.md line 19)
+packageName: erc4626-flows
+version: 0.1.0                     # manifest form: v0.1.0
+outputModule: map_events           # single from-proto sink module emitting vaultflows.v1.Events
+outputType: proto:vaultflows.v1.Events
+contract: specs/vaultflows.proto   # public contract; gate checks the normalized descriptor hash
+
+imports:
+  # Pinax ERC-4626 Deposit/Withdraw extractor, matched by topic0 across every vault on the chain.
+  # Not on the substreams.dev registry (spkg.io and api.substreams.dev both 404 on 2026-09-09), so pinned to a commit.
+  erc4626:
+    url: https://raw.githubusercontent.com/pinax-network/substreams-evm/970a665e15619de8ad7f686bd89412a1030d46dc/spkg/erc4626-v0.1.0.spkg
+    sha256: 72e1e7fdc1977029a754deb219ed2fe954c1934cd0324bfe6be0eef16456287b
+    module: map_events              # output proto:erc4626.v1.Events
+  # Optional, only if ShareTransfer is implemented. File exists in the repo tree; network compatibility not verified.
+  erc20:
+    optional: true
+    url: https://raw.githubusercontent.com/pinax-network/substreams-evm/970a665e15619de8ad7f686bd89412a1030d46dc/spkg/erc20-transfers-v0.4.0.spkg
+    module: map_events              # output proto:erc20.transfers.v1.Events
+
+# Vaults are passed to the modules as lowercase 0x-prefixed hex (exact-match keys; see substreams-facts.md (a)).
+vaults:
+  - address: "0x050ce30b927da55177a4914ec73480238bad56f0"
+    label: "Gauntlet USDC Prime"         # on-chain name(); symbol gtusdcp; Morpho Vault V2; created block 37179342
+  - address: "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+    label: "Steakhouse Prime USDC"       # on-chain name(); Privy dashboard lists it as "Steakhouse Prime Instant"; symbol steakUSDC; created block 37404640
+  # After A3 deploys the Privy fee wrappers, append their addresses here (Privy get-vault-details.vault_address),
+  # so Vaultpilot can exclude its own flows. Do not change before the recorded run without re-tagging.
+
+sampleIntervalBlocks: 1800         # 1800 blocks x 2.000 s = 1 hour; observations at block_number % 1800 == 0
+
+# ~6 weeks before head. Head 51,092,280 at 2026-09-09T17:11:47Z; 42 d x 86400 s / 2.000 s = 1,814,400 blocks;
+# 51,092,280 - 1,814,400 = 49,277,880, rounded down to a multiple of 1800 -> 49,276,800 (~2026-07-29T16:35Z).
+startBlock: 49276800
+
+# How the modules receive configuration (manifest `params:`; also hosted ExecutionConfig.parameters).
+params:
+  encoding: urlencoded             # serde_qs style, per upstream parameterized-modules.md
+  value: "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
+
+sink:
+  kind: clickhouse
+  mode: from-proto                 # required on ClickHouse (Database Changes crash-loops on hosted runner)
+  descriptorSets:
+    - buf.build/streamingfast/substreams-sink-sql
+  tables:                          # generated from vaultflows.proto annotations; never hand-written
+    - vault_flows
+    - share_value_observations
+    - vaults
+    - share_transfers
+  views:                           # created by Streamsmith after the sink has created the base tables; always filter _deleted_ = 0
+    - vault_flows_24h
+    - share_value_growth
+  connection:                      # non-secret fields; password only via the Portal secret page
+    port: 9440
+    secure: true
+    database: default
+
+deployment:
+  preferred: graph-market-hosted   # Portal API HostedService; fallback self-managed-sink (substreams sink clickhouse)
+  network: base                    # UNVERIFIED that the hosted runner accepts "base"; confirm on first Deploy
