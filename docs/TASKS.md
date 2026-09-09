@@ -7,7 +7,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T0.2 M P · `substreams auth` device login (Graph Market streaming key) → `SUBSTREAMS_API_TOKEN` in `.env`. Accept: `substreams run` returns blocks. dep: T1.1
 - [ ] T0.3 M P · Graph Market Portal device-code login for hosted sink (via `thegraph-market-api` skill flow). Accept: `ListDeployments` succeeds. dep: T1.1
 - [ ] T0.4 M P · ClickHouse Cloud trial: service, db `vaultflows`, sink user (DDL) + read-only user; HTTPS + native endpoints in `.env`. Accept: remote `SELECT 1`, DDL, insert, read. (Local Docker ClickHouse covers dev until then.)
-- [ ] T0.5 M P · Privy dashboard: app, **gas sponsorship on**, API key, app secret, authorization key → `.env`. Accept: server wallet created via API.
+- [ ] T0.5 M P · Privy dashboard: (1) app → App ID + secret; (2) Wallets › Authorization keys › two keys (treasurer, agent), save private keys; (3) Wallet infrastructure › Earn › deploy fee wrapper for Gauntlet USDC Prime and Steakhouse Prime Instant → two `vault_id`s; (4) Gas sponsorship › App pays › Base. Fill apps/vaultpilot/.env. Accept: `pnpm --filter @ethonline26/vaultpilot spike` passes.
 - [ ] T0.6 S P · Privy: attempt Organization creation; report gated or not. Fallback: plain business-owned wallet.
 - [ ] T0.7 M P · Base wallet: ~50 USDC + ~$5 ETH; address in `.env`. Accept: balances visible on Basescan.
 - [ ] T0.8 M P · Microphone + 1080p screen capture ready for Sept 12.
@@ -22,7 +22,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T1.5 M A1 · Self-managed `substreams-sink-sql` (from-proto, ClickHouse) with Pinax erc4626 → local CH; cursor persistence; restart resumes. Accept: row count grows; restart no duplicates. dep: T1.4
 - [ ] T1.6 M A2 · Hosted sink spike on Graph Market with Pinax's published package → ClickHouse Cloud. Time-box 90 min. Accept: rows grow, head advances. Fail → T1.5 is the deploy path. dep: T0.3, T0.4
 - [ ] T1.7 M A1 · Block-context `eth_call` spike: in a module, at two historical processed blocks, batch `decimals()`, `convertToAssets(10^d)`, `totalAssets()`, `totalSupply()` for one pinned vault. Accept: deterministic block-specific values on rerun; documented in `docs/build/substreams-facts.md`. dep: T1.2, T0.2
-- [ ] T1.8 M A3 · Privy spike: server wallet, additional signer + policy (`earn` restricted to 2 vault ids + cap), read both pinned vault positions, allowed vs denied call. Accept: denial observed; Earn reachable. dep: T0.5
+- [~] T1.8 M A3 · (code ready: `pnpm --filter @ethonline26/vaultpilot spike`; waits on T0.5 keys + fee-wrapper vault ids) Privy spike: server wallet, additional signer + policy (`earn` restricted to 2 vault ids + cap), read both pinned vault positions, allowed vs denied call. Accept: denial observed; Earn reachable. dep: T0.5
 - [ ] T1.9 M O · Record spike outcomes → choose `deploymentMode`, Privy control model. Update PROJECT.md §8/§11.
 
 ## 2. Public contract (frozen before the recorded run)
@@ -63,7 +63,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T5.3 M A4 · Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
 
 ## 6. Vaultpilot (Sept 11)
-- [ ] T6.1 M A3 · Server (TS): Privy client, business wallet, agent authorization key as additional signer, policy JSON (earn → 2 vault ids, per-action cap, daily aggregation), revocation path documented.
+- [~] T6.1 M A3 · (skeleton committed; methods are earn_deposit/earn_withdraw; daily cap app-side) Server (TS): Privy client, business wallet, agent authorization key as additional signer, policy JSON (earn → 2 vault ids, per-action cap, daily aggregation), revocation path documented.
 - [ ] T6.2 M A3 · Earn deposit / withdraw / position for both vault ids; capture tx hashes. dep: T0.7
 - [ ] T6.3 M A3 · Decision service: observed-window share-value growth (min 24h obs), min differential, outflow guardrail, cooldown, staleness refusal via `pipeline_status`, `maxWithdraw`, self-action exclusion, idempotency, intermediate-failure handling (withdraw ok → deposit fail ⇒ idle + alert).
 - [ ] T6.4 M A3 · One-screen UI (Next.js): position, two observations + exact window, decision + rule, policy result, provenance, tx links, control/revocation info.
