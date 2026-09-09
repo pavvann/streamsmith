@@ -1,0 +1,339 @@
+# specs/gate.yaml — executable quality gate for the erc4626-flows package, run by `streamsmith gate`.
+# Frozen together with specs/vaultflows.proto before the recorded one-prompt run.
+# Every number cites its source. Files: docs/build/vaults.md (ranges, vault facts, reference rows),
+# docs/build/substreams-facts.md (CLI/sink semantics), docs/build/contract-notes.md (field semantics),
+# vendor/substreams-skills/skills/substreams-sql (sink rules), `substreams run --help` (v1.22.0).
+gateVersion: 1
+
+# ---------------------------------------------------------------------------------------------------------------
+# Runner contract (packages/streamsmith `gate` command)
+#  - Order: build -> runs (primary, primary_rerun, observation) -> assertions -> write results.
+#  - Exit codes: 0 every `severity: fail` assertion passed; 10 build step failed; 20 any run failed
+#    (non-zero exit, timeout, unparseable jsonl, zero lines); 30 one or more `severity: fail` assertions failed.
+#    `severity: warn` assertions never change the exit code; their result is still recorded.
+#  - Results: runs/<runId>/gate.json with every assertion {name, severity, passed, detail}; the receipt copies them
+#    into gate.assertions[] and gate.ranges[] ("start:stop", stop exclusive, matching specs/receipt.schema.json
+#    pattern ^\d+:\d+$); gate.passed = (exit code == 0).
+#  - Variables: ${package.dir}, ${spkg} (first expectedOutputs entry), ${endpoint}, ${network}.
+# ---------------------------------------------------------------------------------------------------------------
+exitCodes: { pass: 0, buildFailed: 10, runFailed: 20, assertionFailed: 30 }
+
+package:
+  dir: packages/erc4626-flows              # package directory holding substreams.yaml
+  manifest: substreams.yaml
+  name: erc4626-flows                      # specs/streamsmith.yaml packageName
+  version: v0.1.0                          # specs/streamsmith.yaml version 0.1.0 (manifest form v0.1.0)
+  outputModule: map_events                 # specs/streamsmith.yaml outputModule
+  outputType: proto:vaultflows.v1.Events   # specs/streamsmith.yaml outputType
+
+contract:
+  proto: specs/vaultflows.proto
+  protoPackage: vaultflows.v1
+  configuration: specs/streamsmith.yaml
+  # The sink annotations import. The BSR module the SQL skill names (buf.build/streamingfast/substreams-sink-sql)
+  # is retired: `buf ls-files` on it returns only deprecated/substreams_sink_sql/v1/moved.proto whose comment reads
+  # "The SQL sink definitions live in buf.build/streamingfast/substreams" (checked 2026-09-10, buf 1.72.0).
+  sinkSchema:
+    file: sf/substreams/sink/sql/schema/v1/schema.proto
+    bsrModule: buf.build/streamingfast/substreams        # `buf dep update` resolves; lock commit 47ceeb6c52dd4bd2ac942a655518482b
+    offlineCopy: packages/streamsmith/proto-deps/sf/substreams/sink/sql/schema/v1/schema.proto   # see its NOTICE.md
+    rawUrl: https://raw.githubusercontent.com/streamingfast/substreams/develop/proto/sf/substreams/sink/sql/schema/v1/schema.proto
+  # buf lint on the spec: STANDARD rules except PACKAGE_DIRECTORY_MATCH (the file lives at specs/, not vaultflows/v1/,
+  # because docs/PROJECT.md section 5 fixes the path). Result on 2026-09-10: clean.
+  lint: { tool: buf, rules: STANDARD, except: [PACKAGE_DIRECTORY_MATCH] }
+
+# ---------------------------------------------------------------------------------------------------------------
+build:
+  cwd: ${package.dir}
+  command: substreams build                # substreams-dev/SKILL.md "Publishing": build = "Full WASM + spkg"
+  timeoutSeconds: 1800
+  expectedOutputs:
+    - ${package.dir}/erc4626-flows-v0.1.0.spkg                                    # default name <package.name>-<version>.spkg
+    - ${package.dir}/target/wasm32-unknown-unknown/release/erc4626_flows.wasm    # manifest binaries.default.file
+  record:
+    spkgSha256: true                       # -> receipt.packageHash ("sha256 of the .spkg bytes, hex, lowercase")
+    toolVersions: [substreams --version, buf --version, rustc --version, cargo --version]
+  onFailure: exit 10
+
+# ---------------------------------------------------------------------------------------------------------------
+endpoint: base-mainnet.streamingfast.io:443   # vendor/substreams-skills/skills/substreams-sink/SKILL.md:564 "| Base Mainnet | `base-mainnet.streamingfast.io:443` |"
+network: base                                  # vendor/substreams-skills/skills/substreams-dev/references/networks.md:19 "`base` - Base Chain"
+auth:
+  envAny: [SUBSTREAMS_API_TOKEN, SUBSTREAMS_API_KEY]   # data-plane token, not the Portal bearer (substreams-testing/references/integration-testing.md "Auth")
+
+# Command template. `-t` is EXCLUSIVE: substreams v1.22.0 `run --help`:
+#   "-t, --stop-block string  Stop block to end stream at, exclusively. If the start-block is positive, a '+' prefix
+#    can indicate 'relative to start-block'".
+# Output is one JSON object per block: {"@module": "<module>", "@block": <n>, "@type": "vaultflows.v1.Events",
+# "@data": <protojson Events>} (streamingfast/substreams protodecode/decoder.go `ModuleWrap`; "@partial_index" and
+# "@is_last_partial" appear only for partial blocks and are not expected here).
+runCommand: substreams run -e ${endpoint} ${spkg} ${module} -s ${startBlock} -t ${stopBlock} --network ${network} -o jsonl
+
+runs:
+  primary:
+    module: map_events
+    startBlock: 51092254
+    stopBlock: 51092454                    # start + 200 -> blocks 51092254..51092453 inclusive
+    # docs/build/vaults.md "Recent block range": "Events found in 51,092,263 - 51,092,449 (187 blocks): 42 logs on the
+    # two vaults; Gauntlet: 33 Deposit + 7 Withdraw; Steakhouse: 1 Withdraw ... + 1 Deposit" and "Padded to exactly
+    # 200 blocks: 51,092,254 ... 51,092,453 inclusive (`substreams run -s 51092254 -t +200`)".
+    # Block 51092254 hash 0xe05b627f4d4c392cb2cc577ac21421b6c3d09b4f3c0b397532e292177e7bd089 ts 1788973855 (2026-09-09T17:10:55Z)
+    # Block 51092453 hash 0xa3310a6eafb01072b70e09cf316c25ba23d04cd0ade3105b0bdfd80d6b90f675 ts 1788974253 (2026-09-09T17:17:33Z)
+    # No block in this range satisfies block % 1800 == 0 (nearest 51,091,200 and 51,093,000) -> zero observation rows expected.
+    output: runs/${runId}/primary.jsonl
+    timeoutSeconds: 3600                   # first run pays the server-side store backfill from initialBlock 49276800 (~1.8M blocks)
+  primary_rerun:
+    sameAs: primary                        # identical command, second execution, for deterministic_rerun
+    output: runs/${runId}/primary_rerun.jsonl
+    timeoutSeconds: 1800
+  observation:
+    module: map_events
+    startBlock: 51092998
+    stopBlock: 51093002                    # blocks 51092998..51093001 inclusive; contains 51093000 = 28385 x 1800
+    # Sampled block per specs/streamsmith.yaml sampleIntervalBlocks: 1800 ("observations at block_number % 1800 == 0").
+    # Headers via eth_getBlockByNumber on https://mainnet.base.org, 2026-09-10:
+    #   51092998 hash 0xd347ae9c8580d3b502219f856478e4f54530c95e07fcf2eb872979a251c34edb ts 1788975343
+    #   51093000 hash 0x9c6e8b7f6f72707960744b44d390bad2ecdc7a96b16420338b6ce10777dc29bb ts 1788975347 (2026-09-09T17:35:47Z)
+    #   51093001 hash 0xd6367e6a2d48310ad9684e61d7dde785c31fc234bbe7b613b18154edca15f1b8 ts 1788975349
+    output: runs/${runId}/observation.jsonl
+    timeoutSeconds: 1800
+  onFailure: exit 20
+
+# How rows are extracted from a run (used by every assertion below):
+#  1. Each jsonl line must parse; "@module" must equal the run's module and "@type" must equal "vaultflows.v1.Events".
+#  2. Decode "@data" with the descriptor compiled from specs/vaultflows.proto (protojson -> message), rejecting unknown
+#     fields. Decoding fills defaults, so an omitted string is "" and an omitted bool is false.
+#  3. Tables = the four repeated fields: vault_flows, share_value_observations, vaults, share_transfers. Each row keeps
+#     its "@block".
+#  4. Address comparisons are on lowercase strings; the configured vault list is specs/streamsmith.yaml `vaults[].address`.
+rowExtraction: { decodeWith: specs/vaultflows.proto, rejectUnknownFields: true, expectType: vaultflows.v1.Events }
+
+configuredVaults:                          # specs/streamsmith.yaml vaults[].address (lowercase; docs/build/vaults.md "Identity")
+  - 0x050ce30b927da55177a4914ec73480238bad56f0   # Gauntlet USDC Prime  (gtusdcp)
+  - 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9   # Steakhouse Prime USDC (steakUSDC)
+
+# ---------------------------------------------------------------------------------------------------------------
+# Normalized descriptor hash (receipt.protoDescriptorHash: "sha256 of the normalized FileDescriptorSet of the public
+# contract (specs/vaultflows.proto), hex").
+descriptorHash:
+  algorithm: |
+    1. Obtain the google.protobuf.FileDescriptorProto of package `vaultflows.v1` on each side:
+         spec side: `buf build <workspace: specs/ + sink schema module> --as-file-descriptor-set --exclude-source-info -o -#format=binpb`
+                    and take the file whose `package` == "vaultflows.v1".
+         spkg side: decode the .spkg as sf.substreams.v1.Package (buf.build/streamingfast/substreams
+                    sf/substreams/v1/package.proto: `repeated google.protobuf.FileDescriptorProto proto_files = 1`) and take
+                    the entry whose `package` == "vaultflows.v1". Exactly one file must match on each side.
+    2. Render each FileDescriptorProto to JSON with the proto3 JSON mapping, using a registry that contains
+       google/protobuf/descriptor.proto AND sf/substreams/sink/sql/schema/v1/schema.proto so that the (schema.table) and
+       (schema.field) extensions render as "[schema.table]" / "[schema.field]" objects (not as unknown fields).
+       Enum values as names, 64-bit integers as strings, unset/default fields omitted (standard protojson).
+    3. Normalize: delete the top-level "name"; recursively delete every "jsonName" and "sourceCodeInfo" key. Keep
+       everything else, including "options", "dependency", field numbers, types and reserved ranges.
+    4. Canonicalize: JSON with object keys sorted lexicographically at every level, arrays in original order,
+       separators "," and ":" only (no whitespace), UTF-8, non-ASCII unescaped.
+    5. sha256 over the UTF-8 bytes, lowercase hex.
+    Self-check: the runner must compute the spec-side hash twice, once from `buf build ... -o -#format=json` (buf's own
+    protojson rendering) and once through its own renderer; the two must be identical, otherwise the gate errors
+    (exit 30, detail "renderer mismatch") instead of comparing unlike things.
+  referenceScript: |
+    # python3 descriptor_hash.py vaultflows.v1 < fds.json   (fds.json from `buf build ... --as-file-descriptor-set -o -#format=json`)
+    import sys, json, hashlib
+    def strip(n):
+        if isinstance(n, dict): return {k: strip(v) for k, v in n.items() if k not in ("jsonName", "sourceCodeInfo")}
+        if isinstance(n, list): return [strip(x) for x in n]
+        return n
+    pkg = sys.argv[1]; fds = json.load(sys.stdin)
+    files = [f for f in fds.get("file", []) if f.get("package") == pkg]
+    assert len(files) == 1, f"expected exactly one file for {pkg}, found {len(files)}"
+    f = dict(files[0]); f.pop("name", None)
+    canon = json.dumps(strip(f), sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    print(hashlib.sha256(canon.encode("utf-8")).hexdigest())
+  # Computed 2026-09-10 with buf 1.72.0 from specs/vaultflows.proto as committed with this file. Identical with and
+  # without --exclude-source-info. Pipeline validation: the same script on vendor/substreams-evm/spkg/erc4626-v0.1.0.spkg
+  # (`buf build x.spkg#format=binpb --as-file-descriptor-set -o -#format=json`) and on its source
+  # vendor/substreams-evm/proto/v1/erc4626.proto both give e5a8314bc08196608436a75614d2333989f1858f278a3d077c2dc3205a75bfc6.
+  expectedSpecSha256: 11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b
+
+# ---------------------------------------------------------------------------------------------------------------
+assertions:
+  - name: spec_unmodified
+    severity: fail
+    definition: normalized descriptor hash of specs/vaultflows.proto (descriptorHash.algorithm, spec side) == descriptorHash.expectedSpecSha256
+    why: the one-prompt instruction says "Do not modify the schema"; a different hash means the spec file changed.
+
+  - name: descriptor_hash_match
+    severity: fail
+    definition: normalized descriptor hash of the built ${spkg} (spkg side) == normalized descriptor hash of specs/vaultflows.proto (spec side)
+    why: docs/PROJECT.md 4.1 "normalized protobuf-descriptor hash equals the expected public contract ... If the schema drifted, the gate fails."
+
+  - name: params_match
+    severity: fail
+    definition: |
+      Decode ${spkg} as sf.substreams.v1.Package. (a) Package.network == "base". (b) For every module whose inputs contain a
+      `params` input, Module.Input.Params.value == specs/streamsmith.yaml params.value, byte for byte
+      ("vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453");
+      the same holds for Package.networks["base"].params[<module>] when present. (c) initialBlock of module map_events == 49276800
+      (specs/streamsmith.yaml startBlock). Alternative read-out: `substreams info ${spkg} --json --expand-networks` (v1.22.0 flags).
+    why: receipt.parametersHash and the ExecutionConfig.parameters of the hosted deploy must describe the package that was gated (substreams-facts.md (a)).
+
+  - name: rows_gt
+    severity: fail
+    table: vault_flows
+    run: primary
+    min: 1
+    expectedHint: 42                       # docs/build/vaults.md: "42 logs on the two vaults" in 51,092,263 - 51,092,449
+    definition: count(rows in vault_flows over the primary run) >= min
+
+  - name: known_vault_present
+    severity: fail
+    run: primary
+    in: vault_flows
+    vaults: [0x050ce30b927da55177a4914ec73480238bad56f0, 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9]
+    definition: |
+      For each address in `vaults`: at least one vault_flows row with vault == address AND meta_valid == true AND call_ok == true.
+      Expected counts (docs/build/vaults.md): Gauntlet 40 (33 Deposit + 7 Withdraw), Steakhouse 2 (1 Withdraw + 1 Deposit).
+
+  - name: reference_flows_present
+    severity: fail
+    run: primary
+    in: vault_flows
+    # docs/build/vaults.md "Recent block range" rows (eth_getLogs on https://1rpc.io/base, 2026-09-09), raw amounts as emitted.
+    rows:
+      - { block_number: 51092263, tx_hash: 0x0fe8b63d99cbe6eac9baab1967e9011d7de8a52fa6d5d210b15b4aa4c80a12b4, vault: 0x050ce30b927da55177a4914ec73480238bad56f0, direction: FLOW_DIRECTION_DEPOSIT,  assets_raw: "197373726", shares_raw: "189647169910852085674" }
+      - { block_number: 51092316, tx_hash: 0xf3188ffdb3d650e0f0a876391700726684bbb25ff54f802aea1dd87af514973b, vault: 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9, direction: FLOW_DIRECTION_WITHDRAW, assets_raw: "2210001",   shares_raw: "2125180826770979130" }
+      - { block_number: 51092402, tx_hash: 0x640557be0ab1dae20ea52973bdee493f7851919e2bdd745412bd8160876fd751, vault: 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9, direction: FLOW_DIRECTION_DEPOSIT,  assets_raw: "10000000",  shares_raw: "9616196376594418305" }
+      - { block_number: 51092449, tx_hash: 0x4388fe4a9820e592dc85a9e140722c6c23ad28826f50a81399ed07c9a22d06c0, vault: 0x050ce30b927da55177a4914ec73480238bad56f0, direction: FLOW_DIRECTION_WITHDRAW }
+    definition: each listed row exists (all listed keys equal; keys not listed are unconstrained); chain_id == 8453 on every row.
+
+  - name: log_index_matches_rpc
+    severity: warn
+    run: primary
+    in: vault_flows
+    rows:                                  # logIndex values from the same eth_getLogs scan (block-wide index)
+      - { block_number: 51092263, tx_hash: 0x0fe8b63d99cbe6eac9baab1967e9011d7de8a52fa6d5d210b15b4aa4c80a12b4, log_index: 406 }
+      - { block_number: 51092316, tx_hash: 0xf3188ffdb3d650e0f0a876391700726684bbb25ff54f802aea1dd87af514973b, log_index: 163 }
+      - { block_number: 51092402, tx_hash: 0x640557be0ab1dae20ea52973bdee493f7851919e2bdd745412bd8160876fd751, log_index: 521 }
+      - { block_number: 51092449, tx_hash: 0x4388fe4a9820e592dc85a9e140722c6c23ad28826f50a81399ed07c9a22d06c0, log_index: 836 }
+    definition: the row matched by (block_number, tx_hash) has log_index equal to the listed value.
+    why: confirms log_index is the block-wide receipt index (Firehose Log.blockIndex) that the id scheme relies on; warn until observed once on this endpoint.
+
+  - name: execution_rate_sanity
+    severity: fail
+    run: primary
+    in: vault_flows
+    vaults: [0x050ce30b927da55177a4914ec73480238bad56f0, 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9]
+    range: { min: "1.0", max: "1.1" }      # asset units (USDC) per whole share, decimal string compare
+    definition: |
+      For every vault_flows row with vault in `vaults` AND meta_valid == true AND shares_raw != "0":
+      min <= execution_rate <= max (exact decimal arithmetic, not float). At least one such row must exist per vault
+      (otherwise the assertion is vacuous and fails).
+    why: |
+      docs/build/vaults.md: convertToAssets(1e18) at head 2026-09-09 = 1,040,742 (Gauntlet, ~1.040742 USDC/share) and
+      1,039,912 (Steakhouse, ~1.039912); deposit-implied rate of the first Gauntlet event 197,373,726 / 189,647,169,910,852,085,674
+      x 10^12 = 1.0407417; Steakhouse withdraw 2,210,001 / 2,125,180,826,770,979,130 x 10^12 = 1.0399120; Steakhouse deposit
+      10,000,000 / 9,616,196,376,594,418,305 x 10^12 = 1.0399122. Entry/exit fee spread (EIP-4626, Pinax README) is far below
+      the 4% / 6% headroom of [1.0, 1.1]. Also proves asset_decimals (6) and share_decimals (18) were applied: a wrong
+      decimals default (e.g. 18/18) gives ~1.04e-12, outside the range.
+
+  - name: observation_present
+    severity: fail
+    run: observation
+    in: share_value_observations
+    block: 51093000
+    vaults: [0x050ce30b927da55177a4914ec73480238bad56f0, 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9]
+    definition: |
+      For each address in `vaults`: exactly one share_value_observations row with block_number == 51093000 AND vault == address
+      AND call_ok == true AND sample_interval_blocks == 1800 AND chain_id == 8453
+      AND block_hash == 0x9c6e8b7f6f72707960744b44d390bad2ecdc7a96b16420338b6ce10777dc29bb AND block_timestamp == 1788975347
+      AND assets_per_share_raw, total_assets_raw, total_supply_raw all parse as integers > 0
+      AND id == "8453-51093000-" + address.
+      Additionally: no share_value_observations row has block_number in {51092998, 51092999, 51093001} (not multiples of 1800),
+      and the primary run contains zero share_value_observations rows (no multiple of 1800 in 51092254..51092453).
+
+  - name: observation_matches_reference
+    severity: warn
+    run: observation
+    in: share_value_observations
+    block: 51093000
+    expected:                              # eth_call convertToAssets(1e18) selector 07a2d13a at block 0x30b9e08 via https://mainnet.base.org, 2026-09-10
+      0x050ce30b927da55177a4914ec73480238bad56f0: { assets_per_share_raw: "1040743", assets_per_share_normalized: "1.040743" }
+      0xbeef0e0834849acc03f0089f01f4f1eeb06873c9: { assets_per_share_raw: "1039913", assets_per_share_normalized: "1.039913" }
+    definition: the row for each vault at the block equals the expected values exactly (decimal compare for the normalized field).
+    why: |
+      Firehose executes eth_call at the processed block hash (substreams-facts.md (b)), so an exact match is expected. A mismatch
+      is the symptom of the UNVERIFIED ETH_CALL_FALLBACK_TO_LATEST_DURATION behaviour on the endpoint (call evaluated at head).
+      Warn-level because the cause would be the endpoint, not the package; promote to fail once observed passing.
+
+  - name: rpc_success_ratio_gte
+    severity: fail
+    runs: [primary, observation]
+    tables: [vault_flows, share_value_observations, vaults]
+    min: 0.99
+    definition: |
+      Over all rows of the listed tables in the listed runs whose vault is in configuredVaults:
+      count(call_ok == true) / count(rows) >= min. Note the denominator is ~44 here (42 flows + 2 observations), so a single
+      failed call gives 0.977 and fails: at this sample size the rule is effectively "no failed calls on configured vaults".
+      Rows for non-configured vaults (VaultMeta of unrelated addresses that legitimately fail the probe) are excluded on purpose.
+
+  - name: numeric_strings_valid
+    severity: fail
+    runs: [primary, primary_rerun, observation]
+    definition: |
+      Every uint256 column value (assets_raw, shares_raw, assets_per_share_raw, total_assets_raw, total_supply_raw) matches
+      ^[0-9]+$ and is < 2^256. Every decimal128 column value (assets_normalized, shares_normalized, execution_rate,
+      assets_per_share_normalized) matches ^[0-9]+(\.[0-9]{1,18})?$ with at most 20 integer digits (Decimal128(18) holds |x| < 10^20).
+      An absent or empty string fails.
+    why: |
+      The ClickHouse from-proto sink panics on an empty string for a convertTo column ("empty string cannot be converted to
+      decimal"/"uint256", sink/sql/db_proto/sql/click_house/{decimal,integer}.go; panic in accumulator_inserter.go) and
+      truncates fractional digits beyond the scale. The contract therefore uses "0" plus a flag, never "".
+
+  - name: ids_unique
+    severity: fail
+    runs: [primary, primary_rerun, observation]
+    definition: |
+      Per run and per table, all `id` values are distinct. Formats: vault_flows and share_transfers ^8453-[0-9]+-[0-9]+$ with
+      components equal to chain_id, block_number, log_index; share_value_observations ^8453-[0-9]+-0x[0-9a-f]{40}$ with
+      components equal to chain_id, block_number, vault; vaults ^8453-0x[0-9a-f]{40}$.
+    why: id is the single primary key and first ORDER BY column of a ReplacingMergeTree; duplicates collapse rows on merge.
+
+  - name: addresses_lowercase
+    severity: fail
+    runs: [primary, primary_rerun, observation]
+    definition: |
+      vault, caller, owner, receiver, asset, from_owner, to_owner match ^0x[0-9a-f]{40}$ (asset may be "" only when call_ok == false);
+      block_hash and tx_hash match ^0x[0-9a-f]{64}$.
+    why: specs/vaultflows.proto conventions; substreams-dev/references/block-filtering.md "Match keys exactly - 0x-prefixed lowercase hex".
+
+  - name: deterministic_rerun
+    severity: fail
+    runs: [primary, primary_rerun]
+    definition: |
+      Canonical form of a run = for each jsonl line: parse, re-serialize with keys sorted at every level and separators
+      "," ":" (no whitespace); sort the resulting lines lexicographically; join with "\n". sha256(canonical(primary)) ==
+      sha256(canonical(primary_rerun)) AND the two line counts are equal AND both are > 0.
+    why: docs/PROJECT.md 4.1 "deterministic rerun over the same range"; also the runtime detector for eth_call-at-head drift (substreams-facts.md (b)).
+
+  - name: output_decodes_against_contract
+    severity: fail
+    runs: [primary, primary_rerun, observation]
+    definition: every line has "@module" == "map_events" and "@type" == "vaultflows.v1.Events", and "@data" decodes with the
+      specs/vaultflows.proto descriptor with unknown fields rejected (rowExtraction).
+
+  - name: banned_words
+    severity: fail
+    files: [specs/vaultflows.proto, specs/streamsmith.yaml, specs/gate.yaml, docs/build/contract-notes.md, "${package.dir}/substreams.yaml", "${package.dir}/README.md"]
+    # docs/PROJECT.md 4.2 "Banned words". Patterns are written with a bracketed letter so this file does not match itself.
+    patterns: ["y[i]eld", "\\b[A]PY\\b", "share [p]rice", "\\b[T]VL\\b", "\\b[r]isk"]
+    definition: case-insensitive regex search; zero matches across all listed files that exist. Missing README.md is not a failure.
+
+  - name: spkg_metadata
+    severity: fail
+    definition: |
+      `substreams info ${spkg} map_events --json`: package name == erc4626-flows, version == v0.1.0, network == base,
+      module map_events exists with output type proto:vaultflows.v1.Events (specs/streamsmith.yaml).
+
+# Optional, not run by default (adds a third paid run): production-mode parity per substreams-testing SKILL.md
+# ("substreams run ... --production-mode" over the same range must give the same canonical hash as primary).
+optionalRuns:
+  primary_production_mode: { sameAs: primary, extraFlags: [--production-mode], compareTo: primary, severity: warn, enabled: false }
