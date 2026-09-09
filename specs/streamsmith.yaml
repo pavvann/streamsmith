@@ -47,7 +47,10 @@ sink:
   kind: clickhouse
   mode: from-proto                 # required on ClickHouse (Database Changes crash-loops on hosted runner)
   descriptorSets:
-    - buf.build/streamingfast/substreams-sink-sql
+    # buf.build/streamingfast/substreams-sink-sql is retired: its only file is deprecated/substreams_sink_sql/v1/moved.proto
+    # ("The SQL sink definitions live in buf.build/streamingfast/substreams"). Checked with `buf ls-files` 2026-09-10 (A2b).
+    # Offline copy: packages/streamsmith/proto-deps/sf/substreams/sink/sql/schema/v1/schema.proto
+    - buf.build/streamingfast/substreams
   tables:                          # generated from vaultflows.proto annotations; never hand-written
     - vault_flows
     - share_value_observations
