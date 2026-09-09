@@ -26,14 +26,15 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T1.9 M O · Record spike outcomes → choose `deploymentMode`, Privy control model. Update PROJECT.md §8/§11.
 
 ## 2. Public contract (frozen before the recorded run)
-- [ ] T2.1 M A2 · Read Pinax `erc4626` proto + README; read skills `substreams-dev`, `substreams-ethereum`, `substreams-sql`, `substreams-hosted-sink`, `thegraph-market-api`; write `docs/build/substreams-facts.md` (params mechanism, eth_call block context, from-proto sink rules, hosted-sink API calls, registry publish). Facts with source paths only.
-- [ ] T2.2 M A2 · Resolve pinned vaults: on-chain addresses on Base for Privy Earn "Gauntlet USDC Prime" and "Steakhouse Prime" (Morpho MetaMorpho), their Privy Earn vault ids, share decimals, asset (USDC) decimals; a recent block range with activity. Sources cited. → `docs/build/vaults.md`
-- [ ] T2.3 M A2 · `specs/vaultflows.proto`: `VaultFlow`, `ShareValueObservation`, `ShareTransfer` (optional), `CallStatus`; documented field semantics; versioned package name.
-- [ ] T2.4 M A2 · `specs/streamsmith.yaml` (chain 8453, vaults, `sampleIntervalBlocks: 1800`, sink target, package name) + `specs/gate.yaml` (build, run range, assertions: rows>0, known-vault-present, rpc-success≥threshold, deterministic rerun, descriptor-hash-match).
-- [ ] T2.5 M A2 · `specs/prompt.md`: the verbatim one-human-instruction (from PROJECT.md §5).
+- [x] T2.1 M A2 · (docs/build/substreams-facts.md) Read Pinax `erc4626` proto + README; read skills `substreams-dev`, `substreams-ethereum`, `substreams-sql`, `substreams-hosted-sink`, `thegraph-market-api`; write `docs/build/substreams-facts.md` (params mechanism, eth_call block context, from-proto sink rules, hosted-sink API calls, registry publish). Facts with source paths only.
+- [x] T2.2 M A2 · (docs/build/vaults.md; gate range 51092254:+200; startBlock 49276800; fee-wrapper consequence) Resolve pinned vaults: on-chain addresses on Base for Privy Earn "Gauntlet USDC Prime" and "Steakhouse Prime" (Morpho MetaMorpho), their Privy Earn vault ids, share decimals, asset (USDC) decimals; a recent block range with activity. Sources cited. → `docs/build/vaults.md`
+- [~] T2.3 M A2 · (proto written with sink annotations; A2b reviews PK/order_by) `specs/vaultflows.proto`: `VaultFlow`, `ShareValueObservation`, `ShareTransfer` (optional), `CallStatus`; documented field semantics; versioned package name.
+- [~] T2.4 M A2 · (yaml done; gate.yaml → A2b) `specs/streamsmith.yaml` (chain 8453, vaults, `sampleIntervalBlocks: 1800`, sink target, package name) + `specs/gate.yaml` (build, run range, assertions: rows>0, known-vault-present, rpc-success≥threshold, deterministic rerun, descriptor-hash-match).
+- [x] T2.5 M A2 · `specs/prompt.md`: the verbatim one-human-instruction (from PROJECT.md §5).
 - [ ] T2.6 M O · Freeze: tag `contract-v1` after review.
 
 ## 3. erc4626-flows package (Sept 10; hand-built reference first, then generated)
+- [~] T3.0 M A5 · Rust package compiled in **GitHub Actions** (disk workaround): workflow builds wasm, packs spkg, uploads artifact; iterate until green.
 - [ ] T3.1 M A1 · Manifest importing Pinax `erc4626` (and `erc20` if T3.6), params wiring, protos from `specs/vaultflows.proto`.
 - [ ] T3.2 M A1 · `store_vault_meta`: first-sight probe `asset()`, `decimals()`, asset `decimals()`, `totalAssets()`, `convertToAssets()`; non-compliant → dropped; cached.
 - [ ] T3.3 M A1 · `map_flows`: caller/owner/receiver, raw + normalized amounts (only if meta valid), `deposit_execution_rate`/`withdraw_execution_rate`, flags.
