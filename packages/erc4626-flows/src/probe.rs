@@ -47,7 +47,9 @@ pub struct VaultObservation {
 impl VaultObservation {
     /// ok only if convertToAssets, totalAssets and totalSupply all decoded (asset decimals are a bonus).
     pub fn ok(&self) -> bool {
-        self.assets_per_share.is_some() && self.total_assets.is_some() && self.total_supply.is_some()
+        self.assets_per_share.is_some()
+            && self.total_assets.is_some()
+            && self.total_supply.is_some()
     }
     pub fn error_string(&self) -> String {
         self.errors.join("; ")
@@ -63,11 +65,13 @@ fn decode_uint(response: &RpcResponse) -> Option<String> {
 }
 
 fn decode_decimals(response: &RpcResponse) -> Option<u32> {
-    RpcBatch::decode::<BigInt, vault_fn::Decimals>(response).and_then(|v| decimals_from_u64(v.to_u64()))
+    RpcBatch::decode::<BigInt, vault_fn::Decimals>(response)
+        .and_then(|v| decimals_from_u64(v.to_u64()))
 }
 
 fn decode_address(response: &RpcResponse) -> Option<Vec<u8>> {
-    RpcBatch::decode::<Vec<u8>, vault_fn::Asset>(response).filter(|a| a.len() == 20 && a.iter().any(|b| *b != 0))
+    RpcBatch::decode::<Vec<u8>, vault_fn::Asset>(response)
+        .filter(|a| a.len() == 20 && a.iter().any(|b| *b != 0))
 }
 
 fn decode_string<F>(response: &RpcResponse) -> String
@@ -93,7 +97,10 @@ pub fn probe_vault(vault: &[u8]) -> VaultProbe {
     let first = match first {
         Ok(r) if r.responses.len() == 5 => r,
         Ok(r) => {
-            out.errors.push(format!("rpc: expected 5 responses, got {}", r.responses.len()));
+            out.errors.push(format!(
+                "rpc: expected 5 responses, got {}",
+                r.responses.len()
+            ));
             return out;
         }
         Err(e) => {
@@ -138,7 +145,8 @@ pub fn probe_vault(vault: &[u8]) -> VaultProbe {
         convert_idx = Some(next);
         next += 1;
     } else {
-        out.errors.push("convertToAssets: skipped (decimals unavailable)".to_string());
+        out.errors
+            .push("convertToAssets: skipped (decimals unavailable)".to_string());
     }
 
     if next == 0 {
@@ -154,13 +162,18 @@ pub fn probe_vault(vault: &[u8]) -> VaultProbe {
                 }
             }
             if let Some(i) = convert_idx {
-                out.assets_per_share = RpcBatch::decode::<BigInt, vault_fn::ConvertToAssets>(&r.responses[i]).map(|v| v.to_string());
+                out.assets_per_share =
+                    RpcBatch::decode::<BigInt, vault_fn::ConvertToAssets>(&r.responses[i])
+                        .map(|v| v.to_string());
                 if out.assets_per_share.is_none() {
                     out.errors.push("convertToAssets: failed".to_string());
                 }
             }
         }
-        Ok(r) => out.errors.push(format!("rpc: expected {next} responses, got {}", r.responses.len())),
+        Ok(r) => out.errors.push(format!(
+            "rpc: expected {next} responses, got {}",
+            r.responses.len()
+        )),
         Err(e) => out.errors.push(format!("rpc: {e}")),
     }
     out
@@ -177,7 +190,9 @@ pub fn observe_vaults(vaults: &[Vec<u8>]) -> Vec<VaultObservation> {
 
     let mut first = RpcBatch::new();
     for v in vaults {
-        first = first.add(vault_fn::Decimals {}, v.clone()).add(vault_fn::Asset {}, v.clone());
+        first = first
+            .add(vault_fn::Decimals {}, v.clone())
+            .add(vault_fn::Asset {}, v.clone());
     }
     let mut assets: Vec<Option<Vec<u8>>> = vec![None; vaults.len()];
     match first.execute() {
@@ -195,7 +210,11 @@ pub fn observe_vaults(vaults: &[Vec<u8>]) -> Vec<VaultObservation> {
         }
         Ok(r) => {
             for obs in out.iter_mut() {
-                obs.errors.push(format!("rpc: expected {} responses, got {}", vaults.len() * 2, r.responses.len()));
+                obs.errors.push(format!(
+                    "rpc: expected {} responses, got {}",
+                    vaults.len() * 2,
+                    r.responses.len()
+                ));
             }
             return out;
         }
@@ -239,7 +258,9 @@ pub fn observe_vaults(vaults: &[Vec<u8>]) -> Vec<VaultObservation> {
             s.convert = Some(next);
             next += 1;
         } else {
-            out[i].errors.push("convertToAssets: skipped (decimals unavailable)".to_string());
+            out[i]
+                .errors
+                .push("convertToAssets: skipped (decimals unavailable)".to_string());
         }
         second = second.add(vault_fn::TotalAssets {}, v.clone());
         s.total_assets = next;
@@ -262,7 +283,8 @@ pub fn observe_vaults(vaults: &[Vec<u8>]) -> Vec<VaultObservation> {
                 }
                 if let Some(idx) = s.convert {
                     obs.assets_per_share =
-                        RpcBatch::decode::<BigInt, vault_fn::ConvertToAssets>(&r.responses[idx]).map(|v| v.to_string());
+                        RpcBatch::decode::<BigInt, vault_fn::ConvertToAssets>(&r.responses[idx])
+                            .map(|v| v.to_string());
                     if obs.assets_per_share.is_none() {
                         obs.errors.push("convertToAssets: failed".to_string());
                     }
@@ -272,7 +294,8 @@ pub fn observe_vaults(vaults: &[Vec<u8>]) -> Vec<VaultObservation> {
                     obs.errors.push("totalAssets: failed".to_string());
                 }
                 obs.total_supply =
-                    RpcBatch::decode::<BigInt, vault_fn::TotalSupply>(&r.responses[s.total_supply]).map(|v| v.to_string());
+                    RpcBatch::decode::<BigInt, vault_fn::TotalSupply>(&r.responses[s.total_supply])
+                        .map(|v| v.to_string());
                 if obs.total_supply.is_none() {
                     obs.errors.push("totalSupply: failed".to_string());
                 }
@@ -280,7 +303,10 @@ pub fn observe_vaults(vaults: &[Vec<u8>]) -> Vec<VaultObservation> {
         }
         Ok(r) => {
             for obs in out.iter_mut() {
-                obs.errors.push(format!("rpc: expected {next} responses, got {}", r.responses.len()));
+                obs.errors.push(format!(
+                    "rpc: expected {next} responses, got {}",
+                    r.responses.len()
+                ));
             }
         }
         Err(e) => {
