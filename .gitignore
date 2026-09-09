@@ -1,0 +1,12 @@
+node_modules/
+target/
+dist/
+.env
+.env.*
+!.env.example
+*.spkg
+.firecrawl/
+.context/
+runs/**/raw/
+*.log
+.DS_Store
