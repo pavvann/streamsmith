@@ -14,10 +14,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T0.9 S P · Team: confirm 1 or 2 humans; if 2, assign Dev B (infra/Privy).
 
 ## 1. Toolchain and spikes (Sept 9)
-- [ ] T1.1 M A1 · Install Rust stable + `wasm32-unknown-unknown`, `substreams` CLI, `buf`, `substreams-sink-sql`; pin versions in `docs/build/toolchain.md`. Accept: `cargo build --target wasm32-unknown-unknown` on Pinax erc4626 succeeds.
-- [ ] T1.2 M A1 · Clone `pinax-network/substreams-evm`, build `erc4626` and `erc20` packages, record module names/outputs/proto paths. Accept: `.wasm` built; `substreams info` prints modules.
-- [ ] T1.3 M A1 · Local ClickHouse in Docker (`vaultflows` db, sink user, ro user). Accept: `SELECT 1` over HTTP.
-- [ ] T1.4 M A1 · `substreams run` Pinax erc4626 on Base for a 200-block historical range containing pinned-vault activity. Accept: real Deposit/Withdraw rows. dep: T0.2, T2.2
+- [!] T0.11 M P+O · **Host disk ~1.6 GB free.** Pawan approves cleanup; orchestrator runs: `rm -rf ~/.cache/*` (3.8G), `rm -rf ~/Library/Caches/*` (5.0G), `brew cleanup`, `pnpm store prune`, empty Trash; Pawan checks ~/Downloads, ~/Movies. Target ≥15 GB free. Plan B: GitHub Codespace (needs `gh auth refresh -s codespace`).
+- [x] T1.1 M A1 · (done Sept 9: rustc 1.98.1, substreams 1.22.0, buf 1.72.0, substreams-sink-sql 4.13.1; see docs/build/toolchain.md) Install Rust stable + `wasm32-unknown-unknown`, `substreams` CLI, `buf`, `substreams-sink-sql`; pin versions in `docs/build/toolchain.md`. Accept: `cargo build --target wasm32-unknown-unknown` on Pinax erc4626 succeeds.
+- [~] T1.2 M A1 · (cloned; prebuilt spkg usable; own build BLOCKED by disk; erc4626 not on registry → import by URL) Clone `pinax-network/substreams-evm`, build `erc4626` and `erc20` packages, record module names/outputs/proto paths. Accept: `.wasm` built; `substreams info` prints modules.
+- [!] T1.3 M A1 · (BLOCKED: Docker I/O errors from full disk; replaced by ClickHouse Cloud for dev, see T0.4) Local ClickHouse in Docker (`vaultflows` db, sink user, ro user). Accept: `SELECT 1` over HTTP.
+- [!] T1.4 M A1 · (BLOCKED on T0.2 token) `substreams run` Pinax erc4626 on Base for a 200-block historical range containing pinned-vault activity. Accept: real Deposit/Withdraw rows. dep: T0.2, T2.2
 - [ ] T1.5 M A1 · Self-managed `substreams-sink-sql` (from-proto, ClickHouse) with Pinax erc4626 → local CH; cursor persistence; restart resumes. Accept: row count grows; restart no duplicates. dep: T1.4
 - [ ] T1.6 M A2 · Hosted sink spike on Graph Market with Pinax's published package → ClickHouse Cloud. Time-box 90 min. Accept: rows grow, head advances. Fail → T1.5 is the deploy path. dep: T0.3, T0.4
 - [ ] T1.7 M A1 · Block-context `eth_call` spike: in a module, at two historical processed blocks, batch `decimals()`, `convertToAssets(10^d)`, `totalAssets()`, `totalSupply()` for one pinned vault. Accept: deterministic block-specific values on rerun; documented in `docs/build/substreams-facts.md`. dep: T1.2, T0.2
