@@ -14,3 +14,8 @@ vendor/
 .substreams.env
 .portal-device-code
 .portal-token.json
+runs/live/cloud/sink.out
+runs/live/cloud/sink.err
+runs/live/cloud/sink.pid
+runs/live/cloud/cursor.txt
+runs/live/cloud/sinkinfo/

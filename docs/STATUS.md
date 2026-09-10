@@ -53,3 +53,8 @@ Next steps, in order:
 5. Sept 11: clean-tag `contract-v1`, forensic one-prompt rehearsal from a fresh dir, freeze at midnight. Sept 12: README/diagram/video. Sept 13 submit before 12:00 EDT.
 Standing rules: sub-agents on Opus (Sonnet for low-stakes), never Fable; stop at 65% usage; commit WIP after every agent report.
 - 22:40 IST: hosted Deploy accepted but crash-looped: `param for module "vaults[]": module not found` — `execution_config.parameters` expects `<module>=<value>` pairs, not the raw param string. FIX (one call): re-Deploy (or UpdateDeploymentConfig) with `parameters` OMITTED — the published spkg already carries the `params:` defaults from the manifest — then GetDeploymentState until STATE_LIVE, then verify rows in ClickHouse Cloud (`ro` user). Deployment id depdehi448c87998ebb763b, org in .env. Not executed: usage budget reached (64%).
+
+## Sept 11 (IST 05:20) — resumed (Pawan asleep; Opus for agents)
+- Portal token expired (refresh rejected) → hosted redeploy needs a fresh device login (code issued, expires in 10 min; reissue on wake).
+- Self-managed sink → ClickHouse Cloud running (pid in runs/live/cloud/sink.pid), tables created, backfilling from 51001200 with --final-blocks-only. Monitor active.
+- A10b (Opus) relaunched to finish Vaultpilot.

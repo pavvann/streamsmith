@@ -253,3 +253,16 @@ created by the sink, 171 flow rows + 2 observation rows + 1 vault row landed thr
 `substreams-sink-sql from-proto` into the local ClickHouse container, restart-safe, with the enum removed from
 the contract. §1's blocker is resolved by the contract change, not by a sink patch — `substreams-sink-sql`
 4.13.1 still panics on any populated proto3 enum field.
+
+## §7 ClickHouse Cloud via self-managed sink (Sept 11, 05:13 IST)
+Command (from repo root, `.env` sourced):
+```bash
+substreams-sink-sql from-proto "$CH_CLOUD_SINK_DSN" packages/erc4626-flows/erc4626-flows-v0.1.0.spkg map_events \
+  -e base-mainnet.streamingfast.io:443 --network base -s 51001200 --final-blocks-only --bytes-encoding 0xhex \
+  --clickhouse-cursor-file-path runs/live/cloud/cursor.txt --clickhouse-sink-info-folder runs/live/cloud/sinkinfo
+```
+DSN: `clickhouse://sink:<pw>@<host>:9440/vaultflows?secure=true`. No stop block (live tail). Tables created 05:13:27Z+05:30, then backfill from 51001200.
+
+**Finding (cost one failed run):** the sink stores a per-schema "sink info" file (`vaultflows_schema_hash.txt`) in `--clickhouse-sink-info-folder` (default: cwd). A file left by the LOCAL run made the CLOUD run read `sink_info: {schema_hash: 07a6ec95…}`, skip `CREATE TABLE`, and die on `Table vaultflows._blocks_ does not exist` at block 51001204. Always give each target database its own sink-info folder. Streamsmith's `deploy` self-managed mode must pass this flag (open item for the CLI).
+
+Hosted deployment `depdehi448c87998ebb763b`: first Deploy crash-looped on `param for module "vaults[]"` (raw params string passed to `execution_config.parameters`; the spkg already carries the manifest defaults, so omit the field). Retry blocked on an expired Portal token (refresh window ~8 h); needs a new device login.
