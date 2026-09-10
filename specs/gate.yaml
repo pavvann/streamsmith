@@ -81,7 +81,7 @@ runs:
     # Block 51092453 hash 0xa3310a6eafb01072b70e09cf316c25ba23d04cd0ade3105b0bdfd80d6b90f675 ts 1788974253 (2026-09-09T17:17:33Z)
     # No block in this range satisfies block % 1800 == 0 (nearest 51,091,200 and 51,093,000) -> zero observation rows expected.
     output: runs/${runId}/primary.jsonl
-    timeoutSeconds: 3600                   # first run pays the server-side store backfill from initialBlock 49276800 (~1.8M blocks)
+    timeoutSeconds: 1800                   # first run pays the server-side store preparation from initialBlock 51001200 (~91k blocks x 2 stages); MUST pass --limit-processed-blocks 0 (CLI guard defaults to 10,000)
   primary_rerun:
     sameAs: primary                        # identical command, second execution, for deterministic_rerun
     output: runs/${runId}/primary_rerun.jsonl
@@ -172,7 +172,7 @@ assertions:
       Decode ${spkg} as sf.substreams.v1.Package. (a) Package.network == "base". (b) For every module whose inputs contain a
       `params` input, Module.Input.Params.value == specs/streamsmith.yaml params.value, byte for byte
       ("vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453");
-      the same holds for Package.networks["base"].params[<module>] when present. (c) initialBlock of module map_events == 49276800
+      the same holds for Package.networks["base"].params[<module>] when present. (c) initialBlock of module map_events == 51001200
       (specs/streamsmith.yaml startBlock). Alternative read-out: `substreams info ${spkg} --json --expand-networks` (v1.22.0 flags).
     why: receipt.parametersHash and the ExecutionConfig.parameters of the hosted deploy must describe the package that was gated (substreams-facts.md (a)).
 

@@ -36,7 +36,7 @@ sampleIntervalBlocks: 1800         # 1800 blocks x 2.000 s = 1 hour; observation
 
 # ~6 weeks before head. Head 51,092,280 at 2026-09-09T17:11:47Z; 42 d x 86400 s / 2.000 s = 1,814,400 blocks;
 # 51,092,280 - 1,814,400 = 49,277,880, rounded down to a multiple of 1800 -> 49,276,800 (~2026-07-29T16:35Z).
-startBlock: 49276800
+startBlock: 51001200
 
 # How the modules receive configuration (manifest `params:`; also hosted ExecutionConfig.parameters).
 params:

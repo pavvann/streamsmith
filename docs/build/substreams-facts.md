@@ -116,7 +116,7 @@ Mutations need OWNER/ADMIN role.
     "deployment_request": {"sink_sql_deployment": {
        "spkg": {"url": "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0"},
        "network": "base", "replica": 1,
-       "execution_config": {"start_block": 49276800, "output_module": "map_events",
+       "execution_config": {"start_block": 51001200, "output_module": "map_events",
                             "module_output_type": "proto:vaultflows.v1.Events", "parameters": "<params string>"},
        "outputConfig": {"clickhouse": {"server": "…", "port": 9440, "user": "default", "database": "default", "secure": true}}}}}
    ```

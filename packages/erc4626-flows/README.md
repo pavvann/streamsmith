@@ -40,7 +40,7 @@ map_vault_probe (first-sight VaultMeta rows) ───────────�
 | `map_share_value_observations` | map | params, Clock | Sampled reads; two RPC round trips per sampled block for the whole list. |
 | `map_events` | map | the three maps above | Merge. **Sink this module.** |
 
-All modules have `initialBlock: 49276800` (see `specs/streamsmith.yaml`). Metadata reads use Substreams'
+All modules have `initialBlock: 51001200` (see `specs/streamsmith.yaml`). Metadata reads use Substreams'
 `eth_call`, which executes at the hash of the block being processed.
 
 ## Params

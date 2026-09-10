@@ -117,7 +117,7 @@ Semantics: a point-in-time read; **never interpolated** between samples (docs/PR
 | `call_ok` | 13 | Bool | every probe call returned and decoded (equals `compliant` in v0.1.0) |
 | `call_error` | 14 | String | empty when `call_ok`; else the first failed call |
 
-Because the probe runs once at first sight (store `set_if_not_exists`, substreams-facts.md (c)) and both vaults were active long before the gate ranges, **no `vaults` rows are expected inside the gate ranges**; they are emitted near `startBlock` 49276800 during the backfill. The gate therefore only uses this table for the success ratio when rows happen to be present.
+Because the probe runs once at first sight (store `set_if_not_exists`, substreams-facts.md (c)) and both vaults were active long before the gate ranges, **no `vaults` rows are expected inside the gate ranges**; they are emitted near `startBlock` 51001200 during the backfill. The gate therefore only uses this table for the success ratio when rows happen to be present.
 
 ### `ShareTransfer` -> `share_transfers` (optional; share migration between owners)
 | Field | # | Type (CH) | Semantics |
@@ -176,7 +176,7 @@ What this means for the contract and for Vaultpilot:
 
 ## 7. Interaction with the module layout (A5's `packages/erc4626-flows/substreams.yaml`)
 
-- Stores `store_vault_seen` and `store_vault_meta` have `initialBlock: 49276800`; a `substreams run -s 51092254` must backfill them server-side (substreams-testing SKILL.md: "Always pin `initialBlock` near the test window ... so cold runs do not backfill from genesis"). First gate run: ~1.8M blocks of backfill, then cached by the server for identical module hashes. `gate.yaml` sets a 3600 s timeout on `primary` for this reason.
+- Stores `store_vault_seen` and `store_vault_meta` have `initialBlock: 51001200`; a `substreams run -s 51092254` must backfill them server-side (substreams-testing SKILL.md: "Always pin `initialBlock` near the test window ... so cold runs do not backfill from genesis"). First gate run: ~1.8M blocks of backfill, then cached by the server for identical module hashes. `gate.yaml` sets a 3600 s timeout on `primary` for this reason.
 - Consequence for assertions: `meta_valid` will be true for configured-vault flows in the gate range (first sight happened during backfill), and `vaults` rows will not appear in the range (section 2, VaultMeta).
 - The manifest's `descriptorSets: - module: buf.build/streamingfast/substreams-sink-sql` points at the retired BSR module (section 1). UNVERIFIED whether `substreams build` still resolves it; if the build fails with an unresolved `sf/substreams/sink/sql/schema/v1/schema.proto`, switch to `buf.build/streamingfast/substreams` (as `streamsmith.yaml` now says) or a local `importPaths` copy.
 - `excludePaths: [sf/substreams, ...]` keeps `schema.proto` out of the spkg's `proto_files`; the gate's descriptor comparison works at the `FileDescriptorProto` level with the extension registry supplied from `proto-deps`, so this is fine (gate.yaml `descriptorHash.algorithm`).

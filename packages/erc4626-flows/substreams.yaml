@@ -35,7 +35,7 @@ binaries:
 modules:
   - name: store_vault_seen
     kind: store
-    initialBlock: 49276800
+    initialBlock: 51001200
     updatePolicy: set_if_not_exists
     valueType: int64
     inputs:
@@ -46,7 +46,7 @@ modules:
 
   - name: map_vault_probe
     kind: map
-    initialBlock: 49276800
+    initialBlock: 51001200
     inputs:
       - params: string
       - source: sf.substreams.v1.Clock
@@ -61,7 +61,7 @@ modules:
 
   - name: store_vault_meta
     kind: store
-    initialBlock: 49276800
+    initialBlock: 51001200
     updatePolicy: set_if_not_exists
     valueType: proto:vaultflows.v1.VaultMeta
     inputs:
@@ -70,7 +70,7 @@ modules:
 
   - name: map_flows
     kind: map
-    initialBlock: 49276800
+    initialBlock: 51001200
     inputs:
       - params: string
       - source: sf.substreams.v1.Clock
@@ -85,7 +85,7 @@ modules:
 
   - name: map_share_value_observations
     kind: map
-    initialBlock: 49276800
+    initialBlock: 51001200
     inputs:
       - params: string
       - source: sf.substreams.v1.Clock
@@ -98,7 +98,7 @@ modules:
 
   - name: map_events
     kind: map
-    initialBlock: 49276800
+    initialBlock: 51001200
     inputs:
       - map: map_flows
       - map: map_share_value_observations
