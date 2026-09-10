@@ -1,0 +1,60 @@
+2026-09-10T18:30:45.911+0530 INFO (sink-sql) reading substreams manifest {"manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg"}
+2026-09-10T18:30:45.919+0530 INFO (sink-sql) finding output module {"module_name": "map_events"}
+2026-09-10T18:30:45.919+0530 INFO (sink-sql) validating output module type {"module_name": "map_events", "module_type": "proto:vaultflows.v1.Events"}
+2026-09-10T18:30:45.931+0530 INFO (sink-sql) reading substreams manifest {"manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg"}
+2026-09-10T18:30:45.933+0530 INFO (sink-sql) finding output module {"module_name": "map_events"}
+2026-09-10T18:30:45.933+0530 INFO (sink-sql) validating output module type {"module_name": "map_events", "module_type": "proto:vaultflows.v1.Events"}
+2026-09-10T18:30:45.935+0530 INFO (sink-sql) sinker from CLI {"endpoint": "base-mainnet.streamingfast.io:443", "manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg", "params": [], "network": "base", "output_module_name": "map_events", "expected_module_type": "vaultflows.v1.Events", "start_block": 51092254, "stop_block": 51093002, "start_block_empty": false, "development_mode": false, "noop_mode": false, "max_retries": 3, "final_blocks_only": false, "skip_package_validation": false, "live_block_time_delta": "0s", "undo_buffer_size": 0, "extra_headers": []}
+2026-09-10T18:30:46.319+0530 INFO (sink-sql) sinker configured {"mode": "Production", "module_count": 7, "output_module_name": "map_events", "output_module_type": "proto:vaultflows.v1.Events", "output_module_hash": "a56f04211f28c507923e4d3949033e2c3d9c0fa1", "client_config": "base-mainnet.streamingfast.io:443 (insecure: false, plaintext: false, JWT present: true)", "buffer": "None", "start_block": 51092254, "stop_block": 51093002, "max_retries": 3, "final_blocks_only": false, "liveness_checker": true}
+2026-09-10T18:30:46.319+0530 INFO (sink-sql) creating schema {"name": "vaultflows", "root_message_descriptor": "Events", "with_proto_option": true}
+2026-09-10T18:30:46.319+0530 INFO (sink-sql) initializing schema {"name": "vaultflows", "root_message_descriptor": "Events"}
+2026-09-10T18:30:46.320+0530 INFO (sink-sql) sink info read {"sink_info": {"schema_hash":"f59519ab90647ce3"}}
+2026-09-10T18:30:46.323+0530 INFO (sink-sql) fetched cursor {"block": "None"}
+2026-09-10T18:30:46.325+0530 INFO (sink-sql) starting sinker {"stats_refresh_each": "15s", "end_at": "#51093001"}
+2026-09-10T18:30:46.328+0530 INFO (sink-sql) sending request {"start_block": "51092254", "stop_block": "51093002", "cursor": ""}
+2026-09-10T18:30:46.565+0530 INFO (sink-sql) substreams using protocol version v4
+2026-09-10T18:30:48.150+0530 INFO (sink-sql) session initialized with remote endpoint {"max_parallel_workers": 5, "linear_handoff_block": 51094000, "resolved_start_block": 51092254, "trace_id": "950130fc704ae1884ae03a7573a9e3ee"}
+2026-09-10T18:30:48.326+0530 INFO (sink-sql) substreams stream stats {"data_msg_rate": "0.000 msg/s (0 total)", "undo_msg_rate": "0.000 msg/s (0 total)", "avg_block_wait_time_sec": 0, "avg_block_time_delta_sec": 0, "avg_local_block_processing_time_sec": 0, "last_block": "None"}
+2026-09-10T18:31:03.327+0530 INFO (sink-sql) substreams stream stats {"data_msg_rate": "0.000 msg/s (0 total)", "undo_msg_rate": "0.000 msg/s (0 total)", "avg_block_wait_time_sec": 0, "avg_block_time_delta_sec": 0, "avg_local_block_processing_time_sec": 0, "last_block": "None"}
+2026-09-10T18:31:14.859+0530 INFO (sink-sql) -----------------------------------
+2026-09-10T18:31:14.860+0530 INFO (sink-sql) Stats {"block_count": 1, "Processing Time": "4.63ms", "Total Wait Duration": "0.00ms", "Total Duration": "4.63ms", "Last Block Process At": "2026-09-10T18:31:14.859+0530"}
+2026-09-10T18:31:14.860+0530 INFO (sink-sql)    Wait Duration Between Blocks {"average": "0.00ms", "last X average": "0.00ms"}
+2026-09-10T18:31:14.860+0530 INFO (sink-sql)       Block Processing Duration {"average": "4.63ms", "last X average": "4.63ms"}
+2026-09-10T18:31:14.860+0530 INFO (sink-sql)          Unmarshalling Duration {"average": "0.76ms", "last X average": "0.76ms"}
+2026-09-10T18:31:14.860+0530 INFO (sink-sql)           Block Insert Duration {"average": "2.59ms", "last X average": "2.59ms"}
+2026-09-10T18:31:14.860+0530 INFO (sink-sql)        Entities Insert Duration {"average": "0.00ms", "last X average": "0.00ms"}
+2026-09-10T18:31:14.860+0530 INFO (sink-sql)                  Flush duration {"average": "0.00ms", "last X average": "0.00ms"}
+2026-09-10T18:31:14.860+0530 INFO (sink-sql) -----------------------------------
+panic: interface conversion: interface {} is protoreflect.EnumNumber, not int32
+
+goroutine 59 [running]:
+github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house.(*AccumulatorInserter).insert(0x140007f0150, {0x140005fbe30, 0xb}, {0x14000350c00, 0x1a, 0x103ca503c?})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house/accumulator_inserter.go:224 +0x2d94
+github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house.(*Database).Insert(0x10444cce0?, {0x140005fbe30?, 0x14000feadb0?}, {0x14000350c00?, 0x10450d4e0?, 0x2?})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house/database.go:222 +0x28
+github.com/streamingfast/substreams-sink-sql/db_proto/sql.(*BaseDatabase).WalkMessageDescriptorAndInsertWithDialect(0x14000610300, 0x1400079ee40, 0x30b9b27, {0x0, 0xee2338a31, 0x0}, 0x0, {0x104a7ddd0, 0x14000afda40}, {0x104a37340, ...})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/database.go:207 +0xf38
+github.com/streamingfast/substreams-sink-sql/db_proto/sql.(*BaseDatabase).WalkMessageDescriptorAndInsertWithDialect(0x14000610300, 0x1400079ee00, 0x30b9b27, {0x0, 0xee2338a31, 0x0}, 0x0, {0x104a7ddd0, 0x14000afda40}, {0x104a37340, ...})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/database.go:231 +0x126c
+github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house.(*Database).WalkMessageDescriptorAndInsert(0x0?, 0x30b9b27?, 0x106030cc0?, {0x40?, 0x0?, 0x0?}, 0x0?)
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house/database.go:226 +0x40
+github.com/streamingfast/substreams-sink-sql/db_proto.processMessage(0x1400079ee00, {0x104a8d1e0, 0x14000b44580}, 0x30b9b27, {0x1400062cbc0, 0x40}, {0x1062f45c0?, 0x18?, 0x0?}, 0x1400085ea80)
+	github.com/streamingfast/substreams-sink-sql/db_proto/sinker.go:239 +0x1c0
+github.com/streamingfast/substreams-sink-sql/db_proto.(*Sinker).processHolder(0x14000b44700, 0x140007982c0, 0x1400085ea80)
+	github.com/streamingfast/substreams-sink-sql/db_proto/sinker.go:224 +0x274
+github.com/streamingfast/substreams-sink-sql/db_proto.(*Sinker).HandleBlockScopedData(0x14000b44700, {0xe4?, 0x14000531600?}, 0x14000531600, 0x10605ce8c, 0x140000b83f0)
+	github.com/streamingfast/substreams-sink-sql/db_proto/sinker.go:166 +0x55c
+github.com/streamingfast/substreams/sink.(*Sinker).processBlockScopedData(0x14000d50ba0, {0x104a67bf8, 0x14000b90000}, {0x104a54ae0, 0x14000b44700}, 0x14000531600, 0x1?, {0x10476f620?, 0x0?, 0x106030cc0?}, ...)
+	github.com/streamingfast/substreams@v1.18.2/sink/sinker.go:883 +0x77c
+github.com/streamingfast/substreams/sink.(*Sinker).doRequest(0x14000d50ba0, {0x104a67bf8, 0x14000b90000}, 0x0, 0x14000d6ea90, 0x14000526808, 0x0, {0x14000b8c450, 0x1, 0x1}, ...)
+	github.com/streamingfast/substreams@v1.18.2/sink/sinker.go:659 +0x1d28
+github.com/streamingfast/substreams/sink.(*Sinker).run(0x14000d50ba0, {0x104a67bf8, 0x14000b90000}, 0x0, {0x104a54ae0, 0x14000b44700})
+	github.com/streamingfast/substreams@v1.18.2/sink/sinker.go:409 +0xaa8
+github.com/streamingfast/substreams/sink.(*Sinker).Run(0x14000d50ba0, {0x104a67bf8?, 0x14000332eb0?}, 0x0, {0x104a54ae0, 0x14000b44700})
+	github.com/streamingfast/substreams@v1.18.2/sink/sinker.go:296 +0x5f4
+github.com/streamingfast/substreams-sink-sql/db_proto.(*Sinker).Run(0x14000b44700, {0x104a67bf8, 0x14000332eb0})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sinker.go:69 +0x2f4
+github.com/streamingfast/cli.(*Application).SuperviseAndStartUsing.func4()
+	github.com/streamingfast/cli@v0.0.4-0.20250815192146-d8a233ec3d0b/application.go:170 +0x34
+created by github.com/streamingfast/cli.(*Application).SuperviseAndStartUsing in goroutine 1
+	github.com/streamingfast/cli@v0.0.4-0.20250815192146-d8a233ec3d0b/application.go:169 +0x1b4

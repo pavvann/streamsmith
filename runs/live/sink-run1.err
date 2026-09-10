@@ -1,0 +1,72 @@
+2026-09-10T18:29:57.039+0530 INFO (sink-sql) reading substreams manifest {"manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg"}
+2026-09-10T18:29:57.047+0530 INFO (sink-sql) finding output module {"module_name": "map_events"}
+2026-09-10T18:29:57.047+0530 INFO (sink-sql) validating output module type {"module_name": "map_events", "module_type": "proto:vaultflows.v1.Events"}
+2026-09-10T18:29:57.059+0530 INFO (sink-sql) reading substreams manifest {"manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg"}
+2026-09-10T18:29:57.061+0530 INFO (sink-sql) finding output module {"module_name": "map_events"}
+2026-09-10T18:29:57.061+0530 INFO (sink-sql) validating output module type {"module_name": "map_events", "module_type": "proto:vaultflows.v1.Events"}
+2026-09-10T18:29:57.062+0530 INFO (sink-sql) sinker from CLI {"endpoint": "base-mainnet.streamingfast.io:443", "manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg", "params": [], "network": "base", "output_module_name": "map_events", "expected_module_type": "vaultflows.v1.Events", "start_block": 51092254, "stop_block": 51093002, "start_block_empty": false, "development_mode": false, "noop_mode": false, "max_retries": 3, "final_blocks_only": false, "skip_package_validation": false, "live_block_time_delta": "0s", "undo_buffer_size": 0, "extra_headers": []}
+2026-09-10T18:29:57.420+0530 INFO (sink-sql) sinker configured {"mode": "Production", "module_count": 7, "output_module_name": "map_events", "output_module_type": "proto:vaultflows.v1.Events", "output_module_hash": "a56f04211f28c507923e4d3949033e2c3d9c0fa1", "client_config": "base-mainnet.streamingfast.io:443 (insecure: false, plaintext: false, JWT present: true)", "buffer": "None", "start_block": 51092254, "stop_block": 51093002, "max_retries": 3, "final_blocks_only": false, "liveness_checker": true}
+2026-09-10T18:29:57.420+0530 INFO (sink-sql) creating schema {"name": "vaultflows", "root_message_descriptor": "Events", "with_proto_option": true}
+2026-09-10T18:29:57.420+0530 INFO (sink-sql) initializing schema {"name": "vaultflows", "root_message_descriptor": "Events"}
+2026-09-10T18:29:57.420+0530 WARN (sink-sql) schema hash file does not exist {"file_path": "vaultflows_schema_hash.txt"}
+2026-09-10T18:29:57.420+0530 INFO (sink-sql) sink info read {"sink_info": null}
+2026-09-10T18:29:57.430+0530 INFO (sink-sql) creating database {"schema_name": "vaultflows"}
+2026-09-10T18:29:57.436+0530 INFO (sink-sql) database created {"schema_name": "vaultflows"}
+2026-09-10T18:29:57.461+0530 INFO (sink-sql) block table created {"schema_name": "vaultflows"}
+2026-09-10T18:29:57.470+0530 INFO (sink-sql) table created {"table_name": "CREATE TABLE IF NOT EXISTS vaultflows.vaults ( _block_number_ UInt64 NOT NULL, _block_timestamp_ timestamp NOT NULL, _version_ Int64 NOT NULL, _deleted_ bool NOT NULL,id VARCHAR,chain_id UInt32,vault VARCHAR,first_seen_block UInt64,asset VARCHAR,asset_decimals UInt32,share_decimals UInt32,name VARCHAR,symbol VARCHAR,compliant Bool,in_configured_list Bool,call_ok Bool,call_error VARCHAR ) ENGINE = ReplacingMergeTree(_version_, _deleted_) PRIMARY KEY (id) PARTITION BY (toYYYYMM(_block_timestamp_)) ORDER BY (id) SETTINGS\n allow_experimental_replacing_merge_with_cleanup = 1;", "schema_name": "vaultflows"}
+2026-09-10T18:29:57.477+0530 INFO (sink-sql) table created {"table_name": "CREATE TABLE IF NOT EXISTS vaultflows.share_transfers ( _block_number_ UInt64 NOT NULL, _block_timestamp_ timestamp NOT NULL, _version_ Int64 NOT NULL, _deleted_ bool NOT NULL,id VARCHAR,chain_id UInt32,block_number UInt64,block_hash VARCHAR,block_timestamp UInt64,tx_hash VARCHAR,log_index UInt32,vault VARCHAR,from_owner VARCHAR,to_owner VARCHAR,shares_raw UInt256,shares_normalized Decimal128(18),share_decimals UInt32,meta_valid Bool ) ENGINE = ReplacingMergeTree(_version_, _deleted_) PRIMARY KEY (id) PARTITION BY (toYYYYMM(_block_timestamp_)) ORDER BY (id, vault, block_number) SETTINGS\n allow_experimental_replacing_merge_with_cleanup = 1;", "schema_name": "vaultflows"}
+2026-09-10T18:29:57.482+0530 INFO (sink-sql) table created {"table_name": "CREATE TABLE IF NOT EXISTS vaultflows.vault_flows ( _block_number_ UInt64 NOT NULL, _block_timestamp_ timestamp NOT NULL, _version_ Int64 NOT NULL, _deleted_ bool NOT NULL,id VARCHAR,chain_id UInt32,block_number UInt64,block_hash VARCHAR,block_timestamp UInt64,tx_hash VARCHAR,log_index UInt32,vault VARCHAR,caller VARCHAR,owner VARCHAR,receiver VARCHAR,direction Int32,assets_raw UInt256,shares_raw UInt256,assets_normalized Decimal128(18),shares_normalized Decimal128(18),asset_decimals UInt32,share_decimals UInt32,execution_rate Decimal128(18),meta_valid Bool,call_ok Bool,call_error VARCHAR ) ENGINE = ReplacingMergeTree(_version_, _deleted_) PRIMARY KEY (id) PARTITION BY (toYYYYMM(_block_timestamp_)) ORDER BY (id, vault, block_number) SETTINGS\n allow_experimental_replacing_merge_with_cleanup = 1;", "schema_name": "vaultflows"}
+2026-09-10T18:29:57.487+0530 INFO (sink-sql) table created {"table_name": "CREATE TABLE IF NOT EXISTS vaultflows.share_value_observations ( _block_number_ UInt64 NOT NULL, _block_timestamp_ timestamp NOT NULL, _version_ Int64 NOT NULL, _deleted_ bool NOT NULL,id VARCHAR,chain_id UInt32,block_number UInt64,block_hash VARCHAR,block_timestamp UInt64,vault VARCHAR,sample_interval_blocks UInt32,assets_per_share_raw UInt256,assets_per_share_normalized Decimal128(18),total_assets_raw UInt256,total_supply_raw UInt256,call_ok Bool,call_error VARCHAR ) ENGINE = ReplacingMergeTree(_version_, _deleted_) PRIMARY KEY (id) PARTITION BY (toYYYYMM(_block_timestamp_)) ORDER BY (id, vault, block_number) SETTINGS\n allow_experimental_replacing_merge_with_cleanup = 1;", "schema_name": "vaultflows"}
+2026-09-10T18:29:57.487+0530 INFO (sink-sql) fetched cursor {"block": "None"}
+2026-09-10T18:29:57.487+0530 INFO (sink-sql) starting sinker {"stats_refresh_each": "15s", "end_at": "#51093001"}
+2026-09-10T18:29:57.488+0530 INFO (sink-sql) sending request {"start_block": "51092254", "stop_block": "51093002", "cursor": ""}
+2026-09-10T18:29:57.692+0530 INFO (sink-sql) substreams using protocol version v4
+2026-09-10T18:29:58.010+0530 ERRO (sink-sql) substreams encountered a retryable error {"error": "rpc error: code = Unavailable desc = error reading from server: remote error: tls: bad record MAC"}
+2026-09-10T18:29:58.010+0530 INFO (sink-sql) sleeping before re-connecting {"sleep": "416.682907ms"}
+2026-09-10T18:29:58.428+0530 INFO (sink-sql) sending request {"start_block": "51092254", "stop_block": "51093002", "cursor": ""}
+2026-09-10T18:29:58.435+0530 INFO (sink-sql) substreams using protocol version v4
+2026-09-10T18:29:59.489+0530 INFO (sink-sql) substreams stream stats {"data_msg_rate": "0.000 msg/s (0 total)", "undo_msg_rate": "0.000 msg/s (0 total)", "avg_block_wait_time_sec": 0, "avg_block_time_delta_sec": 0, "avg_local_block_processing_time_sec": 0, "last_block": "None"}
+2026-09-10T18:29:59.836+0530 INFO (sink-sql) session initialized with remote endpoint {"max_parallel_workers": 5, "linear_handoff_block": 51094000, "resolved_start_block": 51092254, "trace_id": "aa6c2243b95f9f7f42528a6e3c45c3f1"}
+2026-09-10T18:30:14.489+0530 INFO (sink-sql) substreams stream stats {"data_msg_rate": "0.000 msg/s (0 total)", "undo_msg_rate": "0.000 msg/s (0 total)", "avg_block_wait_time_sec": 0, "avg_block_time_delta_sec": 0, "avg_local_block_processing_time_sec": 0, "last_block": "None"}
+2026-09-10T18:30:16.373+0530 INFO (sink-sql) -----------------------------------
+2026-09-10T18:30:16.374+0530 INFO (sink-sql) Stats {"block_count": 1, "Processing Time": "8.73ms", "Total Wait Duration": "0.00ms", "Total Duration": "8.73ms", "Last Block Process At": "2026-09-10T18:30:16.373+0530"}
+2026-09-10T18:30:16.374+0530 INFO (sink-sql)    Wait Duration Between Blocks {"average": "0.00ms", "last X average": "0.00ms"}
+2026-09-10T18:30:16.376+0530 INFO (sink-sql)       Block Processing Duration {"average": "8.73ms", "last X average": "8.73ms"}
+2026-09-10T18:30:16.376+0530 INFO (sink-sql)          Unmarshalling Duration {"average": "0.42ms", "last X average": "0.42ms"}
+2026-09-10T18:30:16.376+0530 INFO (sink-sql)           Block Insert Duration {"average": "0.59ms", "last X average": "0.59ms"}
+2026-09-10T18:30:16.378+0530 INFO (sink-sql)        Entities Insert Duration {"average": "0.00ms", "last X average": "0.00ms"}
+2026-09-10T18:30:16.378+0530 INFO (sink-sql)                  Flush duration {"average": "0.00ms", "last X average": "0.00ms"}
+2026-09-10T18:30:16.378+0530 INFO (sink-sql) -----------------------------------
+panic: interface conversion: interface {} is protoreflect.EnumNumber, not int32
+
+goroutine 101 [running]:
+github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house.(*AccumulatorInserter).insert(0x1400067fd10, {0x140005fbe20, 0xb}, {0x14000578600, 0x1a, 0x1040c903c?})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house/accumulator_inserter.go:224 +0x2d94
+github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house.(*Database).Insert(0x104870ce0?, {0x140005fbe20?, 0x14000ecf5b0?}, {0x14000578600?, 0x1049314e0?, 0x2?})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house/database.go:222 +0x28
+github.com/streamingfast/substreams-sink-sql/db_proto/sql.(*BaseDatabase).WalkMessageDescriptorAndInsertWithDialect(0x140004ea000, 0x14000946c40, 0x30b9b27, {0x0, 0xee2338a31, 0x0}, 0x0, {0x104ea1dd0, 0x1400054ad80}, {0x104e5b340, ...})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/database.go:207 +0xf38
+github.com/streamingfast/substreams-sink-sql/db_proto/sql.(*BaseDatabase).WalkMessageDescriptorAndInsertWithDialect(0x140004ea000, 0x14000946c00, 0x30b9b27, {0x0, 0xee2338a31, 0x0}, 0x0, {0x104ea1dd0, 0x1400054ad80}, {0x104e5b340, ...})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/database.go:231 +0x126c
+github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house.(*Database).WalkMessageDescriptorAndInsert(0x0?, 0x30b9b27?, 0x106454cc0?, {0x40?, 0x0?, 0x0?}, 0x0?)
+	github.com/streamingfast/substreams-sink-sql/db_proto/sql/click_house/database.go:226 +0x40
+github.com/streamingfast/substreams-sink-sql/db_proto.processMessage(0x14000946c00, {0x104eb11e0, 0x140008e2480}, 0x30b9b27, {0x14000b62040, 0x40}, {0x106718a78?, 0x18?, 0x0?}, 0x14000608690)
+	github.com/streamingfast/substreams-sink-sql/db_proto/sinker.go:239 +0x1c0
+github.com/streamingfast/substreams-sink-sql/db_proto.(*Sinker).processHolder(0x140008e2980, 0x1400095a2c0, 0x14000608690)
+	github.com/streamingfast/substreams-sink-sql/db_proto/sinker.go:224 +0x274
+github.com/streamingfast/substreams-sink-sql/db_proto.(*Sinker).HandleBlockScopedData(0x140008e2980, {0xe4?, 0x140006dc000?}, 0x140006dc000, 0x106480e8c, 0x14000202688)
+	github.com/streamingfast/substreams-sink-sql/db_proto/sinker.go:166 +0x55c
+github.com/streamingfast/substreams/sink.(*Sinker).processBlockScopedData(0x1400050f320, {0x104e8bbf8, 0x140005115e0}, {0x104e78ae0, 0x140008e2980}, 0x140006dc000, 0x1?, {0x102b0b080?, 0x0?, 0x106454cc0?}, ...)
+	github.com/streamingfast/substreams@v1.18.2/sink/sinker.go:883 +0x77c
+github.com/streamingfast/substreams/sink.(*Sinker).doRequest(0x1400050f320, {0x104e8bbf8, 0x140005115e0}, 0x0, 0x14000880270, 0x14000645c08, 0x0, {0x140006ec870, 0x1, 0x1}, ...)
+	github.com/streamingfast/substreams@v1.18.2/sink/sinker.go:659 +0x1d28
+github.com/streamingfast/substreams/sink.(*Sinker).run(0x1400050f320, {0x104e8bbf8, 0x140005115e0}, 0x0, {0x104e78ae0, 0x140008e2980})
+	github.com/streamingfast/substreams@v1.18.2/sink/sinker.go:409 +0xaa8
+github.com/streamingfast/substreams/sink.(*Sinker).Run(0x1400050f320, {0x104e8bbf8?, 0x140005a6f50?}, 0x0, {0x104e78ae0, 0x140008e2980})
+	github.com/streamingfast/substreams@v1.18.2/sink/sinker.go:296 +0x5f4
+github.com/streamingfast/substreams-sink-sql/db_proto.(*Sinker).Run(0x140008e2980, {0x104e8bbf8, 0x140005a6f50})
+	github.com/streamingfast/substreams-sink-sql/db_proto/sinker.go:69 +0x2f4
+github.com/streamingfast/cli.(*Application).SuperviseAndStartUsing.func4()
+	github.com/streamingfast/cli@v0.0.4-0.20250815192146-d8a233ec3d0b/application.go:170 +0x34
+created by github.com/streamingfast/cli.(*Application).SuperviseAndStartUsing in goroutine 1
+	github.com/streamingfast/cli@v0.0.4-0.20250815192146-d8a233ec3d0b/application.go:169 +0x1b4
