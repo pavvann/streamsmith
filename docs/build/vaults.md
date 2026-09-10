@@ -65,3 +65,10 @@ Scanned with `eth_getLogs` on `https://1rpc.io/base` (50-block windows; topics `
 - Head at 2026-09-09T17:11:47Z: `eth_blockNumber` = `0x30b9b38` = **51,092,280** (`https://mainnet.base.org`); block 51,092,280 timestamp 1788973907 = 17:11:47Z (consistent).
 - 6 weeks = 42 × 86,400 s = 3,628,800 s; at 2.000 s/block = 1,814,400 blocks → 51,092,280 − 1,814,400 = 49,277,880 (≈ 2026-07-29T17:11Z).
 - Rounded **down** to the nearest multiple of `sampleIntervalBlocks` (1800) so the first observation lands on the first block: **49,276,800** (= 27,376 × 1800; ≈ 2026-07-29T16:35Z). Both vault creation blocks (37.18M / 37.40M) precede it.
+
+## Privy fee wrappers — resolved (Sept 10, 20:50 IST, via `GET /v1/earn/ethereum/vaults/{id}`)
+| Privy vault | `vault_id` | fee wrapper `vault_address` (Base) | underlying Morpho vault | fee |
+|---|---|---|---|---|
+| Gauntlet USDC Prime | `qwxu3riq3bvt5inw65jknkqf` | `0x3cb932ceaaaf42485d20ab4be6d7ec8cad291af2` | `0x050ce30b927da55177a4914ec73480238bad56f0` | 10% of generated returns to the app (dashboard) |
+| Steakhouse Prime USDC | `d5d6zyaety43rqx513osyexr` | `0xfc956fb0ca009e0ab4f1e1964bdaa0c389f72028` | `0xbeef0e0834849acc03f0089f01f4f1eeb06873c9` | 10% |
+Both created 2026-09-10 18:44 IST by the dashboard. Consequence (unchanged contract): the module keeps sampling and filtering the two **underlying** vaults; Vaultpilot fetches the wrapper addresses at runtime and excludes flows whose `owner`/`receiver` is the business wallet or a wrapper from the outflow guardrail. Disclose the 10% fee in the UI and README.

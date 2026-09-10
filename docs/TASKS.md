@@ -7,7 +7,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [x] T0.2 M P · (done Sept 10 13:08 IST; token in .env, .substreams.env ignored) `substreams auth` device login (Graph Market streaming key) → `SUBSTREAMS_API_TOKEN` in `.env`. Accept: `substreams run` returns blocks. dep: T1.1
 - [ ] T0.3 M P · Graph Market Portal device-code login for hosted sink (via `thegraph-market-api` skill flow). Accept: `ListDeployments` succeeds. dep: T1.1
 - [x] T0.4 M P+O · (done 20:05 IST: ap-south-1 service; db vaultflows; users sink (DDL/insert/views verified) and ro (read-only verified, writes refused, system.tables/columns readable); creds in .env as CH_CLOUD_*) ClickHouse Cloud
-- [~] T0.5 M P · (everything in .env; spike passes; still to confirm in dashboard: both Earn vaults active + gas sponsorship App-pays on Base) Privy dashboard: (1) app → App ID + secret; (2) Wallets › Authorization keys › two keys (treasurer, agent), save private keys; (3) Wallet infrastructure › Earn › deploy fee wrapper for Gauntlet USDC Prime and Steakhouse Prime Instant → two `vault_id`s; (4) Gas sponsorship › App pays › Base. Fill apps/vaultpilot/.env. Accept: `pnpm --filter @ethonline26/vaultpilot spike` passes.
+- [~] T0.5 M P · (both Earn vaults active per dashboard, wrappers recorded; **gas sponsorship App-pays on Base still unconfirmed**) Privy dashboard: (1) app → App ID + secret; (2) Wallets › Authorization keys › two keys (treasurer, agent), save private keys; (3) Wallet infrastructure › Earn › deploy fee wrapper for Gauntlet USDC Prime and Steakhouse Prime Instant → two `vault_id`s; (4) Gas sponsorship › App pays › Base. Fill apps/vaultpilot/.env. Accept: `pnpm --filter @ethonline26/vaultpilot spike` passes.
 - [ ] T0.6 S P · Privy: attempt Organization creation; report gated or not. Fallback: plain business-owned wallet.
 - [ ] T0.7 M P · Fund the Privy business wallet `0xcdC8B69799bCb135C04A1052b918787125571fDC` with ~50 USDC on Base (gas is sponsored by the app; no ETH needed). Accept: balance on Basescan.
 - [ ] T0.8 M P · Microphone + 1080p screen capture ready for Sept 12.
@@ -90,4 +90,4 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 
 ## Won't
 Bazantic, ERC-8004 module, Chainlink, Arc, Hedera, quorum ceremony, token, landing page.
-- [ ] T0.10 M P · Register the project + team on the ETHGlobal ETHOnline 2026 dashboard (title, tagline, repo link); confirm Start Fresh pool.
+- [x] T0.10 M P · (done Sept 10 ~20:45 IST) Register the project + team on the ETHGlobal ETHOnline 2026 dashboard; Start Fresh pool.
