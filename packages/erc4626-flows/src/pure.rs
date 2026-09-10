@@ -14,6 +14,10 @@ pub const RATE_SCALE: u32 = 18;
 pub const MAX_DECIMALS: u32 = 36;
 /// Sentinel for numeric string columns that are not computable (the sink rejects empty strings).
 pub const ZERO: &str = "0";
+/// `VaultFlow.direction` values. The contract field is a plain string (not a proto3 enum) because
+/// `substreams-sink-sql` 4.13.1 `from-proto` panics on a populated enum field; see proto/vaultflows.proto.
+pub const DIRECTION_DEPOSIT: &str = "deposit";
+pub const DIRECTION_WITHDRAW: &str = "withdraw";
 
 /// Returns the input when it is a non-empty unsigned decimal string, otherwise `"0"`.
 pub fn or_zero(raw: &str) -> String {
@@ -428,6 +432,18 @@ mod tests {
         assert_eq!(or_zero("-5"), "0");
         assert_eq!(or_zero("007"), "7");
         assert_eq!(or_zero("197373726"), "197373726");
+    }
+
+    #[test]
+    fn direction_values_match_the_contract() {
+        // proto/vaultflows.proto: `string direction = 12` holds exactly `deposit` or `withdraw`, lowercase.
+        assert_eq!(DIRECTION_DEPOSIT, "deposit");
+        assert_eq!(DIRECTION_WITHDRAW, "withdraw");
+        for d in [DIRECTION_DEPOSIT, DIRECTION_WITHDRAW] {
+            assert!(!d.is_empty());
+            assert_eq!(d, d.to_lowercase());
+        }
+        assert_ne!(DIRECTION_DEPOSIT, DIRECTION_WITHDRAW);
     }
 
     #[test]

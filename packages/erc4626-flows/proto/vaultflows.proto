@@ -21,7 +21,10 @@
 //   which is unique per block, so tx_hash is not needed in the id.
 // - Call-status flags are flattened to scalar columns (call_ok, call_error) because the from-proto sink drops
 //   message-typed fields that are not google.protobuf.Timestamp or inline.
-// - Enums are stored as Int32 in ClickHouse (TEXT in Postgres): FlowDirection 1 = DEPOSIT, 2 = WITHDRAW.
+// - There are no enum fields in this contract. `substreams-sink-sql` 4.13.1 `from-proto` panics on a populated
+//   proto3 enum field (`interface {} is protoreflect.EnumNumber, not int32`, ClickHouse
+//   accumulator_inserter.go), so `VaultFlow.direction` is a plain String column holding exactly
+//   "deposit" or "withdraw" (lowercase, never empty).
 // - Vocabulary: "execution rate" (assets per share implied by one flow), "share value" (assets per share
 //   observed by convertToAssets at a sampled block), "share migration" (transfer of shares between owners).
 
@@ -37,12 +40,6 @@ message Events {
   repeated ShareValueObservation share_value_observations = 2;
   repeated VaultMeta vaults = 3;
   repeated ShareTransfer share_transfers = 4;
-}
-
-enum FlowDirection {
-  FLOW_DIRECTION_UNSPECIFIED = 0;
-  FLOW_DIRECTION_DEPOSIT = 1;   // ERC-4626 Deposit(sender, owner, assets, shares)
-  FLOW_DIRECTION_WITHDRAW = 2;  // ERC-4626 Withdraw(sender, receiver, owner, assets, shares)
 }
 
 // One Deposit or Withdraw log on a vault in the configured vault list.
@@ -70,7 +67,9 @@ message VaultFlow {
   string caller = 9;           // event `sender`: the address that called deposit/mint/withdraw/redeem
   string owner = 10;           // whose shares were minted (deposit) or burned (withdraw)
   string receiver = 11;        // who received assets on withdraw; equals owner on deposit
-  FlowDirection direction = 12;
+  // Values exactly `deposit` (ERC-4626 Deposit(sender, owner, assets, shares)) or `withdraw`
+  // (ERC-4626 Withdraw(sender, receiver, owner, assets, shares)). Lowercase, never empty.
+  string direction = 12;
   string assets_raw = 13 [(schema.field) = { convertTo: { uint256{} } }];
   string shares_raw = 14 [(schema.field) = { convertTo: { uint256{} } }];
   string assets_normalized = 15 [(schema.field) = { convertTo: { decimal128{ scale: 18 } } }];  // assets_raw / 10^asset_decimals; "0" when meta_valid is false
@@ -78,8 +77,8 @@ message VaultFlow {
   uint32 asset_decimals = 17;  // 0 when meta_valid is false
   uint32 share_decimals = 18;  // 0 when meta_valid is false
   // assets_normalized / shares_normalized for this single flow, in asset units per whole share. Deposit-implied
-  // when direction is DEPOSIT (per EIP-4626 the Deposit `assets` includes any entry fee); withdraw-implied when
-  // WITHDRAW (Withdraw `assets` is net of exit fee). "0" when shares_raw is zero or meta_valid is false.
+  // when direction is `deposit` (per EIP-4626 the Deposit `assets` includes any entry fee); withdraw-implied when
+  // `withdraw` (Withdraw `assets` is net of exit fee). "0" when shares_raw is zero or meta_valid is false.
   string execution_rate = 19 [(schema.field) = { convertTo: { decimal128{ scale: 18 } } }];
   // true when the vault passed the first-sight metadata probe (asset(), decimals(), asset.decimals(),
   // totalAssets(), convertToAssets()) and the normalized fields are populated.

@@ -67,3 +67,37 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
 27. **protojson (`substreams run -o jsonl`) and the sink's column names differ by case convention, and only one of them appears in any document.** Live output is `assetsPerShareNormalized`; the ClickHouse column is `assets_per_share_normalized`; the recorded jsonl also *omits* proto3 default values, so `call_error` and `in_configured_list` are simply absent from rows where they are empty/false. Anyone writing views or dashboards from a recorded run will guess camelCase columns and get `NO_SUCH_COLUMN_IN_TABLE`. Expected: one line in the testing/SQL skills ("jsonl is protojson: lowerCamelCase, defaults omitted; sink columns are the snake_case proto field names"). Cost: 10 min; now pinned by `packages/mcpgen/test/livedata.test.ts`, which maps every live key onto a contract column.
 28. **`erasableSyntaxOnly` (TS 5.8+) is the tax for running TypeScript with Node's native type stripping.** Node >= 22.18 runs `.ts` directly, which removes the whole build step from the generator and the generated MCP server — but constructor parameter properties, `enum` and `namespace` all become TS1294, and the failure surfaces only in `tsc --noEmit`, not at runtime. Worth knowing before choosing "no build step" for a hackathon deliverable that other agents typecheck. Cost: 10 min (a test helper class had to be rewritten with explicit field assignments).
 29. **Positive: a receipt plus a proto is enough to generate a *refusing* MCP, and the refusal payload is the demo.** 7 tools, 5 refusal reasons, provenance (incl. `outputModuleHash`) on every answer, and the whole thing is 73 tests against a fake ClickHouse/RPC with no live database needed. The one thing that made it possible is that `outputModuleHash` is stable across rebuilds while `packageHash` is not (A7 item 19) — the identity the fail-closed check leans on had to be the module hash, and the receipt schema gained it mid-build. A `specs/CHANGELOG` line per spec change (asked for in A6 item 22) would have saved a second diff today.
+
+## 2026-09-10 — A9 enum→string contract change, rebuild, flow rows in ClickHouse (sub-agent A9)
+
+1. **The enum fix is a public-contract change, and nothing warns you before you ship the proto.** A8's finding
+   (`from-proto` panics on a populated proto3 enum, entry above) can only be fixed on our side by removing the
+   enum. Tried: `enum FlowDirection` → `string direction = 12`. Got: works immediately — `direction String` in
+   ClickHouse, 171 flow rows landed. Expected: `substreams-sink-sql`'s proto-annotation docs to state which
+   proto types are supported by from-proto (they list the `convertTo` types and say nothing about enums), or the
+   sink to fail at table-creation time rather than mid-stream on the first non-zero enum value. Cost of the
+   change itself: ~15 min (proto, descriptor hash, bindings, handlers, tests, rebuild, re-run) — cheap, but it
+   was only cheap because the panic had already been isolated. Ship-blocking for anyone who models a category
+   column as an enum, which is the obvious modelling choice.
+2. **`from-proto` does not commit the tail of a bounded range in one pass.** Tried: the same bounded command
+   (`-s 51092254 -t 51093002`) four times against a fresh database. Got: run 1 exit 0, "reached your stop
+   block #51093000", but only committed through block 51092994 (167 rows); run 2 committed 51092998 (169); run 3
+   committed 51093000 (171 rows + the 2 observation rows that live in that block); run 4 was a no-op. Not data
+   loss — the cursor file only advances to what was committed, so reruns are gapless and duplicate-free — but a
+   single run of a bounded range silently leaves its last data blocks out, and the exit code and the "reached
+   your stop block" log say nothing about it. Expected: a final flush before termination, or a log line naming
+   the last committed block (the stats block prints `block_count` but not what was flushed). Impact: any
+   fixed-range backfill or test that asserts counts after one run can be short by a few blocks; ours was short
+   by exactly the block whose rows the gate asserts. Workaround: rerun until counts stop changing, or set the
+   stop block past the last block you care about. Not in `--help` or the v4.13.1 README. Cost: ~12 min to work
+   out that the missing observation rows were a flush boundary and not another bug in the contract.
+3. **Module hash changes → the first run after a contract change pays store preparation again.** Renaming one
+   field's type changed all six module hashes, so the server re-prepared the stores for the range: 138 s and
+   82,646 processed blocks for a 200-block window (the identical run before the change was cached). Expected:
+   nothing different, the caching is per module hash by design — but it is worth a line in the dev skill that a
+   proto-only change invalidates every downstream module's cache, because it makes "just tweak the proto" cost
+   a couple of minutes of paid backfill per range.
+4. **Positive: `.spkg` as a buf image made the contract check trivial after the change.** `buf build
+   erc4626-flows-v0.1.0.spkg#format=binpb --as-file-descriptor-set -o -#format=json` piped into the gate's
+   20-line Python reference gave the same normalized descriptor hash as the source proto
+   (`ce7f7823…`), so "did the built package drift from the public contract" stayed a one-liner across the change.

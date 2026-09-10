@@ -4,8 +4,9 @@ ERC-4626 deposit/withdraw flows and sampled share-value observations on Base (ch
 `vaultflows.v1.Events` for the ClickHouse from-proto sink. Built on Pinax's `erc4626` package (raw
 `Deposit` / `Withdraw` logs matched by signature across every address on the chain).
 
-Status: v0.1.0, compiled in CI (`.github/workflows/build-substreams.yml`). Not yet run against a live endpoint
-from this repository; see "Unverified" below.
+Status: v0.1.0, compiled in CI (`.github/workflows/build-substreams.yml`) and locally, and run against
+`base-mainnet.streamingfast.io:443` (evidence in `runs/live/`) and into local ClickHouse through
+`substreams-sink-sql from-proto` (`docs/build/sink-spike.md`).
 
 ## What it emits
 
@@ -14,7 +15,7 @@ Single sink module `map_events` → `vaultflows.v1.Events`. Each repeated field 
 
 | Field | Table | One row per | Notes |
 |---|---|---|---|
-| `vault_flows` | `vault_flows` | Deposit/Withdraw log on a **configured** vault | `caller`, `owner`, `receiver` kept separate; raw amounts as decimal strings; normalized amounts and `execution_rate` (assets per share implied by this one flow, 18 fractional digits) only when `meta_valid`. Direction 1 = deposit, 2 = withdraw. |
+| `vault_flows` | `vault_flows` | Deposit/Withdraw log on a **configured** vault | `caller`, `owner`, `receiver` kept separate; raw amounts as decimal strings; normalized amounts and `execution_rate` (assets per share implied by this one flow, 18 fractional digits) only when `meta_valid`. `direction` is the string `deposit` or `withdraw` (plain String column, not an enum: `substreams-sink-sql` 4.13.1 `from-proto` panics on a populated proto3 enum field). |
 | `share_value_observations` | `share_value_observations` | configured vault × sampled block (`block_number % interval == 0`) | `convertToAssets(10^shareDecimals)`, `totalAssets()`, `totalSupply()` read at that block's state. Failed vaults are still emitted with `call_ok=false`. Never interpolated. |
 | `vaults` | `vaults` | address, on first sight | First-sight probe result: `asset`, decimals, `name`, `symbol`, `compliant`, `in_configured_list`, `call_ok` / `call_error`. Chain-wide, not only configured vaults. |
 | `share_transfers` | `share_transfers` | — | Empty in v0.1.0 (share migration is a "should"). |
@@ -111,12 +112,14 @@ cargo test
 substreams build
 substreams info erc4626-flows-v0.1.0.spkg
 # 200-block gate range with known activity on both vaults
-substreams run -e base-mainnet.streamingfast.io:443 erc4626-flows-v0.1.0.spkg map_events -s 51092254 -t +200 -o jsonl
+# --limit-processed-blocks 0 is required: the CLI refuses a request whose store preparation exceeds 10,000 blocks
+substreams run -e base-mainnet.streamingfast.io:443 erc4626-flows-v0.1.0.spkg map_events \
+  --network base -s 51092254 -t +200 -o jsonl --limit-processed-blocks 0
 ```
 
 ## Unverified
 
-- Not yet executed against a Base endpoint from this repo (no data-plane token here); the first `substreams run`
-  is the check for Clock `id` format, same-block store visibility and RPC behaviour on the hosted runner.
+- Behaviour on the hosted runner (this package has only been streamed from the CLI and sunk to a local
+  ClickHouse container).
 - Whether the endpoint sets an eth_call "fallback to latest" window for old blocks (would silently break
   historical observations; see `docs/build/substreams-facts.md` (b)).

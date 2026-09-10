@@ -45,8 +45,10 @@ pub struct VaultFlow {
     /// who received assets on withdraw; equals owner on deposit
     #[prost(string, tag="11")]
     pub receiver: ::prost::alloc::string::String,
-    #[prost(enumeration="FlowDirection", tag="12")]
-    pub direction: i32,
+    /// Values exactly `deposit` (ERC-4626 Deposit(sender, owner, assets, shares)) or `withdraw`
+    /// (ERC-4626 Withdraw(sender, receiver, owner, assets, shares)). Lowercase, never empty.
+    #[prost(string, tag="12")]
+    pub direction: ::prost::alloc::string::String,
     #[prost(string, tag="13")]
     pub assets_raw: ::prost::alloc::string::String,
     #[prost(string, tag="14")]
@@ -64,8 +66,8 @@ pub struct VaultFlow {
     #[prost(uint32, tag="18")]
     pub share_decimals: u32,
     /// assets_normalized / shares_normalized for this single flow, in asset units per whole share. Deposit-implied
-    /// when direction is DEPOSIT (per EIP-4626 the Deposit `assets` includes any entry fee); withdraw-implied when
-    /// WITHDRAW (Withdraw `assets` is net of exit fee). "0" when shares_raw is zero or meta_valid is false.
+    /// when direction is `deposit` (per EIP-4626 the Deposit `assets` includes any entry fee); withdraw-implied when
+    /// `withdraw` (Withdraw `assets` is net of exit fee). "0" when shares_raw is zero or meta_valid is false.
     #[prost(string, tag="19")]
     pub execution_rate: ::prost::alloc::string::String,
     /// true when the vault passed the first-sight metadata probe (asset(), decimals(), asset.decimals(),
@@ -200,36 +202,5 @@ pub struct ShareTransfer {
     pub share_decimals: u32,
     #[prost(bool, tag="14")]
     pub meta_valid: bool,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum FlowDirection {
-    Unspecified = 0,
-    /// ERC-4626 Deposit(sender, owner, assets, shares)
-    Deposit = 1,
-    /// ERC-4626 Withdraw(sender, receiver, owner, assets, shares)
-    Withdraw = 2,
-}
-impl FlowDirection {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            FlowDirection::Unspecified => "FLOW_DIRECTION_UNSPECIFIED",
-            FlowDirection::Deposit => "FLOW_DIRECTION_DEPOSIT",
-            FlowDirection::Withdraw => "FLOW_DIRECTION_WITHDRAW",
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "FLOW_DIRECTION_UNSPECIFIED" => Some(Self::Unspecified),
-            "FLOW_DIRECTION_DEPOSIT" => Some(Self::Deposit),
-            "FLOW_DIRECTION_WITHDRAW" => Some(Self::Withdraw),
-            _ => None,
-        }
-    }
 }
 // @@protoc_insertion_point(module)

@@ -1,0 +1,44 @@
+2026-09-10T18:51:56.269+0530 INFO (sink-sql) reading substreams manifest {"manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg"}
+2026-09-10T18:51:56.278+0530 INFO (sink-sql) finding output module {"module_name": "map_events"}
+2026-09-10T18:51:56.279+0530 INFO (sink-sql) validating output module type {"module_name": "map_events", "module_type": "proto:vaultflows.v1.Events"}
+2026-09-10T18:51:56.290+0530 INFO (sink-sql) reading substreams manifest {"manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg"}
+2026-09-10T18:51:56.292+0530 INFO (sink-sql) finding output module {"module_name": "map_events"}
+2026-09-10T18:51:56.292+0530 INFO (sink-sql) validating output module type {"module_name": "map_events", "module_type": "proto:vaultflows.v1.Events"}
+2026-09-10T18:51:56.294+0530 INFO (sink-sql) sinker from CLI {"endpoint": "base-mainnet.streamingfast.io:443", "manifest_path": "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg", "params": [], "network": "base", "output_module_name": "map_events", "expected_module_type": "vaultflows.v1.Events", "start_block": 51092254, "stop_block": 51093002, "start_block_empty": false, "development_mode": false, "noop_mode": false, "max_retries": 3, "final_blocks_only": false, "skip_package_validation": false, "live_block_time_delta": "0s", "undo_buffer_size": 0, "extra_headers": []}
+2026-09-10T18:51:56.850+0530 INFO (sink-sql) sinker configured {"mode": "Production", "module_count": 7, "output_module_name": "map_events", "output_module_type": "proto:vaultflows.v1.Events", "output_module_hash": "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a", "client_config": "base-mainnet.streamingfast.io:443 (insecure: false, plaintext: false, JWT present: true)", "buffer": "None", "start_block": 51092254, "stop_block": 51093002, "max_retries": 3, "final_blocks_only": false, "liveness_checker": true}
+2026-09-10T18:51:56.851+0530 INFO (sink-sql) creating schema {"name": "vaultflows", "root_message_descriptor": "Events", "with_proto_option": true}
+2026-09-10T18:51:56.851+0530 INFO (sink-sql) initializing schema {"name": "vaultflows", "root_message_descriptor": "Events"}
+2026-09-10T18:51:56.854+0530 INFO (sink-sql) sink info read {"sink_info": {"schema_hash":"07a6ec95410a2010"}}
+2026-09-10T18:51:56.864+0530 INFO (sink-sql) undoing blocks {"table": "_block_", "last_valid_block_num": 51093000}
+2026-09-10T18:51:56.880+0530 INFO (sink-sql) undo completed {"table": "_block_", "duration": "16.36ms"}
+2026-09-10T18:51:56.880+0530 INFO (sink-sql) undoing blocks {"table": "share_value_observations", "last_valid_block_num": 51093000}
+2026-09-10T18:51:56.886+0530 INFO (sink-sql) undo completed {"table": "share_value_observations", "duration": "5.64ms"}
+2026-09-10T18:51:56.886+0530 INFO (sink-sql) undoing blocks {"table": "vaults", "last_valid_block_num": 51093000}
+2026-09-10T18:51:56.891+0530 INFO (sink-sql) undo completed {"table": "vaults", "duration": "4.36ms"}
+2026-09-10T18:51:56.891+0530 INFO (sink-sql) undoing blocks {"table": "share_transfers", "last_valid_block_num": 51093000}
+2026-09-10T18:51:56.895+0530 INFO (sink-sql) undo completed {"table": "share_transfers", "duration": "4.03ms"}
+2026-09-10T18:51:56.895+0530 INFO (sink-sql) undoing blocks {"table": "vault_flows", "last_valid_block_num": 51093000}
+2026-09-10T18:51:56.907+0530 INFO (sink-sql) undo completed {"table": "vault_flows", "duration": "12.40ms"}
+2026-09-10T18:51:56.907+0530 INFO (sink-sql) fetched cursor {"block": "#51093000 (9c6e8b7f6f72707960744b44d390bad2ecdc7a96b16420338b6ce10777dc29bb)"}
+2026-09-10T18:51:56.908+0530 INFO (sink-sql) starting sinker {"stats_refresh_each": "15s", "restarting_at": "#51093000 (9c6e8b7f6f72707960744b44d390bad2ecdc7a96b16420338b6ce10777dc29bb)", "end_at": "#51093001", "cursor": "k-ukwW6zDuvtnVG9ONhWUaWwLpc_DF9uVQLmKhFBj4Kl9ifNj5rwBjdyahrQl6D23RLvTwio2ovOHX4po5RS6YK-kL815CdqR30okYnt-Ly9fqCnOAocdrw2DOiHMIrRXj3Xawn7erEK6Ybhb_uLYBQ0NMAkK2a0hjlQpYFQIqcV7XA8w26sJ82Hg6_F9tNI-bAkQuCjlSigD2d7fxpbPcuFYKbMvTVyNw=="}
+2026-09-10T18:51:56.911+0530 INFO (sink-sql) sending request {"start_block": "51092254", "stop_block": "51093002", "cursor": "k-ukwW6zDuvtnVG9ONhWUaWwLpc_DF9uVQLmKhFBj4Kl9ifNj5rwBjdyahrQl6D23RLvTwio2ovOHX4po5RS6YK-kL815CdqR30okYnt-Ly9fqCnOAocdrw2DOiHMIrRXj3Xawn7erEK6Ybhb_uLYBQ0NMAkK2a0hjlQpYFQIqcV7XA8w26sJ82Hg6_F9tNI-bAkQuCjlSigD2d7fxpbPcuFYKbMvTVyNw=="}
+2026-09-10T18:51:57.293+0530 INFO (sink-sql) substreams using protocol version v4
+2026-09-10T18:51:57.581+0530 ERRO (sink-sql) substreams encountered a retryable error {"error": "rpc error: code = Unavailable desc = error reading from server: remote error: tls: bad record MAC"}
+2026-09-10T18:51:57.581+0530 INFO (sink-sql) sleeping before re-connecting {"sleep": "475.488319ms"}
+2026-09-10T18:51:58.058+0530 INFO (sink-sql) sending request {"start_block": "51092254", "stop_block": "51093002", "cursor": "k-ukwW6zDuvtnVG9ONhWUaWwLpc_DF9uVQLmKhFBj4Kl9ifNj5rwBjdyahrQl6D23RLvTwio2ovOHX4po5RS6YK-kL815CdqR30okYnt-Ly9fqCnOAocdrw2DOiHMIrRXj3Xawn7erEK6Ybhb_uLYBQ0NMAkK2a0hjlQpYFQIqcV7XA8w26sJ82Hg6_F9tNI-bAkQuCjlSigD2d7fxpbPcuFYKbMvTVyNw=="}
+2026-09-10T18:51:58.061+0530 INFO (sink-sql) substreams using protocol version v4
+2026-09-10T18:51:58.168+0530 ERRO (sink-sql) substreams encountered a retryable error {"error": "rpc error: code = Unavailable desc = error reading from server: remote error: tls: bad record MAC"}
+2026-09-10T18:51:58.168+0530 INFO (sink-sql) sleeping before re-connecting {"sleep": "1.058354692s"}
+2026-09-10T18:51:58.908+0530 INFO (sink-sql) substreams stream stats {"data_msg_rate": "0.000 msg/s (0 total)", "undo_msg_rate": "0.000 msg/s (0 total)", "avg_block_wait_time_sec": 0, "avg_block_time_delta_sec": 0, "avg_local_block_processing_time_sec": 0, "last_block": "None"}
+2026-09-10T18:51:59.228+0530 INFO (sink-sql) sending request {"start_block": "51092254", "stop_block": "51093002", "cursor": "k-ukwW6zDuvtnVG9ONhWUaWwLpc_DF9uVQLmKhFBj4Kl9ifNj5rwBjdyahrQl6D23RLvTwio2ovOHX4po5RS6YK-kL815CdqR30okYnt-Ly9fqCnOAocdrw2DOiHMIrRXj3Xawn7erEK6Ybhb_uLYBQ0NMAkK2a0hjlQpYFQIqcV7XA8w26sJ82Hg6_F9tNI-bAkQuCjlSigD2d7fxpbPcuFYKbMvTVyNw=="}
+2026-09-10T18:51:59.237+0530 INFO (sink-sql) substreams using protocol version v4
+2026-09-10T18:52:01.525+0530 INFO (sink-sql) session initialized with remote endpoint {"max_parallel_workers": 5, "linear_handoff_block": 51094000, "resolved_start_block": 51093001, "trace_id": "0899b0932c8283a14f46cd1909cc3b9f"}
+2026-09-10T18:52:01.562+0530 INFO (sink-sql) substreams ended correctly, reached your stop block {"last_block_seen": "#51093000 (9c6e8b7f6f72707960744b44d390bad2ecdc7a96b16420338b6ce10777dc29bb)"}
+2026-09-10T18:52:01.562+0530 INFO (sink-sql) sinker terminating
+2026-09-10T18:52:01.562+0530 INFO (sink-sql) substreams stream stats {"data_msg_rate": "0.000 msg/s (0 total)", "undo_msg_rate": "0.000 msg/s (0 total)", "avg_block_wait_time_sec": 0, "avg_block_time_delta_sec": 0, "avg_local_block_processing_time_sec": 0, "last_block": "None"}
+2026-09-10T18:52:01.563+0530 INFO (sink-sql) -----------------------------------
+2026-09-10T18:52:01.563+0530 INFO (sink-sql) Stats: no blocks processed yet
+2026-09-10T18:52:01.563+0530 INFO (sink-sql) -----------------------------------
+2026-09-10T18:52:01.563+0530 INFO (sink-sql) run terminating {"from_signal": false, "with_error": false}
+2026-09-10T18:52:01.563+0530 INFO (sink-sql) waiting for run termination
+2026-09-10T18:52:01.563+0530 INFO (sink-sql) run terminated gracefully

@@ -220,3 +220,66 @@ All field numbers of retained fields are unchanged. Removed numbers are `reserve
 6. `buf lint` (STANDARD minus `PACKAGE_DIRECTORY_MATCH`) clean; `buf build` OK; hash `11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b`.
 
 Sync state at commit `4158d86` (2026-09-10): `packages/erc4626-flows/proto/vaultflows.proto` is byte-identical to `specs/vaultflows.proto`, `src/pb/vaultflows.v1.rs` was regenerated (`call_ok` present, no `CallStatus`), and `src/lib.rs` uses `call_ok`/`call_error` and the `"0"` convention. The spec rewrite itself was committed inside that commit. Still open in the package: `substreams.yaml` `descriptorSets` names the retired module (section 7).
+
+## 12. Proto changes by A9 — `FlowDirection` enum → `string direction`
+
+Executed 2026-09-10. One change, one reason:
+
+**`enum FlowDirection` deleted; `VaultFlow.direction` is now `string direction = 12`** (field number kept, so
+no `reserved` entry is needed and no other field number moved). Accepted values are exactly `deposit` and
+`withdraw` — lowercase, never empty. Rust side: `pure::DIRECTION_DEPOSIT` / `pure::DIRECTION_WITHDRAW`.
+
+Reason (measured, not inferred): `substreams-sink-sql` 4.13.1 `from-proto` panics on a populated proto3 enum
+field — `panic: interface conversion: interface {} is protoreflect.EnumNumber, not int32` in
+`db_proto/sql/click_house/accumulator_inserter.go:224` — on the first block carrying a `VaultFlow` row, 2/2
+reproducible (docs/build/sink-spike.md §1). The enum blocked every `vault_flows` and `vaults` row from ever
+reaching ClickHouse. With the string, the same command lands the rows (sink-spike.md §6); the ClickHouse column
+is `direction String` instead of `direction Int32`.
+
+Header comment updated accordingly: the old line "Enums are stored as Int32 in ClickHouse (TEXT in Postgres):
+FlowDirection 1 = DEPOSIT, 2 = WITHDRAW" is replaced by a statement that the contract has **no** enum fields and
+why. The `execution_rate` comment now says `deposit` / `withdraw` instead of DEPOSIT / WITHDRAW.
+
+### Descriptor hash run (the algorithm of specs/gate.yaml `descriptorHash`)
+
+Workspace: a temp dir holding `specs/vaultflows.proto` plus
+`packages/streamsmith/proto-deps/sf/substreams/sink/sql/schema/v1/schema.proto` at its import path, with a
+`buf.yaml` v2 using `STANDARD` minus `PACKAGE_DIRECTORY_MATCH` (the gate's `contract.lint`).
+
+```bash
+buf lint --path vaultflows.proto            # exit 0, no findings (buf 1.72.0)
+buf build --as-file-descriptor-set --exclude-source-info -o -#format=json \
+  | python3 descriptor_hash.py vaultflows.v1     # the referenceScript, verbatim from specs/gate.yaml
+```
+
+| Side | Command | sha256 |
+|---|---|---|
+| spec, before the change | as above on the enum contract | `11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b` (reproduced the committed value exactly, so the pipeline is the same one A2b ran) |
+| spec, after the change | as above | **`ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9`** |
+| spec, after, without `--exclude-source-info` | same | `ce7f78…d5f9` (identical) |
+| spkg, after the change | `buf build packages/erc4626-flows/erc4626-flows-v0.1.0.spkg#format=binpb --as-file-descriptor-set -o -#format=json \| python3 descriptor_hash.py vaultflows.v1` | `ce7f78…d5f9` (identical → gate `descriptor_hash_match` passes) |
+
+`specs/gate.yaml` `descriptorHash.expectedSpecSha256` was updated to `ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9`
+(the old value is kept in a comment above it), and the `reference_flows_present` rows now read
+`direction: "deposit"` / `direction: "withdraw"`. Nothing else in gate.yaml changed.
+
+### Carried through
+
+- `packages/erc4626-flows/proto/vaultflows.proto` re-copied from `specs/vaultflows.proto` (byte-identical,
+  `cmp` clean — CI enforces this).
+- `src/pb/vaultflows.v1.rs` regenerated with `substreams protogen` (4 s): `pub direction: ::prost::alloc::string::String`.
+- `src/lib.rs`: `FlowDirection` import dropped; the match arms produce `DIRECTION_DEPOSIT.to_string()` /
+  `DIRECTION_WITHDRAW.to_string()`; the struct literal is `direction,` (was `direction as i32`).
+- `src/pure.rs`: the two constants plus a unit test asserting the exact strings; `cargo test --all-targets`
+  14 passed / 0 failed (was 13).
+- `substreams build` 5 s, `substreams pack` < 2 s; new `map_events` module hash
+  `8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a`, spkg sha256 `662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0`.
+- Live evidence in `runs/live/` regenerated with the new spkg; the primary file is line-for-line identical to
+  the pre-change recording once `FLOW_DIRECTION_DEPOSIT`/`_WITHDRAW` are rewritten to `deposit`/`withdraw`
+  (34 lines, 42 rows, same ids/amounts/log indexes/rates), so the change is provably confined to that field.
+
+### Consumers that still reference the enum (owned by other agents, not touched here)
+
+`packages/erc4626-flows/sql/views.sql` (`direction = 1` / `= 2`), `packages/mcpgen` (`enumMap`, its
+`proto.test.ts` / `livedata.test.ts` expectations) and `packages/streamsmith` (`test/jsonl.test.ts`,
+`fixtures/vaultflows.fds.json`). They need `direction = 'deposit'` / `'withdraw'` and no enum table.

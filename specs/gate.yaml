@@ -152,7 +152,10 @@ descriptorHash:
   # without --exclude-source-info. Pipeline validation: the same script on vendor/substreams-evm/spkg/erc4626-v0.1.0.spkg
   # (`buf build x.spkg#format=binpb --as-file-descriptor-set -o -#format=json`) and on its source
   # vendor/substreams-evm/proto/v1/erc4626.proto both give e5a8314bc08196608436a75614d2333989f1858f278a3d077c2dc3205a75bfc6.
-  expectedSpecSha256: 11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b
+  # Recomputed 2026-09-10 by A9 after `FlowDirection direction = 12` became `string direction = 12` (field number kept):
+  # substreams-sink-sql 4.13.1 from-proto panics on a populated proto3 enum field. Previous value (enum contract):
+  # 11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b. Identical with and without --exclude-source-info.
+  expectedSpecSha256: ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9
 
 # ---------------------------------------------------------------------------------------------------------------
 assertions:
@@ -199,10 +202,10 @@ assertions:
     in: vault_flows
     # docs/build/vaults.md "Recent block range" rows (eth_getLogs on https://1rpc.io/base, 2026-09-09), raw amounts as emitted.
     rows:
-      - { block_number: 51092263, tx_hash: 0x0fe8b63d99cbe6eac9baab1967e9011d7de8a52fa6d5d210b15b4aa4c80a12b4, vault: 0x050ce30b927da55177a4914ec73480238bad56f0, direction: FLOW_DIRECTION_DEPOSIT,  assets_raw: "197373726", shares_raw: "189647169910852085674" }
-      - { block_number: 51092316, tx_hash: 0xf3188ffdb3d650e0f0a876391700726684bbb25ff54f802aea1dd87af514973b, vault: 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9, direction: FLOW_DIRECTION_WITHDRAW, assets_raw: "2210001",   shares_raw: "2125180826770979130" }
-      - { block_number: 51092402, tx_hash: 0x640557be0ab1dae20ea52973bdee493f7851919e2bdd745412bd8160876fd751, vault: 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9, direction: FLOW_DIRECTION_DEPOSIT,  assets_raw: "10000000",  shares_raw: "9616196376594418305" }
-      - { block_number: 51092449, tx_hash: 0x4388fe4a9820e592dc85a9e140722c6c23ad28826f50a81399ed07c9a22d06c0, vault: 0x050ce30b927da55177a4914ec73480238bad56f0, direction: FLOW_DIRECTION_WITHDRAW }
+      - { block_number: 51092263, tx_hash: 0x0fe8b63d99cbe6eac9baab1967e9011d7de8a52fa6d5d210b15b4aa4c80a12b4, vault: 0x050ce30b927da55177a4914ec73480238bad56f0, direction: "deposit",  assets_raw: "197373726", shares_raw: "189647169910852085674" }
+      - { block_number: 51092316, tx_hash: 0xf3188ffdb3d650e0f0a876391700726684bbb25ff54f802aea1dd87af514973b, vault: 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9, direction: "withdraw", assets_raw: "2210001",   shares_raw: "2125180826770979130" }
+      - { block_number: 51092402, tx_hash: 0x640557be0ab1dae20ea52973bdee493f7851919e2bdd745412bd8160876fd751, vault: 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9, direction: "deposit",  assets_raw: "10000000",  shares_raw: "9616196376594418305" }
+      - { block_number: 51092449, tx_hash: 0x4388fe4a9820e592dc85a9e140722c6c23ad28826f50a81399ed07c9a22d06c0, vault: 0x050ce30b927da55177a4914ec73480238bad56f0, direction: "withdraw" }
     definition: each listed row exists (all listed keys equal; keys not listed are unconstrained); chain_id == 8453 on every row.
 
   - name: log_index_matches_rpc

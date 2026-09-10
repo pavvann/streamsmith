@@ -29,10 +29,11 @@ pub mod pb {
 }
 
 use pb::erc4626::v1 as erc4626;
-use pb::vaultflows::v1::{Events, FlowDirection, ShareValueObservation, VaultFlow, VaultMeta};
+use pb::vaultflows::v1::{Events, ShareValueObservation, VaultFlow, VaultMeta};
 use pure::{
     address_bytes, bytes_to_hex, execution_rate, flow_id, is_sample_block, normalize_amount,
-    normalize_hash, normalize_rate, observation_id, or_zero, parse_params, vault_id, ZERO,
+    normalize_hash, normalize_rate, observation_id, or_zero, parse_params, vault_id,
+    DIRECTION_DEPOSIT, DIRECTION_WITHDRAW, ZERO,
 };
 use substreams::errors::Error;
 use substreams::pb::substreams::store_delta::Operation;
@@ -144,7 +145,7 @@ fn map_flows(
             }
             let (direction, caller, owner, receiver, assets_raw, shares_raw) = match &log.log {
                 Some(erc4626::log::Log::Deposit(d)) => (
-                    FlowDirection::Deposit,
+                    DIRECTION_DEPOSIT.to_string(),
                     bytes_to_hex(&d.sender),
                     bytes_to_hex(&d.owner),
                     // On deposit the shares go to `owner`; the contract defines receiver == owner here.
@@ -153,7 +154,7 @@ fn map_flows(
                     or_zero(&d.shares),
                 ),
                 Some(erc4626::log::Log::Withdraw(w)) => (
-                    FlowDirection::Withdraw,
+                    DIRECTION_WITHDRAW.to_string(),
                     bytes_to_hex(&w.sender),
                     bytes_to_hex(&w.owner),
                     bytes_to_hex(&w.receiver),
@@ -216,7 +217,7 @@ fn map_flows(
                 caller,
                 owner,
                 receiver,
-                direction: direction as i32,
+                direction,
                 assets_raw,
                 shares_raw,
                 assets_normalized,
