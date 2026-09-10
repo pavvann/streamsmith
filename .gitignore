@@ -11,3 +11,4 @@ runs/**/raw/
 *.log
 .DS_Store
 vendor/
+.substreams.env
