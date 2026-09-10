@@ -1,0 +1,1234 @@
+{
+  "manifestVersion": 1,
+  "generator": {
+    "name": "@ethonline26/mcpgen",
+    "version": "0.1.0"
+  },
+  "package": {
+    "name": "erc4626-flows",
+    "version": "v0.1.0",
+    "packageHash": "ee3ec8930c790036ac477aca1e821fbcd76a339e89a35d2b26a7976446d54d82",
+    "outputModule": "map_events",
+    "outputModuleHash": "3f6c0a9e1d2b4c8f7a5e6d1c0b9a8f7e6d5c4b3a",
+    "deploymentMode": "self-managed-sink",
+    "deploymentId": "fixture-local-clickhouse",
+    "chainId": 8453,
+    "network": "base",
+    "startBlock": 51001200
+  },
+  "receipt": {
+    "sha256": "ffcd65813fc63956f2da8fc4a6cb61e5927fc0e869984e931275cbb0dd8769a4",
+    "parametersHash": "baa6ae91bb4047064c246d4541b33c8cf91c6e6a867be766a16c5be9524100cd",
+    "protoDescriptorHash": "11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b",
+    "sinkSchemaHash": "48f86177bf2be6fc0bdd60357aac6a097c6d0226d3585601c50ad6399210a46d"
+  },
+  "inputs": {
+    "proto": {
+      "file": "vaultflows.proto",
+      "sha256": "74331b0148cae439757c40e552849e4fd67d41086e5eaf0799d6a50a1bd42469",
+      "package": "vaultflows.v1"
+    },
+    "views": {
+      "file": "views.sql",
+      "sha256": "6eb2ce209f1c14c9f396bd012a14f626ff0b98455946d13241f1a45595c688b8"
+    },
+    "semantics": {
+      "file": "default.yaml",
+      "sha256": "46960bb890decb33351300ce54f0a4efd22fb7424caa03c183e03252f2626869"
+    }
+  },
+  "vaults": [
+    "0x050ce30b927da55177a4914ec73480238bad56f0",
+    "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+  ],
+  "expectedSchema": {
+    "tables": {
+      "vault_flows": [
+        {
+          "name": "id",
+          "type": "String"
+        },
+        {
+          "name": "chain_id",
+          "type": "UInt32"
+        },
+        {
+          "name": "block_number",
+          "type": "UInt64"
+        },
+        {
+          "name": "block_hash",
+          "type": "String"
+        },
+        {
+          "name": "block_timestamp",
+          "type": "UInt64"
+        },
+        {
+          "name": "tx_hash",
+          "type": "String"
+        },
+        {
+          "name": "log_index",
+          "type": "UInt32"
+        },
+        {
+          "name": "vault",
+          "type": "String"
+        },
+        {
+          "name": "caller",
+          "type": "String"
+        },
+        {
+          "name": "owner",
+          "type": "String"
+        },
+        {
+          "name": "receiver",
+          "type": "String"
+        },
+        {
+          "name": "direction",
+          "type": "Int32"
+        },
+        {
+          "name": "assets_raw",
+          "type": "UInt256"
+        },
+        {
+          "name": "shares_raw",
+          "type": "UInt256"
+        },
+        {
+          "name": "assets_normalized",
+          "type": "Decimal(38, 18)"
+        },
+        {
+          "name": "shares_normalized",
+          "type": "Decimal(38, 18)"
+        },
+        {
+          "name": "asset_decimals",
+          "type": "UInt32"
+        },
+        {
+          "name": "share_decimals",
+          "type": "UInt32"
+        },
+        {
+          "name": "execution_rate",
+          "type": "Decimal(38, 18)"
+        },
+        {
+          "name": "meta_valid",
+          "type": "Bool"
+        },
+        {
+          "name": "call_ok",
+          "type": "Bool"
+        },
+        {
+          "name": "call_error",
+          "type": "String"
+        },
+        {
+          "name": "_block_number_",
+          "type": "*"
+        },
+        {
+          "name": "_block_timestamp_",
+          "type": "*"
+        },
+        {
+          "name": "_version_",
+          "type": "*"
+        },
+        {
+          "name": "_deleted_",
+          "type": "*"
+        }
+      ],
+      "share_value_observations": [
+        {
+          "name": "id",
+          "type": "String"
+        },
+        {
+          "name": "chain_id",
+          "type": "UInt32"
+        },
+        {
+          "name": "block_number",
+          "type": "UInt64"
+        },
+        {
+          "name": "block_hash",
+          "type": "String"
+        },
+        {
+          "name": "block_timestamp",
+          "type": "UInt64"
+        },
+        {
+          "name": "vault",
+          "type": "String"
+        },
+        {
+          "name": "sample_interval_blocks",
+          "type": "UInt32"
+        },
+        {
+          "name": "assets_per_share_raw",
+          "type": "UInt256"
+        },
+        {
+          "name": "assets_per_share_normalized",
+          "type": "Decimal(38, 18)"
+        },
+        {
+          "name": "total_assets_raw",
+          "type": "UInt256"
+        },
+        {
+          "name": "total_supply_raw",
+          "type": "UInt256"
+        },
+        {
+          "name": "call_ok",
+          "type": "Bool"
+        },
+        {
+          "name": "call_error",
+          "type": "String"
+        },
+        {
+          "name": "_block_number_",
+          "type": "*"
+        },
+        {
+          "name": "_block_timestamp_",
+          "type": "*"
+        },
+        {
+          "name": "_version_",
+          "type": "*"
+        },
+        {
+          "name": "_deleted_",
+          "type": "*"
+        }
+      ],
+      "vaults": [
+        {
+          "name": "id",
+          "type": "String"
+        },
+        {
+          "name": "chain_id",
+          "type": "UInt32"
+        },
+        {
+          "name": "vault",
+          "type": "String"
+        },
+        {
+          "name": "first_seen_block",
+          "type": "UInt64"
+        },
+        {
+          "name": "asset",
+          "type": "String"
+        },
+        {
+          "name": "asset_decimals",
+          "type": "UInt32"
+        },
+        {
+          "name": "share_decimals",
+          "type": "UInt32"
+        },
+        {
+          "name": "name",
+          "type": "String"
+        },
+        {
+          "name": "symbol",
+          "type": "String"
+        },
+        {
+          "name": "compliant",
+          "type": "Bool"
+        },
+        {
+          "name": "in_configured_list",
+          "type": "Bool"
+        },
+        {
+          "name": "call_ok",
+          "type": "Bool"
+        },
+        {
+          "name": "call_error",
+          "type": "String"
+        },
+        {
+          "name": "_block_number_",
+          "type": "*"
+        },
+        {
+          "name": "_block_timestamp_",
+          "type": "*"
+        },
+        {
+          "name": "_version_",
+          "type": "*"
+        },
+        {
+          "name": "_deleted_",
+          "type": "*"
+        }
+      ],
+      "share_transfers": [
+        {
+          "name": "id",
+          "type": "String"
+        },
+        {
+          "name": "chain_id",
+          "type": "UInt32"
+        },
+        {
+          "name": "block_number",
+          "type": "UInt64"
+        },
+        {
+          "name": "block_hash",
+          "type": "String"
+        },
+        {
+          "name": "block_timestamp",
+          "type": "UInt64"
+        },
+        {
+          "name": "tx_hash",
+          "type": "String"
+        },
+        {
+          "name": "log_index",
+          "type": "UInt32"
+        },
+        {
+          "name": "vault",
+          "type": "String"
+        },
+        {
+          "name": "from_owner",
+          "type": "String"
+        },
+        {
+          "name": "to_owner",
+          "type": "String"
+        },
+        {
+          "name": "shares_raw",
+          "type": "UInt256"
+        },
+        {
+          "name": "shares_normalized",
+          "type": "Decimal(38, 18)"
+        },
+        {
+          "name": "share_decimals",
+          "type": "UInt32"
+        },
+        {
+          "name": "meta_valid",
+          "type": "Bool"
+        },
+        {
+          "name": "_block_number_",
+          "type": "*"
+        },
+        {
+          "name": "_block_timestamp_",
+          "type": "*"
+        },
+        {
+          "name": "_version_",
+          "type": "*"
+        },
+        {
+          "name": "_deleted_",
+          "type": "*"
+        }
+      ]
+    },
+    "columnSetHash": "d0530a3f9e7be109539e1097c5568ddec7ffd9a91293c075a19d380a58bd5aea"
+  },
+  "views": {
+    "vault_flows_24h": [
+      {
+        "name": "vault",
+        "type": "String"
+      },
+      {
+        "name": "window_end_timestamp",
+        "type": "UInt64"
+      },
+      {
+        "name": "window_start_timestamp",
+        "type": "UInt64"
+      },
+      {
+        "name": "deposit_count",
+        "type": "UInt64"
+      },
+      {
+        "name": "withdraw_count",
+        "type": "UInt64"
+      },
+      {
+        "name": "assets_in_normalized",
+        "type": "Decimal(38, 18)"
+      },
+      {
+        "name": "assets_out_normalized",
+        "type": "Decimal(38, 18)"
+      },
+      {
+        "name": "net_assets_normalized",
+        "type": "Decimal(38, 18)"
+      },
+      {
+        "name": "flows_without_metadata",
+        "type": "UInt64"
+      }
+    ],
+    "share_value_growth": [
+      {
+        "name": "vault",
+        "type": "String"
+      },
+      {
+        "name": "first_block_number",
+        "type": "UInt64"
+      },
+      {
+        "name": "first_block_timestamp",
+        "type": "UInt64"
+      },
+      {
+        "name": "first_assets_per_share_normalized",
+        "type": "Decimal(38, 18)"
+      },
+      {
+        "name": "last_block_number",
+        "type": "UInt64"
+      },
+      {
+        "name": "last_block_timestamp",
+        "type": "UInt64"
+      },
+      {
+        "name": "last_assets_per_share_normalized",
+        "type": "Decimal(38, 18)"
+      },
+      {
+        "name": "growth",
+        "type": "Nullable(Float64)"
+      },
+      {
+        "name": "observed_hours",
+        "type": "Float64"
+      },
+      {
+        "name": "observation_count",
+        "type": "UInt64"
+      }
+    ]
+  },
+  "policy": {
+    "maxLagBlocksDefault": 300,
+    "checkIntervalSeconds": 60,
+    "queryTimeoutMs": 10000,
+    "maxLimit": 500,
+    "defaultLimit": 100,
+    "maxWindowHours": 2160,
+    "defaultWindowHours": 24
+  },
+  "tools": [
+    {
+      "name": "vault_flows",
+      "kind": "table",
+      "source": "vault_flows",
+      "description": "ERC-4626 Deposit/Withdraw logs on the configured vaults (table vault_flows), newest first, within a trailing window of the observed data. caller, owner and receiver are kept separate; assets/shares are raw base-unit strings plus normalized decimals; execution_rate is assets per whole share implied by this single flow (deposit-implied or withdraw-implied per direction). Rows with meta_valid = false carry \"0\" placeholders.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "chain_id",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_number",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_hash",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_timestamp",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "unix seconds"
+        },
+        {
+          "name": "tx_hash",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "log_index",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": "receipt log index within the block (block-wide, not per-transaction)"
+        },
+        {
+          "name": "vault",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "caller",
+          "type": "String",
+          "stringify": false,
+          "comment": "event `sender`: the address that called deposit/mint/withdraw/redeem"
+        },
+        {
+          "name": "owner",
+          "type": "String",
+          "stringify": false,
+          "comment": "whose shares were minted (deposit) or burned (withdraw)"
+        },
+        {
+          "name": "receiver",
+          "type": "String",
+          "stringify": false,
+          "comment": "who received assets on withdraw; equals owner on deposit"
+        },
+        {
+          "name": "direction",
+          "type": "Int32",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "assets_raw",
+          "type": "UInt256",
+          "stringify": true,
+          "comment": ""
+        },
+        {
+          "name": "shares_raw",
+          "type": "UInt256",
+          "stringify": true,
+          "comment": ""
+        },
+        {
+          "name": "assets_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": "assets_raw / 10^asset_decimals; \"0\" when meta_valid is false"
+        },
+        {
+          "name": "shares_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": "shares_raw / 10^share_decimals; \"0\" when meta_valid is false"
+        },
+        {
+          "name": "asset_decimals",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": "0 when meta_valid is false"
+        },
+        {
+          "name": "share_decimals",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": "0 when meta_valid is false"
+        },
+        {
+          "name": "execution_rate",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": ""
+        },
+        {
+          "name": "meta_valid",
+          "type": "Bool",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "call_ok",
+          "type": "Bool",
+          "stringify": false,
+          "comment": "status of the metadata probe this row relied on: true when every call returned and decoded"
+        },
+        {
+          "name": "call_error",
+          "type": "String",
+          "stringify": false,
+          "comment": "empty when call_ok; otherwise a short reason, e.g. \"convertToAssets: reverted\""
+        }
+      ],
+      "params": [
+        {
+          "name": "vault",
+          "kind": "vault",
+          "column": "vault",
+          "values": [
+            "0x050ce30b927da55177a4914ec73480238bad56f0",
+            "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+          ],
+          "chType": "String",
+          "description": "Restrict to one vault. Only the 2 vault(s) pinned by the Deployment Receipt are accepted (lowercase 0x hex)."
+        },
+        {
+          "name": "direction",
+          "kind": "enumFilter",
+          "column": "direction",
+          "values": [
+            "deposit",
+            "withdraw"
+          ],
+          "valueMap": {
+            "deposit": 1,
+            "withdraw": 2
+          },
+          "chType": "Int32",
+          "description": "Restrict to deposits (1) or withdrawals (2)."
+        },
+        {
+          "name": "windowHours",
+          "kind": "windowHours",
+          "min": 1,
+          "max": 2160,
+          "description": "Trailing window in hours, measured back from the newest observed row (not from now). 1..2160, default 24.",
+          "default": 24
+        },
+        {
+          "name": "limit",
+          "kind": "limit",
+          "min": 1,
+          "max": 500,
+          "default": 100,
+          "description": "Maximum rows returned, 1..500 (default 100)."
+        }
+      ],
+      "deletedFilter": true,
+      "orderBy": [
+        "block_number DESC",
+        "log_index DESC"
+      ],
+      "window": {
+        "column": "block_timestamp",
+        "table": "vault_flows",
+        "where": "_deleted_ = 0",
+        "marker": false
+      }
+    },
+    {
+      "name": "share_value_observations",
+      "kind": "table",
+      "source": "share_value_observations",
+      "description": "Point-in-time share-value observations (table share_value_observations): convertToAssets(10^share_decimals), totalAssets and totalSupply read at sampled blocks (block_number % sample_interval_blocks == 0). Rows with call_ok = false are emitted with \"0\" placeholders and call_error; nothing is interpolated between samples.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "chain_id",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_number",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_hash",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_timestamp",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "unix seconds"
+        },
+        {
+          "name": "vault",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "sample_interval_blocks",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "assets_per_share_raw",
+          "type": "UInt256",
+          "stringify": true,
+          "comment": ""
+        },
+        {
+          "name": "assets_per_share_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": ""
+        },
+        {
+          "name": "total_assets_raw",
+          "type": "UInt256",
+          "stringify": true,
+          "comment": "totalAssets(); \"0\" when call_ok is false"
+        },
+        {
+          "name": "total_supply_raw",
+          "type": "UInt256",
+          "stringify": true,
+          "comment": "totalSupply(); \"0\" when call_ok is false"
+        },
+        {
+          "name": "call_ok",
+          "type": "Bool",
+          "stringify": false,
+          "comment": "true only if convertToAssets, totalAssets and totalSupply all returned and decoded"
+        },
+        {
+          "name": "call_error",
+          "type": "String",
+          "stringify": false,
+          "comment": "empty when call_ok; otherwise a short reason naming the failed call"
+        }
+      ],
+      "params": [
+        {
+          "name": "vault",
+          "kind": "vault",
+          "column": "vault",
+          "values": [
+            "0x050ce30b927da55177a4914ec73480238bad56f0",
+            "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+          ],
+          "chType": "String",
+          "description": "Restrict to one vault. Only the 2 vault(s) pinned by the Deployment Receipt are accepted (lowercase 0x hex)."
+        },
+        {
+          "name": "windowHours",
+          "kind": "windowHours",
+          "min": 1,
+          "max": 2160,
+          "description": "Trailing window in hours, measured back from the newest observed row (not from now). 1..2160, default 24.",
+          "default": 24
+        },
+        {
+          "name": "limit",
+          "kind": "limit",
+          "min": 1,
+          "max": 500,
+          "default": 100,
+          "description": "Maximum rows returned, 1..500 (default 100)."
+        }
+      ],
+      "deletedFilter": true,
+      "orderBy": [
+        "block_number DESC"
+      ],
+      "window": {
+        "column": "block_timestamp",
+        "table": "share_value_observations",
+        "where": "_deleted_ = 0",
+        "marker": false
+      }
+    },
+    {
+      "name": "vaults",
+      "kind": "table",
+      "source": "vaults",
+      "description": "First-sight metadata probe results (table vaults): asset, decimals, name, symbol, compliant (heuristic: every probe call returned and decoded) and in_configured_list. The vault filter is limited to the configured list.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "chain_id",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "vault",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "first_seen_block",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "block at which the probe ran"
+        },
+        {
+          "name": "asset",
+          "type": "String",
+          "stringify": false,
+          "comment": "asset() result; empty if the probe failed (plain string column, empty is allowed)"
+        },
+        {
+          "name": "asset_decimals",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": "0 if the probe failed"
+        },
+        {
+          "name": "share_decimals",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": "0 if the probe failed"
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "stringify": false,
+          "comment": "name() if decodable, else empty"
+        },
+        {
+          "name": "symbol",
+          "type": "String",
+          "stringify": false,
+          "comment": "symbol() if decodable, else empty"
+        },
+        {
+          "name": "compliant",
+          "type": "Bool",
+          "stringify": false,
+          "comment": "heuristic: all probe calls succeeded and decoded"
+        },
+        {
+          "name": "in_configured_list",
+          "type": "Bool",
+          "stringify": false,
+          "comment": "true when the address is in the package's vault parameter"
+        },
+        {
+          "name": "call_ok",
+          "type": "Bool",
+          "stringify": false,
+          "comment": "true when every probe call returned and decoded (equals compliant in v0.1.0)"
+        },
+        {
+          "name": "call_error",
+          "type": "String",
+          "stringify": false,
+          "comment": "empty when call_ok; otherwise the first failed call, e.g. \"asset: reverted\""
+        }
+      ],
+      "params": [
+        {
+          "name": "vault",
+          "kind": "vault",
+          "column": "vault",
+          "values": [
+            "0x050ce30b927da55177a4914ec73480238bad56f0",
+            "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+          ],
+          "chType": "String",
+          "description": "Restrict to one vault. Only the 2 vault(s) pinned by the Deployment Receipt are accepted (lowercase 0x hex)."
+        },
+        {
+          "name": "limit",
+          "kind": "limit",
+          "min": 1,
+          "max": 500,
+          "default": 100,
+          "description": "Maximum rows returned, 1..500 (default 100)."
+        }
+      ],
+      "deletedFilter": true,
+      "orderBy": [
+        "id ASC"
+      ]
+    },
+    {
+      "name": "recent_share_migration",
+      "kind": "table",
+      "source": "share_transfers",
+      "description": "Share migration: ERC-20 transfers of vault shares between owners (table share_transfers), excluding the mint paired with Deposit and the burn paired with Withdraw. Optional table; empty in v0.1.0.",
+      "columns": [
+        {
+          "name": "id",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "chain_id",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_number",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_hash",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "block_timestamp",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "tx_hash",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "log_index",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "vault",
+          "type": "String",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "from_owner",
+          "type": "String",
+          "stringify": false,
+          "comment": "Transfer `from` (renamed: bare `to` is a ClickHouse keyword and the sink emits unquoted identifiers)"
+        },
+        {
+          "name": "to_owner",
+          "type": "String",
+          "stringify": false,
+          "comment": "Transfer `to`"
+        },
+        {
+          "name": "shares_raw",
+          "type": "UInt256",
+          "stringify": true,
+          "comment": ""
+        },
+        {
+          "name": "shares_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": "\"0\" when meta_valid is false"
+        },
+        {
+          "name": "share_decimals",
+          "type": "UInt32",
+          "stringify": false,
+          "comment": ""
+        },
+        {
+          "name": "meta_valid",
+          "type": "Bool",
+          "stringify": false,
+          "comment": ""
+        }
+      ],
+      "params": [
+        {
+          "name": "vault",
+          "kind": "vault",
+          "column": "vault",
+          "values": [
+            "0x050ce30b927da55177a4914ec73480238bad56f0",
+            "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+          ],
+          "chType": "String",
+          "description": "Restrict to one vault. Only the 2 vault(s) pinned by the Deployment Receipt are accepted (lowercase 0x hex)."
+        },
+        {
+          "name": "windowHours",
+          "kind": "windowHours",
+          "min": 1,
+          "max": 2160,
+          "description": "Trailing window in hours, measured back from the newest observed row (not from now). 1..2160, default 24.",
+          "default": 24
+        },
+        {
+          "name": "limit",
+          "kind": "limit",
+          "min": 1,
+          "max": 500,
+          "default": 100,
+          "description": "Maximum rows returned, 1..500 (default 100)."
+        }
+      ],
+      "deletedFilter": true,
+      "orderBy": [
+        "block_number DESC",
+        "log_index DESC"
+      ],
+      "window": {
+        "column": "block_timestamp",
+        "table": "share_transfers",
+        "where": "_deleted_ = 0",
+        "marker": false
+      },
+      "whenEmpty": {
+        "reason": "share_transfers not populated in v0.1.0"
+      }
+    },
+    {
+      "name": "vault_flows_24h",
+      "kind": "view",
+      "source": "vault_flows_24h",
+      "description": "Per configured vault: deposit and withdraw counts and normalized asset amounts in and out over the trailing 24 hours of the observed window (window end = newest vault_flows row).",
+      "columns": [
+        {
+          "name": "vault",
+          "type": "String",
+          "stringify": false,
+          "comment": "vault address, lowercase 0x hex"
+        },
+        {
+          "name": "window_end_timestamp",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "unix seconds of the newest vault_flows row (end of the trailing window)"
+        },
+        {
+          "name": "window_start_timestamp",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "window_end_timestamp - 86400"
+        },
+        {
+          "name": "deposit_count",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "Deposit logs in the window"
+        },
+        {
+          "name": "withdraw_count",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "Withdraw logs in the window"
+        },
+        {
+          "name": "assets_in_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": "sum of deposit assets_normalized (meta_valid rows only), asset units"
+        },
+        {
+          "name": "assets_out_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": "sum of withdraw assets_normalized (meta_valid rows only), asset units"
+        },
+        {
+          "name": "net_assets_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": "assets_in_normalized - assets_out_normalized"
+        },
+        {
+          "name": "flows_without_metadata",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "rows with meta_valid = false, excluded from the sums"
+        }
+      ],
+      "params": [
+        {
+          "name": "vault",
+          "kind": "vault",
+          "column": "vault",
+          "values": [
+            "0x050ce30b927da55177a4914ec73480238bad56f0",
+            "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+          ],
+          "chType": "String",
+          "description": "Restrict to one vault. Only the 2 vault(s) pinned by the Deployment Receipt are accepted (lowercase 0x hex)."
+        },
+        {
+          "name": "limit",
+          "kind": "limit",
+          "min": 1,
+          "max": 500,
+          "default": 100,
+          "description": "Maximum rows returned, 1..500 (default 100)."
+        }
+      ],
+      "deletedFilter": false,
+      "orderBy": [
+        "vault ASC"
+      ]
+    },
+    {
+      "name": "share_value_growth",
+      "kind": "view",
+      "source": "share_value_growth",
+      "description": "Per configured vault: first and last share-value observation in the observed window (block numbers, timestamps, assets per share) and growth = last / first - 1. Only observations with call_ok = true; never interpolated.",
+      "columns": [
+        {
+          "name": "vault",
+          "type": "String",
+          "stringify": false,
+          "comment": "vault address, lowercase 0x hex"
+        },
+        {
+          "name": "first_block_number",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "block of the first observation in the window"
+        },
+        {
+          "name": "first_block_timestamp",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "unix seconds of the first observation"
+        },
+        {
+          "name": "first_assets_per_share_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": "convertToAssets(10^share_decimals) / 10^asset_decimals at the first observation"
+        },
+        {
+          "name": "last_block_number",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "block of the last observation in the window"
+        },
+        {
+          "name": "last_block_timestamp",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "unix seconds of the last observation"
+        },
+        {
+          "name": "last_assets_per_share_normalized",
+          "type": "Decimal(38, 18)",
+          "stringify": true,
+          "comment": "assets per share at the last observation"
+        },
+        {
+          "name": "growth",
+          "type": "Nullable(Float64)",
+          "stringify": false,
+          "comment": "last_assets_per_share_normalized / first_assets_per_share_normalized - 1; NULL when the first value is zero"
+        },
+        {
+          "name": "observed_hours",
+          "type": "Float64",
+          "stringify": false,
+          "comment": "(last_block_timestamp - first_block_timestamp) / 3600"
+        },
+        {
+          "name": "observation_count",
+          "type": "UInt64",
+          "stringify": false,
+          "comment": "call_ok observations in the window"
+        }
+      ],
+      "params": [
+        {
+          "name": "vault",
+          "kind": "vault",
+          "column": "vault",
+          "values": [
+            "0x050ce30b927da55177a4914ec73480238bad56f0",
+            "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+          ],
+          "chType": "String",
+          "description": "Restrict to one vault. Only the 2 vault(s) pinned by the Deployment Receipt are accepted (lowercase 0x hex)."
+        },
+        {
+          "name": "windowHours",
+          "kind": "windowHours",
+          "min": 1,
+          "max": 2160,
+          "description": "Trailing window in hours, measured back from the newest observed row. Omit for the entire observed window. 1..2160.",
+          "optional": true
+        },
+        {
+          "name": "limit",
+          "kind": "limit",
+          "min": 1,
+          "max": 500,
+          "default": 100,
+          "description": "Maximum rows returned, 1..500 (default 100)."
+        }
+      ],
+      "deletedFilter": false,
+      "orderBy": [
+        "vault ASC"
+      ],
+      "window": {
+        "column": "block_timestamp",
+        "table": "share_value_observations",
+        "where": "_deleted_ = 0 AND call_ok = true",
+        "marker": true
+      },
+      "body": "SELECT\n  vault,\n  min(block_number) AS first_block_number,\n  argMin(block_timestamp, block_number) AS first_block_timestamp,\n  argMin(assets_per_share_normalized, block_number) AS first_assets_per_share_normalized,\n  max(block_number) AS last_block_number,\n  argMax(block_timestamp, block_number) AS last_block_timestamp,\n  argMax(assets_per_share_normalized, block_number) AS last_assets_per_share_normalized,\n  if(first_assets_per_share_normalized = 0, NULL,\n     toFloat64(last_assets_per_share_normalized) / toFloat64(first_assets_per_share_normalized) - 1) AS growth,\n  (last_block_timestamp - first_block_timestamp) / 3600 AS observed_hours,\n  count() AS observation_count\nFROM share_value_observations\nWHERE _deleted_ = 0 AND call_ok = true /*@window*/\nGROUP BY vault"
+    },
+    {
+      "name": "pipeline_status",
+      "kind": "status",
+      "source": "",
+      "description": "Health of the pipeline behind the other tools: receipt identity (package hash, module hash, parameters hash), live ClickHouse schema check against the receipt, sink head vs chain head (lag in blocks), the fail-closed verdict and its reason, and the policy in force. Call this before acting on data; every other tool refuses when this reports refused = true.",
+      "columns": [],
+      "params": [],
+      "deletedFilter": false,
+      "orderBy": []
+    }
+  ],
+  "toolsHash": "bb97cba06b9e8745be24a7f581cda4e660fc1ff278ad829f1c81a519263dd667"
+}

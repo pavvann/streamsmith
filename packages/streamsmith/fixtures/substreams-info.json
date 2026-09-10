@@ -1,0 +1,153 @@
+{
+  "name": "erc4626-flows",
+  "version": "v0.1.0",
+  "network": "base",
+  "modules": [
+    {
+      "name": "store_vault_seen",
+      "kind": "store",
+      "inputs": [
+        {
+          "type": "map",
+          "name": "erc4626:map_events"
+        }
+      ],
+      "value_type": "int64",
+      "update_policy": "set_if_not_exists",
+      "initial_block": 51001200,
+      "hash": "e1cecb1771fdbd745ba42c7f194627c24085ac55"
+    },
+    {
+      "name": "map_vault_probe",
+      "kind": "map",
+      "inputs": [
+        {
+          "type": "params",
+          "name": "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
+        },
+        {
+          "type": "source",
+          "name": "sf.substreams.v1.Clock"
+        },
+        {
+          "type": "store",
+          "name": "store_vault_seen",
+          "mode": "deltas"
+        }
+      ],
+      "output_type": "proto:vaultflows.v1.Events",
+      "initial_block": 51001200,
+      "hash": "1f7fff8f578f901af673856698b121a1c67eef15"
+    },
+    {
+      "name": "store_vault_meta",
+      "kind": "store",
+      "inputs": [
+        {
+          "type": "map",
+          "name": "map_vault_probe"
+        }
+      ],
+      "value_type": "proto:vaultflows.v1.VaultMeta",
+      "update_policy": "set_if_not_exists",
+      "initial_block": 51001200,
+      "hash": "61405fbb8338c9503a888d018e2038fbeb6bb8bb"
+    },
+    {
+      "name": "map_flows",
+      "kind": "map",
+      "inputs": [
+        {
+          "type": "params",
+          "name": "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
+        },
+        {
+          "type": "source",
+          "name": "sf.substreams.v1.Clock"
+        },
+        {
+          "type": "map",
+          "name": "erc4626:map_events"
+        },
+        {
+          "type": "store",
+          "name": "store_vault_meta",
+          "mode": "get"
+        }
+      ],
+      "output_type": "proto:vaultflows.v1.Events",
+      "initial_block": 51001200,
+      "hash": "af697e133efa2c7565b0bf853399f4153bdbced2"
+    },
+    {
+      "name": "map_share_value_observations",
+      "kind": "map",
+      "inputs": [
+        {
+          "type": "params",
+          "name": "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
+        },
+        {
+          "type": "source",
+          "name": "sf.substreams.v1.Clock"
+        }
+      ],
+      "output_type": "proto:vaultflows.v1.Events",
+      "initial_block": 51001200,
+      "hash": "7e21449aecfc80a4adcad59842929b6f409dd3af"
+    },
+    {
+      "name": "map_events",
+      "kind": "map",
+      "inputs": [
+        {
+          "type": "map",
+          "name": "map_flows"
+        },
+        {
+          "type": "map",
+          "name": "map_share_value_observations"
+        },
+        {
+          "type": "map",
+          "name": "map_vault_probe"
+        }
+      ],
+      "output_type": "proto:vaultflows.v1.Events",
+      "initial_block": 51001200,
+      "hash": "1f9e1dff75f677a6493655ab5e9126384b045459"
+    },
+    {
+      "name": "erc4626:map_events",
+      "kind": "map",
+      "inputs": [
+        {
+          "type": "source",
+          "name": "sf.ethereum.type.v2.Block"
+        }
+      ],
+      "output_type": "proto:erc4626.v1.Events",
+      "initial_block": 0,
+      "hash": "9d3e4a81797e43b37f46443144913096d3a3080c"
+    }
+  ],
+  "proto_packages": [
+    "erc4626.v1",
+    "schema",
+    "sf.codegen.conversation.v1",
+    "sf.substreams.v1.test",
+    "sf.substreams.sink.sql.service.v1",
+    "sf.substreams.index.v1",
+    "sf.substreams.sink.sql.v1",
+    "vaultflows.v1",
+    "sf.substreams.rpc.v2",
+    "sf.firehose.v2",
+    "google.protobuf",
+    "sf.substreams",
+    "sf.substreams.v1",
+    "sf.substreams.rpc.v4",
+    "sf.substreams.internal.v2",
+    "sf.substreams.rpc.v3",
+    "sf.substreams.sink.service.v1"
+  ]
+}

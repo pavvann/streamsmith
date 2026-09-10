@@ -1,4 +1,5 @@
 import type { DeploymentMode, ReceiptSink } from "../receipt.ts";
+import type { ViewsRecord } from "./views.ts";
 
 export interface DeployRecord {
   deploymentMode: DeploymentMode;
@@ -28,5 +29,7 @@ export interface DeployRecord {
   cursorFile?: string;
   cursor?: { present: boolean; mtime?: string; raw?: string };
   command?: string;
+  /** ClickHouse views applied after the sink created the base tables (packages/erc4626-flows/sql/views.sql) */
+  views?: ViewsRecord;
   notes?: string[];
 }

@@ -4,7 +4,9 @@ import { join } from "node:path";
 import { PortalClient, field } from "../src/deploy/portal.ts";
 import { deployHosted, AwaitingSecretError, summarizeState, isSettled } from "../src/deploy/hosted.ts";
 import { buildSinkCommand, parseDsn } from "../src/deploy/selfManaged.ts";
-import { chMaxBlock, chDumpSchema, redactUrl } from "../src/deploy/clickhouse.ts";
+import { chMaxBlock, chDumpSchema, redactUrl, clickhouseHttpUrl, clickhouseDatabase } from "../src/deploy/clickhouse.ts";
+import { splitSqlStatements, applyViews } from "../src/deploy/views.ts";
+import { mkdir, writeFile } from "node:fs/promises";
 import { ethBlockNumber } from "../src/deploy/rpc.ts";
 import { loadStreamsmithConfig } from "../src/config/streamsmith.ts";
 import { createCtx } from "../src/util/ctx.ts";
@@ -117,5 +119,64 @@ describe("self-managed sink", () => {
     const sql = await chDumpSchema(ctx, "http://ro:ropass@localhost:8123/", "default", ["vault_flows"]);
     expect(sql).toContain("-- default.vault_flows\nCREATE TABLE default.vault_flows\n(");
     expect(sql.endsWith(";\n")).toBe(true);
+  });
+});
+
+describe("views after deploy (packages/erc4626-flows/sql/views.sql, optional)", () => {
+  it("splits SQL on ';' outside string literals and drops -- comments", () => {
+    const sql = "-- header; not a statement\nCREATE VIEW a AS SELECT 'x;y' AS s, 1 -- trailing; comment\nFROM t;\n\nCREATE VIEW b AS SELECT 2;;\n";
+    expect(splitSqlStatements(sql)).toEqual(["CREATE VIEW a AS SELECT 'x;y' AS s, 1 \nFROM t", "CREATE VIEW b AS SELECT 2"]);
+    expect(splitSqlStatements("-- only comments\n")).toEqual([]);
+  });
+
+  it("clickhouseHttpUrl merges CLICKHOUSE_USER/PASSWORD into CLICKHOUSE_URL; clickhouseDatabase has a precedence", async () => {
+    const ctx = await createCtx({ root: REPO_ROOT, log: () => {}, env: { CLICKHOUSE_URL: "https://ch.example:8443/", CLICKHOUSE_USER: "ro", CLICKHOUSE_PASSWORD: "p@ss", CLICKHOUSE_DATABASE: "vaultflows" } });
+    expect(clickhouseHttpUrl(ctx)).toBe("https://ro:p%40ss@ch.example:8443/");
+    expect(clickhouseHttpUrl(ctx, "http://u:p@localhost:8123/")).toBe("http://u:p@localhost:8123/");
+    expect(clickhouseDatabase(ctx)).toBe("vaultflows");
+    expect(clickhouseDatabase(ctx, "explicit")).toBe("explicit");
+    const bare = await createCtx({ root: REPO_ROOT, log: () => {}, env: {} });
+    expect(clickhouseHttpUrl(bare)).toBeUndefined();
+    expect(clickhouseDatabase(bare, undefined, "fromSpec")).toBe("fromSpec");
+  });
+
+  it("applyViews: skips when the file is absent, waits for the base tables, then runs each statement over HTTP", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const bodies: string[] = [];
+      let tablesPresent = false;
+      const fetch = async (_url: string, init?: RequestInit) => {
+        const body = String(init?.body ?? "");
+        bodies.push(body);
+        if (body.includes("system.tables") && body.includes("name IN")) return new Response(tablesPresent ? "vault_flows\nshare_value_observations\nvaults\nshare_transfers\n" : "vault_flows\n");
+        if (body.includes("engine IN ('View'")) return new Response("share_value_growth\nvault_flows_24h\n");
+        return new Response("");
+      };
+      const ctx = { ...repo.ctx, fetch };
+      const tables = ["vault_flows", "share_value_observations", "vaults", "share_transfers"];
+      const absent = await applyViews(ctx, { url: "http://localhost:8123/", database: "default", requiredTables: tables });
+      expect(absent).toMatchObject({ present: false, statements: 0, applied: [], views: [] });
+      expect(absent.skipped).toMatch(/views.sql does not exist \(optional/);
+      expect(bodies).toEqual([]);
+      const dir = join(repo.root, "packages", "erc4626-flows", "sql");
+      await mkdir(dir, { recursive: true });
+      await writeFile(join(dir, "views.sql"), "-- views\nCREATE OR REPLACE VIEW vault_flows_24h AS SELECT vault FROM vault_flows WHERE _deleted_ = 0;\nCREATE OR REPLACE VIEW share_value_growth AS SELECT vault FROM share_value_observations WHERE _deleted_ = 0 AND call_ok = 1;\n");
+      const missing = await applyViews(ctx, { url: "http://localhost:8123/", database: "default", requiredTables: tables, waitSeconds: 0 });
+      expect(missing.present).toBe(true);
+      expect(missing.statements).toBe(2);
+      expect(missing.skipped).toMatch(/base tables missing in default: share_value_observations, vaults, share_transfers/);
+      expect(missing.applied).toEqual([]);
+      tablesPresent = true;
+      bodies.length = 0;
+      const ok = await applyViews(ctx, { url: "http://localhost:8123/", database: "default", requiredTables: tables, waitSeconds: 30 });
+      expect(ok.skipped).toBeUndefined();
+      expect(ok.applied).toEqual(["CREATE OR REPLACE VIEW vault_flows_24h AS SELECT vault FROM vault_flows WHERE _deleted_ = 0", "CREATE OR REPLACE VIEW share_value_growth AS SELECT vault FROM share_value_observations WHERE _deleted_ = 0 AND call_ok = 1"]);
+      expect(ok.views).toEqual(["share_value_growth", "vault_flows_24h"]);
+      expect(ok.sha256).toHaveLength(64);
+      expect(bodies.filter((b) => b.startsWith("CREATE OR REPLACE VIEW"))).toHaveLength(2);
+      expect(bodies[0]).toMatch(/SELECT name FROM system.tables WHERE database = 'default' AND name IN \('vault_flows', 'share_value_observations', 'vaults', 'share_transfers'\)/);
+    } finally {
+      await repo.cleanup();
+    }
   });
 });

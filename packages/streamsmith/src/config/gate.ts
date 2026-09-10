@@ -141,7 +141,7 @@ export function parseGateConfig(raw: Rec): GateConfig {
       timeoutSeconds: Number(pick(r, "timeoutSeconds", "timeout_seconds") ?? base?.timeoutSeconds ?? 3600),
       extraFlags: toList(pick(r, "extraFlags", "extra_flags")) ?? base?.extraFlags ?? [],
     };
-    const output = pick(r, "output") ?? (base?.output ? undefined : undefined);
+    const output = pick(r, "output");
     if (output !== undefined) spec.output = String(output);
     if (sameAs) spec.sameAs = sameAs;
     if (!Number.isFinite(spec.startBlock) || !Number.isFinite(spec.stopBlock)) throw new Error(`gate.yaml: run "${name}" needs numeric startBlock/stopBlock`);
@@ -179,7 +179,6 @@ export function parseGateConfig(raw: Rec): GateConfig {
     if (tables) spec.tables = tables;
     if (a.min !== undefined) spec.min = a.min as string | number;
     if (a.max !== undefined) spec.max = a.max as string | number;
-    if (a.value !== undefined && a.min === undefined) spec.min = (Number(a.value) + 1) as number; // legacy "gt value"
     const vaults = toList(a.vaults);
     if (vaults) spec.vaults = vaults.map((v) => v.toLowerCase());
     if (Array.isArray(a.rows)) spec.rows = a.rows.filter(isRec) as ReferenceRow[];

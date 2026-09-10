@@ -65,3 +65,20 @@ export async function chDumpSchema(ctx: Ctx, url: string, database: string, tabl
 export function schemaHash(sql: string): string {
   return sha256Hex(normalizeSql(sql));
 }
+
+/**
+ * ClickHouse HTTP URL from the environment: CLICKHOUSE_URL (http(s)://host:8123|8443) with CLICKHOUSE_USER /
+ * CLICKHOUSE_PASSWORD merged in when the URL carries no credentials. CLICKHOUSE_RO_HTTP_URL is the legacy name.
+ */
+export function clickhouseHttpUrl(ctx: Ctx, explicit?: string): string | undefined {
+  const base = explicit ?? ctx.env.CLICKHOUSE_URL ?? ctx.env.CLICKHOUSE_RO_HTTP_URL;
+  if (!base) return undefined;
+  const u = new URL(base);
+  if (!u.username && ctx.env.CLICKHOUSE_USER) u.username = encodeURIComponent(ctx.env.CLICKHOUSE_USER);
+  if (!u.password && ctx.env.CLICKHOUSE_PASSWORD) u.password = encodeURIComponent(ctx.env.CLICKHOUSE_PASSWORD);
+  return u.toString();
+}
+
+export function clickhouseDatabase(ctx: Ctx, explicit?: string, fallback?: string): string {
+  return explicit ?? ctx.env.CLICKHOUSE_DATABASE ?? ctx.env.CLICKHOUSE_DB ?? fallback ?? "default";
+}

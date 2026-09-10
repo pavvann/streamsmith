@@ -11,7 +11,7 @@
 // Self-check: the spec-side hash is computed twice — from `buf build -o -#format=json` and from `buf convert` of the
 // binary FileDescriptorSet (an independent protojson entry point with the same registry); a difference is reported as
 // "renderer mismatch" and fails the descriptor assertions.
-import { mkdtemp, rm, writeFile, mkdir, cp, readFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, mkdir, cp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, basename, dirname, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -153,5 +153,3 @@ export async function substreamsInfo(ctx: Ctx, manifestOrSpkg: string, opts: { c
     throw new Error(`substreams info returned non-JSON output: ${r.stdout.slice(0, 200)}`);
   }
 }
-
-export { readFile };

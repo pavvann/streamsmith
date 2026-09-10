@@ -7,34 +7,40 @@ import { createInterface } from "node:readline";
 import { createCtx, paths, type Ctx } from "./util/ctx.ts";
 import { exists, newRunId, readJson, readText, writeText, writeJson } from "./util/fsx.ts";
 import { sha256File, sha256Hex } from "./util/hash.ts";
-import { runGate } from "./gate/run.ts";
-import { loadStreamsmithConfig, parametersHash, receiptParameters } from "./config/streamsmith.ts";
-import { contractDescriptor, packageDescriptor, protoPackageOf } from "./proto/descriptor.ts";
+import { runGate, moduleHashesOf } from "./gate/run.ts";
+import { loadStreamsmithConfig, parametersHash, receiptParameters, type StreamsmithConfig } from "./config/streamsmith.ts";
+import { specDescriptor, spkgDescriptor, protoPackageOf, substreamsInfo } from "./proto/descriptor.ts";
 import { runPublish, type PublishRecord } from "./publish.ts";
 import { deployHosted, hostedStatus, portalLogin, AwaitingSecretError, EXIT_AWAITING_SECRET } from "./deploy/hosted.ts";
 import { startSelfManaged, selfManagedStatus, stopSelfManaged } from "./deploy/selfManaged.ts";
-import { chDumpSchema } from "./deploy/clickhouse.ts";
+import { chDumpSchema, clickhouseHttpUrl, clickhouseDatabase } from "./deploy/clickhouse.ts";
+import { applyViews, DEFAULT_VIEWS_PATH } from "./deploy/views.ts";
 import type { DeployRecord } from "./deploy/types.ts";
-import { assembleReceipt, writeReceipt, hashSpkg, hashSchemaSql, loadReceipt, validateReceipt, loadReceiptSchema, receiptHash } from "./receipt.ts";
+import { assembleReceipt, writeReceipt, hashSpkg, hashSchemaSql, loadReceipt, validateReceipt, loadReceiptSchema, receiptHash, receiptFileName } from "./receipt.ts";
 import type { GateReport } from "./gate/run.ts";
 import { manifestStart, manifestFinish } from "./manifest.ts";
 import { writeCaseStudy } from "./casestudy.ts";
+import { runMcp, DEFAULT_MCP_OUT } from "./mcp.ts";
 
 const USAGE = `streamsmith <command> [options]
 
 Commands
   new-run                              mint a run id, create runs/<id>/, remember it in runs/CURRENT
-  gate        [--gate specs/gate.yaml] [--reuse-runs] [--skip-build] [--verbose]
+  gate        [--gate specs/gate.yaml] [--reuse-runs] [--skip-build] [--offline] [--rpc-url URL] [--verbose]
   publish     [--pkg-dir DIR] [--manifest substreams.yaml] [--spkg FILE] [--dry-run] [--team-slug S] [--verify-url]
   deploy hosted        --spkg-url URL [--deployment-id ID] [--name N] [--ch-server H --ch-port 9440 --ch-user U --ch-database D --ch-secure]
-                       [--stop-block N] [--poll-timeout SEC]           (env PORTAL_TOKEN, PORTAL_ORG_ID)
-  deploy self-managed  --spkg FILE [--dsn DSN] [--endpoint E] [--network N] [--start-block N] [--stop-block N] [--sink-binary B] [--flavor substreams-sink-sql|substreams-cli]
+                       [--stop-block N] [--poll-timeout SEC] [--views FILE]   (env PORTAL_TOKEN, PORTAL_ORG_ID; CLICKHOUSE_URL to apply views)
+  deploy self-managed  --spkg FILE [--dsn DSN] [--endpoint E] [--network N] [--start-block N] [--stop-block N] [--sink-binary B]
+                       [--flavor substreams-sink-sql|substreams-cli] [--views FILE]
+  deploy views         [--views packages/erc4626-flows/sql/views.sql] [--clickhouse-url URL] [--database D] [--wait SEC]
   deploy status        [--clickhouse-url URL] [--rpc-url URL] [--deployment-id ID]
   deploy stop
   deploy login                         device-code login; prints export lines (never stores tokens)
   schema-dump [--clickhouse-url URL] [--database D] [--tables a,b] [--out FILE]
   receipt     --spkg FILE (--schema-sql FILE | --schema-hash HEX) [--mcp-manifest FILE] [--deploy-json FILE] [--force]
   receipt verify FILE                  validate a receipt file against specs/receipt.schema.json
+  mcp         [--receipt FILE] [--out packages/mcp-vaultflows] [--proto specs/vaultflows.proto] [--views FILE]
+                                       runs \`pnpm --filter @ethonline26/mcpgen generate …\`, binds mcpManifestHash into the receipt
   manifest start|finish [--receipt FILE] [--recording FILE]
   casestudy   [--name N] [--id S1.1] [--title T] [--skills a,b] [--model M] [--result R] [--receipt FILE]
   hash descriptor FILE | spkg FILE | sql FILE | params | file FILE
@@ -43,13 +49,13 @@ Common: --run-id ID (default runs/CURRENT or STREAMSMITH_RUN_ID)  --root DIR  --
 
 const OPTIONS = {
   "run-id": { type: "string" }, root: { type: "string" }, json: { type: "boolean" }, help: { type: "boolean", short: "h" },
-  gate: { type: "string" }, "reuse-runs": { type: "boolean" }, "skip-build": { type: "boolean" }, verbose: { type: "boolean" },
+  gate: { type: "string" }, "reuse-runs": { type: "boolean" }, "skip-build": { type: "boolean" }, verbose: { type: "boolean" }, offline: { type: "boolean" },
   "pkg-dir": { type: "string" }, manifest: { type: "string" }, spkg: { type: "string" }, "dry-run": { type: "boolean" }, "team-slug": { type: "string" }, "verify-url": { type: "boolean" },
   "spkg-url": { type: "string" }, "deployment-id": { type: "string" }, name: { type: "string" }, "ch-server": { type: "string" }, "ch-port": { type: "string" }, "ch-user": { type: "string" }, "ch-database": { type: "string" }, "ch-secure": { type: "boolean" },
   "stop-block": { type: "string" }, "start-block": { type: "string" }, "poll-timeout": { type: "string" }, dsn: { type: "string" }, endpoint: { type: "string" }, network: { type: "string" }, module: { type: "string" }, "sink-binary": { type: "string" }, flavor: { type: "string" }, "cursor-file": { type: "string" },
-  "clickhouse-url": { type: "string" }, "rpc-url": { type: "string" }, database: { type: "string" }, tables: { type: "string" }, out: { type: "string" },
+  "clickhouse-url": { type: "string" }, "rpc-url": { type: "string" }, database: { type: "string" }, tables: { type: "string" }, out: { type: "string" }, views: { type: "string" }, wait: { type: "string" },
   "schema-sql": { type: "string" }, "schema-hash": { type: "string" }, "mcp-manifest": { type: "string" }, "deploy-json": { type: "string" }, "publish-json": { type: "string" }, "gate-json": { type: "string" }, force: { type: "boolean" },
-  receipt: { type: "string" }, recording: { type: "string" },
+  receipt: { type: "string" }, recording: { type: "string" }, proto: { type: "string" },
   id: { type: "string" }, title: { type: "string" }, skills: { type: "string" }, model: { type: "string" }, result: { type: "string" }, chain: { type: "string" }, goal: { type: "string" }, note: { type: "string", multiple: true },
 } as const;
 
@@ -84,6 +90,30 @@ async function waitForEnter(): Promise<void> {
   rl.close();
 }
 
+/** After a deploy: apply the optional views file when a ClickHouse HTTP URL is known; record the outcome honestly. */
+async function applyViewsAfterDeploy(ctx: Ctx, v: Values, ss: StreamsmithConfig, record: DeployRecord, path: string, waitSeconds: number): Promise<void> {
+  const url = clickhouseHttpUrl(ctx, s(v, "clickhouse-url"));
+  record.notes = record.notes ?? [];
+  if (!url) {
+    record.notes.push("views not applied: no ClickHouse HTTP URL (set CLICKHOUSE_URL or pass --clickhouse-url, then `streamsmith deploy views`)");
+    await writeJson(path, record);
+    return;
+  }
+  const database = clickhouseDatabase(ctx, s(v, "database") ?? s(v, "ch-database"), record.sink?.database ?? ss.sink?.connection?.database);
+  const vo: Parameters<typeof applyViews>[1] = { url, database, requiredTables: ss.sink?.tables ?? [], waitSeconds };
+  if (s(v, "views")) vo.viewsPath = s(v, "views")!;
+  record.views = await applyViews(ctx, vo);
+  await writeJson(path, record);
+}
+
+async function findReceiptForRun(ctx: Ctx, runId: string): Promise<string | undefined> {
+  const { readdir } = await import("node:fs/promises");
+  const dir = paths.receipts(ctx);
+  if (!(await exists(dir))) return undefined;
+  const f = (await readdir(dir)).filter((x) => x.endsWith(`-${runId}.json`))[0];
+  return f ? join("receipts", f) : undefined;
+}
+
 export async function main(argv: string[]): Promise<number> {
   const { values, positionals } = parseArgs({ args: argv, options: OPTIONS as never, allowPositionals: true, strict: true });
   const v = values as Values;
@@ -105,10 +135,12 @@ export async function main(argv: string[]): Promise<number> {
     }
     case "gate": {
       const runId = await resolveRunId(ctx, v, true);
-      const opts: Parameters<typeof runGate>[1] = { runId, reuseRuns: b(v, "reuse-runs"), skipBuild: b(v, "skip-build"), verbose: b(v, "verbose") };
+      const opts: Parameters<typeof runGate>[1] = { runId, reuseRuns: b(v, "reuse-runs"), skipBuild: b(v, "skip-build"), verbose: b(v, "verbose"), offline: b(v, "offline") };
       if (s(v, "gate")) opts.gatePath = s(v, "gate")!;
+      if (s(v, "rpc-url")) opts.rpcUrl = s(v, "rpc-url")!;
       const r = await runGate(ctx, opts);
-      out(v, `${r.report.status}: ${r.report.assertions.filter((a) => a.passed).length}/${r.report.assertions.length} assertions passed; report ${relative(ctx.root, r.reportPath)}`, r.report);
+      const failLevel = r.report.assertions.filter((a) => a.severity === "fail");
+      out(v, `${r.report.status}: ${failLevel.filter((a) => a.passed).length}/${failLevel.length} fail-level assertions passed${r.report.warnings.length ? `; warnings: ${r.report.warnings.join(", ")}` : ""}; report ${relative(ctx.root, r.reportPath)}`, r.report);
       return r.exitCode;
     }
     case "publish": {
@@ -136,7 +168,7 @@ export async function main(argv: string[]): Promise<number> {
         const conn = ss.sink?.connection ?? {};
         const server = s(v, "ch-server") ?? ctx.env.CLICKHOUSE_SERVER ?? conn.host;
         if (!server) throw new Error("ClickHouse server required: --ch-server or CLICKHOUSE_SERVER");
-        const clickhouse = { server, port: n(v, "ch-port") ?? Number(ctx.env.CLICKHOUSE_NATIVE_PORT ?? conn.port ?? 9440), user: s(v, "ch-user") ?? ctx.env.CLICKHOUSE_USER ?? conn.user ?? "default", database: s(v, "ch-database") ?? ctx.env.CLICKHOUSE_DB ?? conn.database ?? "default", secure: b(v, "ch-secure") || (conn.secure ?? true) };
+        const clickhouse = { server, port: n(v, "ch-port") ?? Number(ctx.env.CLICKHOUSE_NATIVE_PORT ?? conn.port ?? 9440), user: s(v, "ch-user") ?? ctx.env.CLICKHOUSE_USER ?? conn.user ?? "default", database: clickhouseDatabase(ctx, s(v, "ch-database"), conn.database), secure: b(v, "ch-secure") || (conn.secure ?? true) };
         const publishPath = paths.runs(ctx, runId, "publish.json");
         const pub = (await exists(publishPath)) ? await readJson<PublishRecord>(publishPath) : undefined;
         try {
@@ -147,7 +179,8 @@ export async function main(argv: string[]): Promise<number> {
           if (n(v, "stop-block") !== undefined) ho.stopBlock = n(v, "stop-block")!;
           if (n(v, "poll-timeout") !== undefined) ho.pollTimeoutSeconds = n(v, "poll-timeout")!;
           const r = await deployHosted(ctx, ho);
-          out(v, `hosted ${r.record.deploymentId} ${r.record.state ?? ""} head=${r.record.headBlock ?? "?"} lag=${r.record.lagBlocks ?? "?"} blocks`, r.record);
+          await applyViewsAfterDeploy(ctx, v, ss, r.record, r.path, n(v, "wait") ?? 0);
+          out(v, `hosted ${r.record.deploymentId} ${r.record.state ?? ""} head=${r.record.headBlock ?? "?"} lag=${r.record.lagBlocks ?? "?"} blocks; views ${r.record.views ? (r.record.views.skipped ?? `${r.record.views.applied.length} statements`) : "not applied"}`, r.record);
           return 0;
         } catch (err) {
           if (err instanceof AwaitingSecretError) {
@@ -161,7 +194,7 @@ export async function main(argv: string[]): Promise<number> {
         const spkg = s(v, "spkg");
         if (!spkg) throw new Error("--spkg is required");
         const dsn = s(v, "dsn") ?? ctx.env.CLICKHOUSE_DSN;
-        if (!dsn) throw new Error("--dsn or CLICKHOUSE_DSN is required");
+        if (!dsn) throw new Error("--dsn or CLICKHOUSE_DSN is required (native DSN clickhouse://user:pw@host:9440/db?secure=true)");
         const endpoint = s(v, "endpoint") ?? ctx.env.SUBSTREAMS_ENDPOINT;
         if (!endpoint) throw new Error("--endpoint or SUBSTREAMS_ENDPOINT is required");
         const so: Parameters<typeof startSelfManaged>[1] = { runId, streamsmith: ss, dsn, spkg, endpoint };
@@ -173,7 +206,24 @@ export async function main(argv: string[]): Promise<number> {
         if (s(v, "sink-binary")) so.sinkBinary = s(v, "sink-binary")!;
         if (s(v, "flavor")) so.flavor = s(v, "flavor") as "substreams-sink-sql" | "substreams-cli";
         const r = await startSelfManaged(ctx, so);
-        out(v, `self-managed pid ${r.record.pid} -> ${relative(ctx.root, r.path)}`, r.record);
+        await applyViewsAfterDeploy(ctx, v, ss, r.record, r.path, n(v, "wait") ?? 120);
+        out(v, `self-managed pid ${r.record.pid} -> ${relative(ctx.root, r.path)}; views ${r.record.views ? (r.record.views.skipped ?? `${r.record.views.applied.length} statements`) : "not applied"}`, r.record);
+        return 0;
+      }
+      if (sub === "views") {
+        const url = clickhouseHttpUrl(ctx, s(v, "clickhouse-url"));
+        if (!url) throw new Error("--clickhouse-url or CLICKHOUSE_URL is required");
+        const p = paths.runs(ctx, runId, "deploy.json");
+        const existing = (await exists(p)) ? await readJson<DeployRecord>(p) : undefined;
+        const database = clickhouseDatabase(ctx, s(v, "database"), existing?.sink?.database ?? ss.sink?.connection?.database);
+        const vo: Parameters<typeof applyViews>[1] = { url, database, requiredTables: ss.sink?.tables ?? [], waitSeconds: n(v, "wait") ?? 0 };
+        if (s(v, "views")) vo.viewsPath = s(v, "views")!;
+        const rec = await applyViews(ctx, vo);
+        if (existing) {
+          existing.views = rec;
+          await writeJson(p, existing);
+        } else await writeJson(paths.runs(ctx, runId, "views.json"), rec);
+        out(v, rec.skipped ? `skipped: ${rec.skipped}` : `${rec.applied.length} statement(s) from ${rec.file}; views: ${rec.views.join(", ") || "(none)"}`, rec);
         return 0;
       }
       if (sub === "status") {
@@ -187,7 +237,8 @@ export async function main(argv: string[]): Promise<number> {
           rec = await hostedStatus(ctx, hs);
         } else {
           const st: Parameters<typeof selfManagedStatus>[1] = { runId, streamsmith: ss };
-          if (s(v, "clickhouse-url")) st.clickhouseUrl = s(v, "clickhouse-url")!;
+          const url = clickhouseHttpUrl(ctx, s(v, "clickhouse-url"));
+          if (url) st.clickhouseUrl = url;
           if (s(v, "rpc-url")) st.rpcUrl = s(v, "rpc-url")!;
           if (s(v, "database")) st.database = s(v, "database")!;
           if (s(v, "tables")) st.tables = s(v, "tables")!.split(",");
@@ -201,14 +252,14 @@ export async function main(argv: string[]): Promise<number> {
         out(v, ok ? "stopped" : "nothing to stop", { stopped: ok });
         return ok ? 0 : 1;
       }
-      throw new Error(`unknown deploy subcommand "${sub ?? ""}" (hosted | self-managed | status | stop | login)`);
+      throw new Error(`unknown deploy subcommand "${sub ?? ""}" (hosted | self-managed | views | status | stop | login)`);
     }
     case "schema-dump": {
       const runId = await resolveRunId(ctx, v, true);
       const ss = await loadStreamsmithConfig(ssPath);
-      const url = s(v, "clickhouse-url") ?? ctx.env.CLICKHOUSE_RO_HTTP_URL;
-      if (!url) throw new Error("--clickhouse-url or CLICKHOUSE_RO_HTTP_URL is required");
-      const database = s(v, "database") ?? ctx.env.CLICKHOUSE_DB ?? ss.sink?.connection?.database ?? "default";
+      const url = clickhouseHttpUrl(ctx, s(v, "clickhouse-url"));
+      if (!url) throw new Error("--clickhouse-url or CLICKHOUSE_URL is required");
+      const database = clickhouseDatabase(ctx, s(v, "database"), ss.sink?.connection?.database);
       const tables = s(v, "tables")?.split(",") ?? ss.sink?.tables ?? ["vault_flows", "share_value_observations", "vaults", "share_transfers"];
       const sql = await chDumpSchema(ctx, url, database, tables);
       const file = s(v, "out") ? abs(ctx, s(v, "out")!) : paths.runs(ctx, runId, "schema.sql");
@@ -243,21 +294,49 @@ export async function main(argv: string[]): Promise<number> {
         if (!(await exists(sqlPath))) throw new Error(`schema.sql not found (${relative(ctx.root, sqlPath)}); run \`streamsmith schema-dump\` or pass --schema-sql / --schema-hash`);
         sinkSchemaHash = await hashSchemaSql(sqlPath);
       }
-      let protoDescriptorHash = gate.descriptor?.expectedHash;
-      if (!protoDescriptorHash) protoDescriptorHash = (await contractDescriptor(ctx, [abs(ctx, ss.contract)])).hash;
-      if (gate.descriptor?.actualHash && gate.descriptor.actualHash !== protoDescriptorHash && !b(v, "force")) {
-        throw new Error(`refusing to write a receipt: gate descriptor mismatch (package ${gate.descriptor.actualHash} vs contract ${protoDescriptorHash})`);
+      let protoDescriptorHash = gate.descriptor?.specHash;
+      if (!protoDescriptorHash) protoDescriptorHash = (await specDescriptor(ctx, abs(ctx, ss.contract))).hash;
+      if (gate.descriptor?.spkgHash && gate.descriptor.spkgHash !== protoDescriptorHash && !b(v, "force")) {
+        throw new Error(`refusing to write a receipt: gate descriptor mismatch (package ${gate.descriptor.spkgHash} vs contract ${protoDescriptorHash})`);
       }
       if (!gate.passed && !b(v, "force")) throw new Error(`refusing to write a receipt: gate status is ${gate.status} (use --force only for a non-canonical receipt)`);
+      // module hashes from the spkg being receipted (the reproducible identity; spkg bytes are not reproducible)
+      const outputModule = gate.package.outputModule ?? ss.outputModule;
+      let moduleHashes: Record<string, string> | undefined;
+      try {
+        moduleHashes = moduleHashesOf(await substreamsInfo(ctx, abs(ctx, spkg), { expandNetworks: true }));
+      } catch (err) {
+        ctx.log(`receipt: substreams info on ${spkg} failed (${(err as Error).message}); falling back to publish.json / gate.json module hashes`);
+        moduleHashes = publish?.moduleHashes ?? gate.package.moduleHashes;
+      }
+      const gatedHash = gate.package.moduleHash ?? gate.package.moduleHashes?.[outputModule];
+      const liveHash = moduleHashes?.[outputModule];
+      if (gatedHash && liveHash && gatedHash !== liveHash && !b(v, "force")) {
+        throw new Error(`refusing to write a receipt: ${outputModule} module hash ${liveHash} in ${spkg} differs from the gated build ${gatedHash} (rebuilt after the gate?)`);
+      }
       const inputs: Parameters<typeof assembleReceipt>[0] = { streamsmith: ss, gate, packageHash, protoDescriptorHash, sinkSchemaHash, runId, createdAt: ctx.now().toISOString() };
+      if (moduleHashes && Object.keys(moduleHashes).length) inputs.moduleHashes = moduleHashes;
       if (publish) inputs.publish = publish;
       if (deploy) inputs.deploy = deploy;
       if (gate.package.outputModule) inputs.outputModule = gate.package.outputModule;
+      if (gate.endpoint) inputs.endpoint = gate.endpoint;
       if (s(v, "mcp-manifest")) inputs.mcpManifestHash = await sha256File(abs(ctx, s(v, "mcp-manifest")!));
       const receipt = assembleReceipt(inputs);
       const r = await writeReceipt(ctx.root, receipt, { force: b(v, "force"), ...(s(v, "out") ? { outDir: s(v, "out")! } : {}) });
       if (r.errors.length) ctx.log(`receipt: WARNING written with --force despite ${r.errors.length} schema errors`);
       out(v, `${relative(ctx.root, r.path)} receiptHash ${r.hash}`, { path: r.path, receiptHash: r.hash, receipt: r.receipt, errors: r.errors });
+      return 0;
+    }
+    case "mcp": {
+      const runId = await resolveRunId(ctx, v);
+      const ss = await loadStreamsmithConfig(ssPath);
+      const receiptPath = s(v, "receipt") ?? (await findReceiptForRun(ctx, runId));
+      if (!receiptPath) throw new Error(`no receipt for run ${runId} (expected receipts/${receiptFileName({ packageName: ss.packageName, packageVersion: ss.version, runId })}); run \`streamsmith receipt\` first or pass --receipt`);
+      const mo: Parameters<typeof runMcp>[1] = { runId, receiptPath, outDir: s(v, "out") ?? DEFAULT_MCP_OUT, protoPath: s(v, "proto") ?? ss.contract };
+      const views = s(v, "views") ?? DEFAULT_VIEWS_PATH;
+      if (await exists(abs(ctx, views))) mo.viewsPath = views;
+      const r = await runMcp(ctx, mo);
+      out(v, `${r.record.manifest} sha256 ${r.record.mcpManifestHash}; receipt ${r.record.receiptPath} receiptHash ${r.record.receiptHash}`, r.record);
       return 0;
     }
     case "manifest": {
@@ -269,7 +348,7 @@ export async function main(argv: string[]): Promise<number> {
       }
       if (sub === "finish") {
         const mo: Parameters<typeof manifestFinish>[1] = { runId };
-        const rp = s(v, "receipt") ?? (await (async () => { const { readdir } = await import("node:fs/promises"); const dir = paths.receipts(ctx); if (!(await exists(dir))) return undefined; const f = (await readdir(dir)).filter((x) => x.endsWith(`-${runId}.json`))[0]; return f ? join("receipts", f) : undefined; })());
+        const rp = s(v, "receipt") ?? (await findReceiptForRun(ctx, runId));
         if (rp) mo.receiptPath = rp;
         if (s(v, "recording")) mo.recordingPath = s(v, "recording")!;
         const r = await manifestFinish(ctx, mo);
@@ -296,16 +375,17 @@ export async function main(argv: string[]): Promise<number> {
       switch (sub) {
         case "descriptor": {
           if (!target) throw new Error("hash descriptor FILE.proto");
-          const r = await contractDescriptor(ctx, [abs(ctx, target)]);
-          out(v, r.hash, { hash: r.hash, files: r.files });
+          const r = await specDescriptor(ctx, abs(ctx, target));
+          out(v, r.hash, { hash: r.hash, package: r.pkg, rendererMatch: r.rendererMatch });
           return 0;
         }
         case "spkg": {
-          if (!target) throw new Error("hash spkg FILE.spkg [--module map_events]");
+          if (!target) throw new Error("hash spkg FILE.spkg");
           const ss = await loadStreamsmithConfig(ssPath);
           const pkg = protoPackageOf(await readText(abs(ctx, ss.contract))) ?? "vaultflows.v1";
-          const r = await packageDescriptor(ctx, abs(ctx, target), pkg);
-          out(v, `packageHash ${await sha256File(abs(ctx, target))}\nprotoDescriptorHash ${r.hash}`, { packageHash: await sha256File(abs(ctx, target)), protoDescriptorHash: r.hash, files: r.files });
+          const r = await spkgDescriptor(ctx, abs(ctx, target), pkg);
+          const packageHash = await sha256File(abs(ctx, target));
+          out(v, `packageHash ${packageHash}\nprotoDescriptorHash ${r.hash}`, { packageHash, protoDescriptorHash: r.hash, package: pkg });
           return 0;
         }
         case "sql": {
@@ -346,4 +426,3 @@ if (isMain) {
     },
   );
 }
-void writeJson;

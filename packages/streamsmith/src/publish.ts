@@ -23,7 +23,9 @@ export interface PublishRecord {
   publishOutput?: string;
   urlVerified?: boolean;
   outputModule?: string;
+  /** module hash of outputModule — the reproducible identity (packageHash is the artifact's bytes only) */
   moduleHash?: string;
+  moduleHashes?: Record<string, string>;
   runId: string;
   createdAt: string;
 }
@@ -52,7 +54,7 @@ export async function runPublish(ctx: Ctx, opts: PublishOptions): Promise<{ reco
   const commands: string[] = [];
   const runDir = paths.runs(ctx, opts.runId);
 
-  const info = await substreamsInfo(ctx, opts.spkgPath ?? manifest, opts.spkgPath ? undefined : pkgDir);
+  const info = await substreamsInfo(ctx, opts.spkgPath ? (isAbsolute(opts.spkgPath) ? opts.spkgPath : join(ctx.root, opts.spkgPath)) : manifest, opts.spkgPath ? {} : { cwd: pkgDir });
   if (!info.name || !info.version) throw new Error("substreams info did not return package name/version");
   const name = info.name.replace(/_/g, "-");
   const version = normalizeVersion(info.version);
@@ -85,6 +87,9 @@ export async function runPublish(ctx: Ctx, opts: PublishOptions): Promise<{ reco
     record.outputModule = mod.name;
     if (mod.hash) record.moduleHash = mod.hash;
   }
+  const hashes: Record<string, string> = {};
+  for (const m of info.modules ?? []) if (m.name && m.hash) hashes[m.name] = m.hash;
+  if (Object.keys(hashes).length) record.moduleHashes = hashes;
   const urls = registryUrls(name, version);
   if (opts.dryRun) {
     ctx.log(`publish: dry-run; would run: substreams registry publish ${basename(spkgPath)} --yes${opts.teamSlug ? ` --team-slug ${opts.teamSlug}` : ""}`);

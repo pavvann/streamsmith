@@ -111,7 +111,7 @@ export class ProcessRunner implements Runner {
  * file to `stdoutFile` so jsonl-producing commands behave like the real thing.
  */
 export interface FakeRule {
-  match: (cmd: string, args: string[]) => boolean;
+  match: (cmd: string, args: string[], opts: RunOptions) => boolean;
   result?: Partial<RunResult>;
   stdoutFileContent?: string;
   onCall?: (cmd: string, args: string[], opts: RunOptions) => void | Promise<void>;
@@ -126,7 +126,7 @@ export class FakeRunner implements Runner {
   }
   async run(cmd: string, args: string[], opts: RunOptions = {}): Promise<RunResult> {
     this.calls.push({ cmd, args, opts });
-    const rule = this.rules.find((r) => r.match(cmd, args));
+    const rule = this.rules.find((r) => r.match(cmd, args, opts));
     if (!rule) {
       return {
         command: formatCommand(cmd, args),

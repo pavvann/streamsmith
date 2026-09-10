@@ -4,6 +4,7 @@ import type { AssertionSpec, GateConfig, GateRunSpec } from "../config/gate.ts";
 import type { StreamsmithConfig } from "../config/streamsmith.ts";
 import type { SubstreamsInfo } from "../proto/descriptor.ts";
 import type { ContractSchema } from "./contract.ts";
+import type { RpcEvidence } from "./rpc.ts";
 import { type ParsedRun, type Row, str, num, bool, rowsOf } from "./jsonl.ts";
 import { canonicalJson, sha256Hex } from "../util/hash.ts";
 
@@ -41,6 +42,8 @@ export interface AssertionInputs {
   /** file contents for banned_words, keyed by the path as listed (after templating) */
   files: Record<string, string | undefined>;
   configuredVaults: string[];
+  /** live RPC evidence for the warn-level cross-checks; absent when gate.yaml has no RPC-citing assertion */
+  rpc?: RpcEvidence;
 }
 
 type Outcome = { passed: boolean; detail: string };
@@ -192,7 +195,7 @@ const known_vault_present: Evaluator = (spec, i) => {
   return { passed: ok === vaults.length, detail: parts.join("; ") };
 };
 
-const reference_rows: Evaluator = (spec, i) => {
+const reference_flows_present: Evaluator = (spec, i) => {
   const { name, run } = runOf(spec, i);
   const missing = needRun(name, run);
   if (missing) return missing;
@@ -200,18 +203,50 @@ const reference_rows: Evaluator = (spec, i) => {
   const rows = rowsOf(run, table);
   const problems: string[] = [];
   for (const ref of spec.rows ?? []) {
-    const { log_index, ...keys } = ref;
-    const hit = spec.kind === "log_index_matches_rpc" ? matchRow(rows, { block_number: keys.block_number, tx_hash: keys.tx_hash }) : matchRow(rows, ref);
-    if (!hit) {
-      problems.push(`no ${table} row matching ${canonicalJson(spec.kind === "log_index_matches_rpc" ? { block_number: keys.block_number, tx_hash: keys.tx_hash } : ref)}`);
-      continue;
-    }
-    if (spec.kind === "log_index_matches_rpc" && log_index !== undefined && !eqLoose(hit.log_index, log_index)) problems.push(`block ${keys.block_number} tx ${String(keys.tx_hash).slice(0, 12)}…: log_index ${str(hit, "log_index")} != ${log_index}`);
+    if (!matchRow(rows, ref)) problems.push(`no ${table} row matching ${canonicalJson(ref)}`);
   }
   const chainId = i.streamsmith?.chainId ?? 8453;
   const badChain = rows.filter((r) => num(r, "chain_id") !== chainId).length;
-  if (spec.kind === "reference_flows_present" && badChain) problems.push(`${badChain} rows with chain_id != ${chainId}`);
-  return { passed: problems.length === 0, detail: problems.length ? summarizeList(problems) : `${(spec.rows ?? []).length} reference rows present in ${rows.length} ${table} rows` };
+  if (badChain) problems.push(`${badChain} rows with chain_id != ${chainId}`);
+  return { passed: problems.length === 0, detail: problems.length ? summarizeList(problems) : `${(spec.rows ?? []).length} reference rows present in ${rows.length} ${table} rows; chain_id ${chainId} on every row` };
+};
+
+/** Static: the row matched by (block_number, tx_hash) has the listed log_index. Live (when the RPC answers): the
+ *  transaction receipt has a log at that index emitted by the row's vault, i.e. log_index is the block-wide index. */
+const log_index_matches_rpc: Evaluator = (spec, i) => {
+  const { name, run } = runOf(spec, i);
+  const missing = needRun(name, run);
+  if (missing) return missing;
+  const table = spec.table ?? "vault_flows";
+  const rows = rowsOf(run, table);
+  const problems: string[] = [];
+  const notes: string[] = [];
+  let live = 0;
+  for (const ref of spec.rows ?? []) {
+    const key = { block_number: ref.block_number, tx_hash: ref.tx_hash };
+    const hit = matchRow(rows, key);
+    if (!hit) {
+      problems.push(`no ${table} row matching ${canonicalJson(key)}`);
+      continue;
+    }
+    if (ref.log_index !== undefined && !eqLoose(hit.log_index, ref.log_index)) problems.push(`block ${ref.block_number} tx ${String(ref.tx_hash).slice(0, 12)}…: log_index ${str(hit, "log_index")} != listed ${ref.log_index}`);
+    if (i.rpc?.reachable) {
+      const rec = i.rpc.receipts[String(ref.tx_hash).toLowerCase()];
+      if (!rec) notes.push(`tx ${String(ref.tx_hash).slice(0, 12)}…: no receipt fetched`);
+      else if ("error" in rec) notes.push(`tx ${String(ref.tx_hash).slice(0, 12)}…: receipt error ${rec.error}`);
+      else {
+        live++;
+        const idx = num(hit, "log_index");
+        const log = rec.logs.find((l) => l.logIndex === idx);
+        if (!log) problems.push(`RPC receipt of tx ${String(ref.tx_hash).slice(0, 12)}… has no log at block-wide index ${idx} (indices ${rec.logs.map((l) => l.logIndex).join(",")})`);
+        else if (log.address !== lower(hit.vault)) problems.push(`RPC log ${idx} of tx ${String(ref.tx_hash).slice(0, 12)}… was emitted by ${log.address}, row vault is ${lower(hit.vault)}`);
+        if (rec.blockNumber !== undefined && rec.blockNumber !== num(hit, "block_number")) problems.push(`RPC receipt block ${rec.blockNumber} != row block ${str(hit, "block_number")}`);
+      }
+    }
+  }
+  const skip = !i.rpc ? "no live RPC check requested" : i.rpc.reachable ? undefined : `live RPC check skipped (${i.rpc.error ?? "unreachable"})`;
+  const summary = `${(spec.rows ?? []).length} listed log_index values match the rows${live ? `; ${live} confirmed against eth_getTransactionReceipt (${i.rpc?.url})` : ""}${skip ? `; ${skip}` : ""}${notes.length ? `; ${summarizeList(notes, 3)}` : ""}`;
+  return { passed: problems.length === 0, detail: problems.length ? summarizeList(problems) + (skip ? `; ${skip}` : "") : summary };
 };
 
 const execution_rate_sanity: Evaluator = (spec, i) => {
@@ -296,16 +331,30 @@ const observation_matches_reference: Evaluator = (spec, i) => {
   if (missing) return missing;
   const rows = rowsOf(run, spec.table ?? "share_value_observations");
   const problems: string[] = [];
+  const notes: string[] = [];
   let checked = 0;
-  for (const [vault, exp] of Object.entries(spec.expected ?? {})) {
-    const r = rows.find((x) => lower(x.vault) === vault.toLowerCase() && (spec.block === undefined || num(x, "block_number") === spec.block));
+  let live = 0;
+  for (const [vaultRaw, exp] of Object.entries(spec.expected ?? {})) {
+    const vault = vaultRaw.toLowerCase();
+    const r = rows.find((x) => lower(x.vault) === vault && (spec.block === undefined || num(x, "block_number") === spec.block));
     if (!r) { problems.push(`${vault}: no row at block ${spec.block}`); continue; }
     for (const [k, v] of Object.entries((exp ?? {}) as Record<string, unknown>)) {
       checked++;
-      if (!eqLoose(r[k], v)) problems.push(`${vault}: ${k} ${str(r, k)} != ${String(v)}`);
+      if (!eqLoose(r[k], v)) problems.push(`${vault}: ${k} ${str(r, k)} != listed ${String(v)}`);
+    }
+    if (i.rpc?.reachable && spec.block !== undefined) {
+      const res = i.rpc.convertToAssets[`${vault}@${spec.block}`];
+      if (!res) notes.push(`${vault}: no live eth_call made`);
+      else if ("error" in res) notes.push(`${vault}: live eth_call unavailable (${res.error})`);
+      else {
+        live++;
+        if (!eqLoose(r.assets_per_share_raw, res.raw)) problems.push(`${vault}: assets_per_share_raw ${str(r, "assets_per_share_raw")} != live eth_call convertToAssets ${res.raw} at block ${spec.block}`);
+      }
     }
   }
-  return { passed: problems.length === 0, detail: problems.length ? summarizeList(problems) : `${checked} values match the eth_call reference at block ${spec.block}` };
+  const skip = !i.rpc ? undefined : i.rpc.reachable ? undefined : `live eth_call skipped (${i.rpc.error ?? "unreachable"})`;
+  const summary = `${checked} values match the listed eth_call reference at block ${spec.block}${live ? `; ${live} vault(s) confirmed by live eth_call (${i.rpc?.url})` : ""}${skip ? `; ${skip}` : ""}${notes.length ? `; ${summarizeList(notes, 3)}` : ""}`;
+  return { passed: problems.length === 0, detail: problems.length ? summarizeList(problems) + (skip ? `; ${skip}` : "") : summary };
 };
 
 const rpc_success_ratio_gte: Evaluator = (spec, i) => {
@@ -485,8 +534,8 @@ export const EVALUATORS: Record<string, Evaluator> = {
   params_match,
   rows_gt,
   known_vault_present,
-  reference_flows_present: reference_rows,
-  log_index_matches_rpc: reference_rows,
+  reference_flows_present,
+  log_index_matches_rpc,
   execution_rate_sanity,
   observation_present,
   observation_matches_reference,

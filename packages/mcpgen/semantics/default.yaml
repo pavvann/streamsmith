@@ -1,0 +1,36 @@
+# Semantic overlay for the generated tools. mcpgen derives one tool per table and per view from the proto and
+# views.sql on its own (name = table/view name, vault filter when a `vault` column exists, trailing window when a
+# `block_timestamp` column exists). This file only renames tools, adds descriptions and declares the
+# "empty table" behaviour. Pass another file with --semantics; omit the flag to use this one.
+tables:
+  vault_flows:
+    tool: vault_flows
+    description: >-
+      ERC-4626 Deposit/Withdraw logs on the configured vaults (table vault_flows), newest first, within a trailing
+      window of the observed data. caller, owner and receiver are kept separate; assets/shares are raw base-unit
+      strings plus normalized decimals; execution_rate is assets per whole share implied by this single flow
+      (deposit-implied or withdraw-implied per direction). Rows with meta_valid = false carry "0" placeholders.
+    filters:
+      direction:
+        column: direction
+        values: { deposit: 1, withdraw: 2 }
+        description: Restrict to deposits (1) or withdrawals (2).
+  share_value_observations:
+    tool: share_value_observations
+    description: >-
+      Point-in-time share-value observations (table share_value_observations): convertToAssets(10^share_decimals),
+      totalAssets and totalSupply read at sampled blocks (block_number % sample_interval_blocks == 0). Rows with
+      call_ok = false are emitted with "0" placeholders and call_error; nothing is interpolated between samples.
+  vaults:
+    tool: vaults
+    description: >-
+      First-sight metadata probe results (table vaults): asset, decimals, name, symbol, compliant (heuristic: every
+      probe call returned and decoded) and in_configured_list. The vault filter is limited to the configured list.
+  share_transfers:
+    tool: recent_share_migration
+    description: >-
+      Share migration: ERC-20 transfers of vault shares between owners (table share_transfers), excluding the
+      mint paired with Deposit and the burn paired with Withdraw. Optional table; empty in v0.1.0.
+    whenEmpty:
+      reason: share_transfers not populated in v0.1.0
+views: {}

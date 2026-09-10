@@ -1,0 +1,88 @@
+{
+  "receiptVersion": 1,
+  "packageName": "erc4626-flows",
+  "packageVersion": "v0.1.0",
+  "packageHash": "ee3ec8930c790036ac477aca1e821fbcd76a339e89a35d2b26a7976446d54d82",
+  "packageUrl": "https://spkg.io/pavvann/erc4626-flows-v0.1.0.spkg",
+  "outputModule": "map_events",
+  "outputModuleHash": "3f6c0a9e1d2b4c8f7a5e6d1c0b9a8f7e6d5c4b3a",
+  "moduleHashes": {
+    "map_events": "3f6c0a9e1d2b4c8f7a5e6d1c0b9a8f7e6d5c4b3a",
+    "map_flows": "8b1d4e7a2c5f9083b6d1e4a7c0f3b6d9e2a5c8f1",
+    "map_share_value_observations": "c2e5a8b1d4f7093c6e9b2d5a8c1f4e7b0d3a6c9e",
+    "map_vault_probe": "5d8b1e4a7c0f3d6b9e2a5c8f1b4d7e0a3c6f9b2d",
+    "store_vault_seen": "e9c2f5a8b1d4e7f0a3c6b9d2e5f8a1c4b7d0e3f6",
+    "store_vault_meta": "1a4d7b0e3c6f9a2d5b8e1c4f7a0d3b6e9c2f5a8b"
+  },
+  "protoDescriptorHash": "11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b",
+  "parametersHash": "baa6ae91bb4047064c246d4541b33c8cf91c6e6a867be766a16c5be9524100cd",
+  "parameters": {
+    "vaults": [
+      "0x050ce30b927da55177a4914ec73480238bad56f0",
+      "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"
+    ],
+    "sampleIntervalBlocks": 1800,
+    "chainId": 8453
+  },
+  "sinkSchemaHash": "48f86177bf2be6fc0bdd60357aac6a097c6d0226d3585601c50ad6399210a46d",
+  "sink": {
+    "kind": "clickhouse",
+    "mode": "from-proto",
+    "database": "vaultflows",
+    "hostFingerprint": "4d3f5a8c0c1e4b2a9f7d6e5c4b3a2918f7e6d5c4b3a291807f6e5d4c3b2a1908"
+  },
+  "deploymentMode": "self-managed-sink",
+  "deploymentId": "fixture-local-clickhouse",
+  "chainId": 8453,
+  "network": "base",
+  "endpoint": "base-mainnet.streamingfast.io:443",
+  "startBlock": 51001200,
+  "headBlock": 51093000,
+  "lagBlocks": 12,
+  "lagSeconds": 24,
+  "gate": {
+    "passed": true,
+    "ranges": [
+      "51092254:51092454",
+      "51092998:51093002"
+    ],
+    "assertions": [
+      {
+        "name": "rows_produced",
+        "passed": true,
+        "detail": "vault_flows rows: 4"
+      },
+      {
+        "name": "known_vault_present",
+        "passed": true
+      },
+      {
+        "name": "observation_present",
+        "passed": true,
+        "detail": "block 51093000, both vaults"
+      },
+      {
+        "name": "rpc_success_ratio",
+        "passed": true,
+        "detail": "1.00"
+      },
+      {
+        "name": "deterministic_rerun",
+        "passed": true
+      },
+      {
+        "name": "descriptor_hash_match",
+        "passed": true,
+        "detail": "11b959fc"
+      }
+    ],
+    "toolVersions": {
+      "substreams": "v1.22.0",
+      "buf": "1.72.0"
+    }
+  },
+  "registryPublishedAt": "2026-09-10T12:00:00Z",
+  "deployedAt": "2026-09-10T12:05:00Z",
+  "createdAt": "2026-09-10T12:06:00Z",
+  "runId": "fixture"
+}

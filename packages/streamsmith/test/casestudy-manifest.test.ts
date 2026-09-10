@@ -5,7 +5,7 @@ import { renderCaseStudy, writeCaseStudy } from "../src/casestudy.ts";
 import { manifestStart, manifestFinish } from "../src/manifest.ts";
 import { runGate } from "../src/gate/run.ts";
 import { runPublish } from "../src/publish.ts";
-import { makeTempRepo, hasBuf, fixture } from "./helpers.ts";
+import { makeTempRepo, hasBuf, REPO_ROOT } from "./helpers.ts";
 import YAML from "yaml";
 
 const bufAvailable = await hasBuf();
@@ -23,8 +23,8 @@ describe("manifest + publish + case study over a gated run", () => {
   it("records commits, prompt hash, receipt hash and writes case-studies/<name>.md", async () => {
     let gateYaml: string | undefined;
     if (!bufAvailable) {
-      const g = YAML.parse(await fixture("gate.yaml")) as { assertions: Array<{ kind: string }> };
-      g.assertions = g.assertions.filter((a) => a.kind !== "descriptor_hash_match");
+      const g = YAML.parse(await readFile(join(REPO_ROOT, "specs", "gate.yaml"), "utf8")) as { assertions: Array<{ name: string }> };
+      g.assertions = g.assertions.filter((a) => !["spec_unmodified", "descriptor_hash_match", "numeric_strings_valid", "addresses_lowercase", "output_decodes_against_contract"].includes(a.name));
       gateYaml = YAML.stringify(g);
     }
     const repo = await makeTempRepo(gateYaml ? { gateYaml } : {});
@@ -35,11 +35,14 @@ describe("manifest + publish + case study over a gated run", () => {
       expect(m1.manifest.startingTags).toEqual(["v0.1.0-run"]);
       expect(m1.manifest.specHashes["specs/vaultflows.proto"]).toHaveLength(64);
 
-      const gate = await runGate(repo.ctx, { runId: "run1" });
+      const gate = await runGate(repo.ctx, { runId: "run1", offline: true });
       expect(gate.exitCode).toBe(0);
       const pub = await runPublish(repo.ctx, { pkgDir: "packages/erc4626-flows", dryRun: true, runId: "run1" });
-      expect(pub.record).toMatchObject({ packageName: "erc4626-flows", packageVersion: "v0.1.0", dryRun: true, spkgBytes: 15 });
+      expect(pub.record).toMatchObject({ packageName: "erc4626-flows", packageVersion: "v0.1.0", dryRun: true, outputModule: "map_events" });
+      expect(pub.record.spkgBytes).toBeGreaterThan(0);
       expect(pub.record.packageHash).toHaveLength(64);
+      expect(pub.record.moduleHash).toMatch(/^[0-9a-f]{40}$/);
+      expect(pub.record.moduleHashes?.map_events).toBe(pub.record.moduleHash);
       expect(pub.record.packageUrl).toBeUndefined();
       const live = await runPublish(repo.ctx, { pkgDir: "packages/erc4626-flows", runId: "run1", spkgPath: pub.record.spkgPath });
       expect(live.record.packageUrl).toBe("https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0");
@@ -49,7 +52,10 @@ describe("manifest + publish + case study over a gated run", () => {
       const { assembleReceipt, writeReceipt } = await import("../src/receipt.ts");
       const { loadStreamsmithConfig } = await import("../src/config/streamsmith.ts");
       const ss = await loadStreamsmithConfig(join(repo.root, "specs", "streamsmith.yaml"));
-      const receipt = assembleReceipt({ streamsmith: ss, gate: gate.report, packageHash: live.record.packageHash, protoDescriptorHash: gate.report.descriptor?.expectedHash ?? "e".repeat(64), sinkSchemaHash: "f".repeat(64), publish: live.record, runId: "run1", createdAt: repo.ctx.now().toISOString() });
+      const receipt = assembleReceipt({ streamsmith: ss, gate: gate.report, packageHash: live.record.packageHash, protoDescriptorHash: gate.report.descriptor?.specHash ?? "e".repeat(64), sinkSchemaHash: "f".repeat(64), publish: live.record, runId: "run1", createdAt: repo.ctx.now().toISOString() });
+      expect(receipt.outputModuleHash).toBe(live.record.moduleHash);
+      expect(receipt.gate.ranges).toEqual(["51092254:51092454", "51092254:51092454", "51092998:51093002"]);
+      expect(receipt.gate.assertions).toHaveLength(gateYaml ? 13 : 18);
       const w = await writeReceipt(repo.root, receipt);
       const rel = join("receipts", w.path.split("/").pop()!);
 

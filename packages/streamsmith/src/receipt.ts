@@ -30,9 +30,14 @@ export interface Receipt {
   receiptVersion: 1;
   packageName: string;
   packageVersion: string;
+  /** sha256 of the exact .spkg bytes — identifies the artifact, not the source (spkg bytes are not reproducible) */
   packageHash: string;
   packageUrl?: string;
   outputModule: string;
+  /** Substreams module hash of outputModule (`substreams info <spkg> --json` modules[].hash) — the reproducible identity */
+  outputModuleHash: string;
+  /** module name -> module hash for every module in the package */
+  moduleHashes?: Record<string, string>;
   protoDescriptorHash: string;
   parametersHash: string;
   parameters: ReceiptParameters;
@@ -100,6 +105,9 @@ export interface BuildReceiptInputs {
   packageName?: string;
   packageVersion?: string;
   outputModule?: string;
+  /** falls back to publish.moduleHash, then gate.package.moduleHash; required in the end */
+  outputModuleHash?: string;
+  moduleHashes?: Record<string, string>;
   packageUrl?: string;
   registryPublishedAt?: string;
   publish?: PublishRecord;
@@ -113,12 +121,18 @@ export interface BuildReceiptInputs {
 export function assembleReceipt(i: BuildReceiptInputs): Receipt {
   const ss = i.streamsmith;
   const params = receiptParameters(ss);
+  const outputModule = i.outputModule ?? ss.outputModule;
+  const gatePkg = "package" in i.gate ? (i.gate as GateReport).package : undefined;
+  const moduleHashes = i.moduleHashes ?? i.publish?.moduleHashes ?? gatePkg?.moduleHashes;
+  const outputModuleHash = i.outputModuleHash ?? moduleHashes?.[outputModule] ?? i.publish?.moduleHash ?? gatePkg?.moduleHash;
+  if (!outputModuleHash) throw new Error(`outputModuleHash is required (module hash of ${outputModule} from \`substreams info <spkg> --json\`); none in inputs, publish.json or gate.json`);
   const r: Receipt = {
     receiptVersion: 1,
     packageName: i.packageName ?? i.publish?.packageName ?? ss.packageName,
     packageVersion: normalizeVersion(i.packageVersion ?? i.publish?.packageVersion ?? ss.version),
     packageHash: i.packageHash,
-    outputModule: i.outputModule ?? ss.outputModule,
+    outputModule,
+    outputModuleHash,
     protoDescriptorHash: i.protoDescriptorHash,
     parametersHash: parametersHash(params),
     parameters: params,
@@ -130,6 +144,7 @@ export function assembleReceipt(i: BuildReceiptInputs): Receipt {
     gate: gateEvidence(i.gate),
     createdAt: i.createdAt,
   };
+  if (moduleHashes && Object.keys(moduleHashes).length) r.moduleHashes = moduleHashes;
   const url = i.packageUrl ?? i.publish?.packageUrl;
   if (url) r.packageUrl = url;
   const publishedAt = i.registryPublishedAt ?? i.publish?.registryPublishedAt;
@@ -200,6 +215,8 @@ export interface LiveState {
   packageHash?: string;
   /** sha256 of `SHOW CREATE TABLE` output for the receipt's tables, normalized with normalizeSql */
   sinkSchemaHash?: string;
+  /** module hash of the output module the sink is running (`substreams info` on the deployed spkg) */
+  outputModuleHash?: string;
   protoDescriptorHash?: string;
   parametersHash?: string;
   /** highest block the sink has written */
@@ -224,6 +241,7 @@ export interface FailClosedVerdict {
   reasons: string[];
   provenance: {
     packageHash: string;
+    outputModuleHash: string;
     parametersHash: string;
     protoDescriptorHash: string;
     sinkSchemaHash: string;
@@ -244,6 +262,7 @@ export function checkReceiptAgainstLive(receipt: Receipt, live: LiveState, polic
   if (live.sinkSchemaHash === undefined) {
     if (policy.requireSchemaHash) reasons.push("live sink schema hash unavailable");
   } else if (live.sinkSchemaHash.toLowerCase() !== receipt.sinkSchemaHash.toLowerCase()) reasons.push(`sink schema hash mismatch: live ${live.sinkSchemaHash} vs receipt ${receipt.sinkSchemaHash}`);
+  if (live.outputModuleHash !== undefined && live.outputModuleHash.toLowerCase() !== receipt.outputModuleHash.toLowerCase()) reasons.push(`output module hash mismatch: live ${live.outputModuleHash} vs receipt ${receipt.outputModuleHash}`);
   if (live.protoDescriptorHash !== undefined && live.protoDescriptorHash.toLowerCase() !== receipt.protoDescriptorHash.toLowerCase()) reasons.push("proto descriptor hash mismatch");
   if (live.parametersHash !== undefined && live.parametersHash.toLowerCase() !== receipt.parametersHash.toLowerCase()) reasons.push("parameters hash mismatch");
   let lagBlocks: number | undefined;
@@ -254,6 +273,7 @@ export function checkReceiptAgainstLive(receipt: Receipt, live: LiveState, polic
   if (policy.maxLagSeconds !== undefined && live.lagSeconds !== undefined && live.lagSeconds > policy.maxLagSeconds) reasons.push(`lag ${live.lagSeconds}s exceeds ${policy.maxLagSeconds}s`);
   const provenance: FailClosedVerdict["provenance"] = {
     packageHash: receipt.packageHash,
+    outputModuleHash: receipt.outputModuleHash,
     parametersHash: receipt.parametersHash,
     protoDescriptorHash: receipt.protoDescriptorHash,
     sinkSchemaHash: receipt.sinkSchemaHash,

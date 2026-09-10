@@ -1,13 +1,28 @@
+# Stub package manifest for tests: same identity/params/initialBlock as packages/erc4626-flows/substreams.yaml, but a
+# single module and an 8-byte placeholder wasm so `substreams pack` works without cargo. Tests copy specs/vaultflows.proto
+# and the vendored sink schema next to it.
 specVersion: v0.1.0
 package:
-  name: erc4626_flows
+  name: erc4626-flows
   version: v0.1.0
+  url: https://github.com/pavvann/streamsmith
+  description: test stub
 network: base
 protobuf:
   files: [vaultflows.proto]
   importPaths: [./proto]
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./placeholder.wasm
 modules:
   - name: map_events
     kind: map
-    inputs: [{ source: sf.ethereum.type.v2.Block }]
-    output: { type: proto:vaultflows.v1.Events }
+    initialBlock: 51001200
+    inputs:
+      - params: string
+      - source: sf.substreams.v1.Clock
+    output:
+      type: proto:vaultflows.v1.Events
+params:
+  map_events: "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"

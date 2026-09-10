@@ -1,0 +1,29 @@
+{
+  "name": "@ethonline26/mcpgen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "mcpgen: generate a fail-closed MCP server from a Substreams public proto contract, a Deployment Receipt and ClickHouse views.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "bin": {
+    "mcpgen": "./bin/mcpgen.js"
+  },
+  "scripts": {
+    "generate": "node bin/mcpgen.js generate --receipt fixtures/receipt.example.json --proto ../../specs/vaultflows.proto --views ../erc4626-flows/sql/views.sql --out ../mcp-vaultflows",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.11"
+  }
+}
