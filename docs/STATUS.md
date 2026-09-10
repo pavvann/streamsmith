@@ -33,3 +33,4 @@
 - New standing rule: sub-agents on Sonnet only. Relaunched A4c (streamsmith), A6b (mcpgen), A8 (sink spike into local ClickHouse = kill criterion) on Sonnet.
 - Still need from Pawan: Privy auth keys ×2 + fee-wrapper vault ids ×2 + gas sponsorship; ClickHouse Cloud; Base wallet funding; ETHGlobal registration; team size.
 - 19:30 IST: A8 sink spike: **first custom rows in ClickHouse** (2 share_value_observations, exact values, restart-safe, views work). vault_flows blocked: substreams-sink-sql 4.13.1 (latest) panics on proto3 enums. Decision: `direction` enum → string. A9 (Opus) carrying it through proto/Rust/gate/evidence/sink. A4c/A6b told. Rule refined: sub-agents default Opus, Sonnet for low-stakes.
+- 20:10 IST: ClickHouse Cloud provisioned and verified (sink/ro users). Privy treasurer + agent authorization keys received and stored. Privy spike still waits on the two fee-wrapper vault_ids + gas sponsorship.
