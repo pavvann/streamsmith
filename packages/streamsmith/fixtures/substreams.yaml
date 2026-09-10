@@ -1,0 +1,13 @@
+specVersion: v0.1.0
+package:
+  name: erc4626_flows
+  version: v0.1.0
+network: base
+protobuf:
+  files: [vaultflows.proto]
+  importPaths: [./proto]
+modules:
+  - name: map_events
+    kind: map
+    inputs: [{ source: sf.ethereum.type.v2.Block }]
+    output: { type: proto:vaultflows.v1.Events }

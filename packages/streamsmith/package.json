@@ -1,0 +1,32 @@
+{
+  "name": "@ethonline26/streamsmith",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Streamsmith: promotion pipeline for Substreams packages — gate, publish, deploy, receipt, manifest, case study.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "streamsmith": "./bin/streamsmith.js"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./receipt": "./src/receipt.ts"
+  },
+  "scripts": {
+    "streamsmith": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.11"
+  }
+}

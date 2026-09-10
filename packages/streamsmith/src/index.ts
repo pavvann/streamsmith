@@ -1,0 +1,21 @@
+// Public import surface (the MCP generator imports from "./receipt" directly; everything else is here).
+export * from "./receipt.ts";
+export { runGate, substreamsRunArgs, type GateReport, type GateOutcome, type GateOptions } from "./gate/run.ts";
+export { parseJsonl, parseJsonlFile, TABLES, type ParsedRun, type Row } from "./gate/jsonl.ts";
+export { evaluateAssertions, evaluateAssertion, type AssertionResult, type AssertionInputs } from "./gate/assertions.ts";
+export { loadGateConfig, parseGateConfig, type GateConfig, type AssertionSpec, type GateRunSpec, DEFAULT_EXIT_CODES } from "./config/gate.ts";
+export { loadStreamsmithConfig, type StreamsmithConfig } from "./config/streamsmith.ts";
+export { buildDescriptor, contractDescriptor, packageDescriptor, normalizeFileDescriptorSet, substreamsInfo } from "./proto/descriptor.ts";
+export { runPublish, registryUrls, type PublishRecord } from "./publish.ts";
+export { deployHosted, hostedStatus, portalLogin, AwaitingSecretError, EXIT_AWAITING_SECRET } from "./deploy/hosted.ts";
+export { startSelfManaged, selfManagedStatus, stopSelfManaged, buildSinkCommand, parseDsn } from "./deploy/selfManaged.ts";
+export { PortalClient, field as portalField } from "./deploy/portal.ts";
+export { chQuery, chMaxBlock, chDumpSchema, schemaHash } from "./deploy/clickhouse.ts";
+export { ethBlockNumber } from "./deploy/rpc.ts";
+export type { DeployRecord } from "./deploy/types.ts";
+export { manifestStart, manifestFinish, type RunManifest } from "./manifest.ts";
+export { renderCaseStudy, writeCaseStudy, type CaseStudyInput } from "./casestudy.ts";
+export { createCtx, paths, type Ctx } from "./util/ctx.ts";
+export { ProcessRunner, FakeRunner, type Runner, type RunResult } from "./util/exec.ts";
+export { sha256Hex, sha256File, canonicalJson, sha256Canonical } from "./util/hash.ts";
+export { validateAgainstSchema } from "./schema/jsonschema.ts";

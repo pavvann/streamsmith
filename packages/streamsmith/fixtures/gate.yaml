@@ -1,0 +1,27 @@
+# Fixture gate.yaml — the shape `streamsmith gate` evaluates (specs/gate.yaml is the real one, written by A2b).
+version: 1
+package:
+  dir: packages/erc4626-flows
+  manifest: substreams.yaml
+  outputModule: map_events
+build:
+  command: [substreams, build]
+  timeoutSeconds: 1800
+runs:
+  primary:
+    module: map_events
+    startBlock: 51092200
+    stopBlock: 51093400
+    endpoint: base-mainnet.streamingfast.io:443
+    network: base
+  rerun:
+    sameAs: primary
+assertions:
+  - { kind: rows_gt, name: rows-produced, run: primary, table: vault_flows, value: 0 }
+  - { kind: known_vault_present, name: known-vault-present, run: primary }
+  - { kind: observation_present, name: observation-present, run: primary, minCount: 1 }
+  - { kind: execution_rate_sanity, name: execution-rate-sanity, run: primary, min: 0.5, max: 2 }
+  - { kind: rpc_success_ratio_gte, name: rpc-success, run: primary, value: 0.99 }
+  - { kind: deterministic_rerun, name: deterministic-rerun, runs: [primary, rerun] }
+  - { kind: descriptor_hash_match, name: descriptor-hash-match, contract: specs/vaultflows.proto }
+exitCodes: { pass: 0, buildFailed: 10, runFailed: 20, assertionsFailed: 30 }
