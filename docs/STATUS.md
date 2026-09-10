@@ -22,3 +22,5 @@
 - Still blocked on Pawan: disk cleanup approval (1.5 GB free), `substreams auth`, ClickHouse Cloud, Privy dashboard, wallet funding. No live streaming possible yet → kill-criterion slipped; new target for first live row: as soon as the token lands.
 - 13:20 IST: Pawan approved cleanup; caches + Docker VM data + cargo registry removed; 12 GB free. A7 launched: local Docker ClickHouse + local Rust build + spkg hash vs CI.
 - A7 done: local ClickHouse up; Rust 1.88 toolchain; local build green (35 s). Finding: spkg sha256 is NOT reproducible (proto file order random, wasm host-dependent) → receipt gains `outputModuleHash` (required) and `moduleHashes`; packageHash documented as artifact identity only. Cargo.lock committed. Still no token → no live run.
+- 13:40 IST: **first live custom-module output**: map_share_value_observations at block 51093000 returns both vaults with assets_per_share 1040743 / 1039913 = exact on-chain reference. Historical eth_call determinism confirmed. Primary map_events range running (store backfill from 49276800).
+- Privy App ID + secret in apps/vaultpilot/.env (gitignored). Waiting on authorization keys and fee-wrapper vault ids.
