@@ -34,33 +34,33 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T2.6 M O · Freeze: tag `contract-v1` after review. NOTE: `buf.build/streamingfast/substreams-sink-sql` is retired; use `buf.build/streamingfast/substreams` (A5 manifest must change).
 
 ## 3. erc4626-flows package (Sept 10; hand-built reference first, then generated)
-- [~] T3.0 M A5 · Rust package compiled in **GitHub Actions** (disk workaround): workflow builds wasm, packs spkg, uploads artifact; iterate until green.
-- [ ] T3.1 M A1 · Manifest importing Pinax `erc4626` (and `erc20` if T3.6), params wiring, protos from `specs/vaultflows.proto`.
-- [ ] T3.2 M A1 · `store_vault_meta`: first-sight probe `asset()`, `decimals()`, asset `decimals()`, `totalAssets()`, `convertToAssets()`; non-compliant → dropped; cached.
-- [ ] T3.3 M A1 · `map_flows`: caller/owner/receiver, raw + normalized amounts (only if meta valid), `deposit_execution_rate`/`withdraw_execution_rate`, flags.
-- [ ] T3.4 M A1 · `map_share_value_observations`: `block.number % K == 0`, per configured vault: `convertToAssets(10^d)`, `totalAssets`, `totalSupply`, status; point-in-time only.
-- [ ] T3.5 M A1 · Tests: zero shares, decimal bounds, RPC partial failure, known Morpho events, deterministic replay, `convertToAssets` reconciliation at cited blocks.
-- [ ] T3.6 S A1 · `map_share_transfers`: ERC-20 Transfer of vault shares excluding mint/burn paired with Deposit/Withdraw. Drop if it fights.
-- [ ] T3.7 M A1 · Sink `schema.sql` (from-proto): `vault_flows`, `share_value_observations`, `vaults`; deterministic ids; ORDER BY per SQL skill; views `vault_flows_24h`, `share_value_growth`.
-- [ ] T3.8 M A1 · Gate script (`packages/streamsmith/scripts/gate`) executes `specs/gate.yaml`; deterministic exit codes.
+- [x] T3.0 M A5 · (CI green, run 34396041869; spkg artifact 301 KB) Rust package compiled in **GitHub Actions** (disk workaround): workflow builds wasm, packs spkg, uploads artifact; iterate until green.
+- [x] T3.1 M A5 · Manifest importing Pinax `erc4626` (and `erc20` if T3.6), params wiring, protos from `specs/vaultflows.proto`.
+- [x] T3.2 M A5 · (store_vault_seen + map_vault_probe, one probe per vault ever) `store_vault_meta`: first-sight probe `asset()`, `decimals()`, asset `decimals()`, `totalAssets()`, `convertToAssets()`; non-compliant → dropped; cached.
+- [x] T3.3 M A5 · `map_flows`: caller/owner/receiver, raw + normalized amounts (only if meta valid), `deposit_execution_rate`/`withdraw_execution_rate`, flags.
+- [x] T3.4 M A5 · (Clock-based, 2 RPC round trips per sampled block) `map_share_value_observations`: `block.number % K == 0`, per configured vault: `convertToAssets(10^d)`, `totalAssets`, `totalSupply`, status; point-in-time only.
+- [~] T3.5 M A5 · (13 native unit tests green; reconciliation vs convertToAssets needs live run) Tests: zero shares, decimal bounds, RPC partial failure, known Morpho events, deterministic replay, `convertToAssets` reconciliation at cited blocks.
+- [ ] T3.6 S — · (not implemented; share_transfers table empty in v0.1.0) `map_share_transfers`: ERC-20 Transfer of vault shares excluding mint/burn paired with Deposit/Withdraw. Drop if it fights.
+- [~] T3.7 M A5+A6 · (tables from proto annotations; views.sql → A6) Sink `schema.sql` (from-proto): `vault_flows`, `share_value_observations`, `vaults`; deterministic ids; ORDER BY per SQL skill; views `vault_flows_24h`, `share_value_growth`.
+- [~] T3.8 M A4b · Gate script (`packages/streamsmith/scripts/gate`) executes `specs/gate.yaml`; deterministic exit codes.
 - [ ] T3.9 M A1 · Publish `erc4626-flows` v0.1.0 to registry (reference build, may be superseded by generated build). Accept: importable via `use`.
 - [ ] T3.10 M A1 · Deploy (hosted or self-managed per T1.9); backfill ~6 weeks; verify live head. **Kill checkpoint Sept 10 12:00 IST: one custom row in sink.**
 - [ ] T3.11 M A1 · Reconcile one vault end to end vs `convertToAssets` at cited blocks. Accept: within rounding.
 - [ ] T3.12 S A1 · Package README: semantics, params, caveats (fee spread, virtual offset, heuristic validation), composition example.
 
 ## 4. Streamsmith plugin (Sept 11)
-- [ ] T4.1 M A4 · Plugin skeleton: `plugin.json`, `SKILL.md` (routes code-gen to official skills; owns promotion), install docs.
-- [ ] T4.2 M A4 · `gate` generalization: parse `gate.yaml`, structured JSON results.
-- [ ] T4.3 M A4 · `publish`: pack + registry publish; capture package hash + timestamp.
-- [ ] T4.4 M A4 · `deploy`: hosted (Portal API) and self-managed modes; poll head/lag; `deploymentMode` recorded.
-- [ ] T4.5 M A4 · Deployment Receipt generator (schema in PROJECT.md §4.1): hashes (package, proto descriptor, params, sink schema, MCP manifest), deployment, range, head, lag, gate evidence, timestamps.
-- [ ] T4.6 M A4 · MCP generator from protobuf descriptors + receipt: typed read-only tools, parameterized SQL, limits/timeouts, provenance in every response, fail-closed on schema/lag mismatch (real check).
-- [ ] T4.7 M A4 · Run manifest + case-study writer (`runs/<id>/manifest.json`, `case-studies/`).
+- [~] T4.1 M A4b · Plugin skeleton: `plugin.json`, `SKILL.md` (routes code-gen to official skills; owns promotion), install docs.
+- [~] T4.2 M A4b · `gate` generalization: parse `gate.yaml`, structured JSON results.
+- [~] T4.3 M A4b · `publish`: pack + registry publish; capture package hash + timestamp.
+- [~] T4.4 M A4b · `deploy`: hosted (Portal API) and self-managed modes; poll head/lag; `deploymentMode` recorded.
+- [~] T4.5 M A4b · (receipt.ts exists) Deployment Receipt generator (schema in PROJECT.md §4.1): hashes (package, proto descriptor, params, sink schema, MCP manifest), deployment, range, head, lag, gate evidence, timestamps.
+- [~] T4.6 M A6 · (packages/mcpgen) MCP generator from protobuf descriptors + receipt: typed read-only tools, parameterized SQL, limits/timeouts, provenance in every response, fail-closed on schema/lag mismatch (real check).
+- [~] T4.7 M A4b · Run manifest + case-study writer (`runs/<id>/manifest.json`, `case-studies/`).
 - [ ] T4.8 M A4 · Clean end-to-end rehearsal from a fresh directory, no human follow-up; fix tooling; restore clean baseline.
 
 ## 5. MCP for vault flows (Sept 11)
-- [ ] T5.1 M A4 · Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
-- [ ] T5.2 M A4 · Hand-tune descriptions/SQL for the demo question; windows; limits.
+- [~] T5.1 M A6 · Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
+- [~] T5.2 M A6 · Hand-tune descriptions/SQL for the demo question; windows; limits.
 - [ ] T5.3 M A4 · Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
 
 ## 6. Vaultpilot (Sept 11)

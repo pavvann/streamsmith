@@ -13,3 +13,10 @@
 - Receipt schema v1 written (specs/receipt.schema.json).
 - Wave 2 launched: A2b (gate + notes + proto review), A4 (Streamsmith TS core: gate/publish/deploy/receipt/manifest/SKILL), A5 (Rust package + CI build in GitHub Actions).
 - Still waiting on Pawan: disk cleanup approval, `substreams auth`, ClickHouse Cloud, Privy dashboard, wallet funding. Kill-criterion (one custom row in sink by 12:00 IST) is AT RISK without the token; honest revised target: 18:00 IST.
+
+## Sept 10 (IST 13:00)
+- A5 done: erc4626-flows compiles green in GitHub Actions (rust 1.88, wasm 46 s), 13 unit tests, spkg artifact. Merged to main (ff).
+- A2b done: gate.yaml (19 assertions), contract notes, proto fixes. Committed.
+- A4 killed by spend limit mid-refactor; WIP committed. Relaunched as A4b (finish CLI, align to gate.yaml, plugin packaging).
+- A6 launched: mcpgen (proto+receipt-driven MCP with fail-closed checks) + views.sql.
+- Still blocked on Pawan: disk cleanup approval (1.5 GB free), `substreams auth`, ClickHouse Cloud, Privy dashboard, wallet funding. No live streaming possible yet → kill-criterion slipped; new target for first live row: as soon as the token lands.
