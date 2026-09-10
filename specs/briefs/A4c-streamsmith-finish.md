@@ -1,4 +1,4 @@
-# Brief A4c — Finish Streamsmith (third pass). Sonnet.
+# Brief A4c — Finish Streamsmith (third pass). Opus.
 
 Repo /Users/pawan/Code/hacks/ethonline26, branch main. Do NOT commit; do NOT git checkout/switch/stash; do NOT run cargo/docker/`substreams build`. pnpm only. Other agents own packages/mcpgen, packages/mcp-vaultflows, packages/erc4626-flows/sql — never touch them. Facts only; where a service is unreachable, code against an injectable interface with fixture tests and say so.
 

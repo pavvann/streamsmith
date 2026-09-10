@@ -1,4 +1,4 @@
-# Brief A6b — Finish mcpgen and the generated MCP (continuation of A6). Sonnet.
+# Brief A6b — Finish mcpgen and the generated MCP (continuation of A6). Opus.
 
 Repo /Users/pawan/Code/hacks/ethonline26, branch main. Do NOT commit; do NOT git checkout/switch/stash; do NOT run cargo/docker/`substreams build`. pnpm only. You own packages/mcpgen, packages/mcp-vaultflows, packages/erc4626-flows/sql/views.sql only; another agent is editing packages/streamsmith — never touch it. Read specs/briefs/A6-mcpgen.md first; all deliverables there still apply.
 

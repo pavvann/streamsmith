@@ -82,7 +82,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T7.8 M P · Submission form: partners = The Graph (both tracks) + Privy (both tracks); Start Fresh pool; repo; video; per-partner "how we used it" + feedback text. Submit before 12:00 EDT Sept 13. No force pushes after.
 
 ## 8. Hygiene (continuous)
-- [x] T8.0 M O · **Standing rule (Sept 10 18:30 IST): sub-agents never run on Fable; every Agent call passes `model: sonnet` (opus only with a stated reason).**
+- [x] T8.0 M O · **Standing rule (Sept 10 18:30 IST): sub-agents never run on Fable; default `model: opus`, `sonnet` only for low-stakes tasks.**
 - [ ] T8.1 M O · Commit every logical unit with meaningful messages; never a single dump.
 - [ ] T8.2 M O · Secrets only in `.env`; `.env.example` in every package; secret scan before each push.
 - [ ] T8.3 M O · Licenses: MIT for our code; respect Pinax/StreamingFast licenses on imports.
