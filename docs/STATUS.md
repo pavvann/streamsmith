@@ -41,3 +41,14 @@
 - A4c done: Streamsmith green (75/75), real E2E on live data (gate 18/18, receipt, mcp, views). A9 done: enum→string, 171 flow rows in local ClickHouse (kill criterion met). A6b done: mcpgen green.
 - Published erc4626-flows v0.1.0 to substreams.dev; Portal login done; hosted deployment depdehi448c87998ebb763b created, awaiting ClickHouse secret entry by Pawan.
 - Usage 58% at 21:40 IST; no new agents; A10 (Vaultpilot) still running.
+
+## STOPPED at 64% usage (Sept 10, ~22:20 IST) — RESUME HERE
+Done and committed: contract (proto/gate/yaml/receipt schema), erc4626-flows package (CI + local green, published to substreams.dev v0.1.0), Streamsmith CLI (75 tests), mcpgen + generated MCP (73 tests), Privy wallet/policy/signer live (spike pass), ClickHouse Cloud provisioned (db vaultflows, users sink/ro), local ClickHouse holds 171 flows + 2 observations via self-managed sink, Portal login + hosted deployment `depdehi448c87998ebb763b` created.
+In progress (A10 stopped mid-task, WIP committed as-is): apps/vaultpilot decision service / executor / UI — check `pnpm typecheck` + `pnpm test` state in the commit message below.
+Next steps, in order:
+1. Pawan enters ClickHouse `default` password at https://thegraph.market/sinks/depdehi448c87998ebb763b/secret?output=clickhouse → orchestrator: HasDeploymentSecret → Deploy (user default, db vaultflows, port 9440 secure, network "base", start 51001200, params from specs/streamsmith.yaml, spkg url https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0) → GetDeploymentState until LIVE → apply views (streamsmith deploy views) → receipt with deploymentMode graph-market-hosted. Fallback: self-managed sink on a VPS to ClickHouse Cloud.
+2. Confirm Privy gas sponsorship (App pays, Base); fund 0xcdC8B69799bCb135C04A1052b918787125571fDC with ~50 USDC; run `pnpm demo:denied`, `pnpm demo:deposit --amount 25`.
+3. Relaunch A10 (Opus) from the WIP to finish Vaultpilot (decision, executor, UI, tests).
+4. Point mcp-vaultflows at ClickHouse Cloud; run the fail-closed demo (force stale lag, schema mismatch).
+5. Sept 11: clean-tag `contract-v1`, forensic one-prompt rehearsal from a fresh dir, freeze at midnight. Sept 12: README/diagram/video. Sept 13 submit before 12:00 EDT.
+Standing rules: sub-agents on Opus (Sonnet for low-stakes), never Fable; stop at 65% usage; commit WIP after every agent report.

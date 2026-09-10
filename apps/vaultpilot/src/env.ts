@@ -1,20 +1,22 @@
 /**
- * Minimal .env loader (no dependency). Reads `apps/vaultpilot/.env` if present and
- * populates process.env without overriding variables already set in the shell.
+ * Minimal .env loader (no dependency). Reads `apps/vaultpilot/.env` and then the repo root `.env`
+ * (the root file holds the ClickHouse credentials shared with the sink and the MCP) and populates
+ * process.env without overriding variables already set in the shell. First writer wins, so the
+ * app-local file takes precedence over the root file.
  */
 import {existsSync, readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {dirname, resolve} from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-export const ENV_FILE = resolve(here, '..', '.env');
+export const APP_DIR = resolve(here, '..');
+export const REPO_ROOT = resolve(here, '..', '..', '..');
+export const ENV_FILE = resolve(APP_DIR, '.env');
+export const ROOT_ENV_FILE = resolve(REPO_ROOT, '.env');
 
-let loaded = false;
-export function loadEnv(): void {
-  if (loaded) return;
-  loaded = true;
-  if (!existsSync(ENV_FILE)) return;
-  for (const raw of readFileSync(ENV_FILE, 'utf8').split(/\r?\n/)) {
+function loadFile(path: string): void {
+  if (!existsSync(path)) return;
+  for (const raw of readFileSync(path, 'utf8').split(/\r?\n/)) {
     const line = raw.trim();
     if (!line || line.startsWith('#')) continue;
     const eq = line.indexOf('=');
@@ -28,6 +30,14 @@ export function loadEnv(): void {
   }
 }
 
+let loaded = false;
+export function loadEnv(): void {
+  if (loaded) return;
+  loaded = true;
+  loadFile(ENV_FILE);
+  loadFile(ROOT_ENV_FILE);
+}
+
 export const REQUIRED_ENV = [
   'PRIVY_APP_ID',
   'PRIVY_APP_SECRET',
@@ -39,12 +49,35 @@ export const REQUIRED_ENV = [
 
 export const OPTIONAL_ENV = [
   'PRIVY_VAULT_ID_UNAPPROVED',
+  'PRIVY_TREASURER_KEY_ID',
+  'PRIVY_AGENT_KEY_ID',
   'VAULTPILOT_PER_ACTION_CAP_USD',
   'VAULTPILOT_DAILY_CAP_USD',
+  'VAULTPILOT_MIN_OBSERVATION_HOURS',
+  'VAULTPILOT_MIN_DIFFERENTIAL_BPS',
+  'VAULTPILOT_COOLDOWN_HOURS',
+  'VAULTPILOT_OUTFLOW_GUARDRAIL_BPS',
+  'VAULTPILOT_MAX_LAG_BLOCKS',
+  'VAULTPILOT_SOURCE',
+  'VAULTPILOT_FIXTURE',
+  'VAULTPILOT_WATCH_MINUTES',
+  'VAULTPILOT_AGENT_URL',
+  'VAULTPILOT_SERVE_PORT',
   'BASE_RPC_URL',
+  'CLICKHOUSE_URL',
+  'CLICKHOUSE_USER',
+  'CLICKHOUSE_PASSWORD',
+  'CLICKHOUSE_DATABASE',
+  'CH_CLOUD_URL',
+  'CH_CLOUD_RO_USER',
+  'CH_CLOUD_RO_PASSWORD',
+  'CH_CLOUD_DATABASE',
+  'MCP_MANIFEST_PATH',
+  'MCP_RECEIPT_PATH',
 ] as const;
 
 export type RequiredEnvKey = (typeof REQUIRED_ENV)[number];
+export type OptionalEnvKey = (typeof OPTIONAL_ENV)[number];
 
 /** Returns the names of required variables that are unset or empty. */
 export function missingEnv(): RequiredEnvKey[] {
@@ -59,8 +92,22 @@ export function env(key: RequiredEnvKey): string {
   return v.trim();
 }
 
-export function envOptional(key: (typeof OPTIONAL_ENV)[number]): string | undefined {
+export function envOptional(key: OptionalEnvKey): string | undefined {
   loadEnv();
   const v = process.env[key];
   return v && v.trim() !== '' ? v.trim() : undefined;
+}
+
+export function envNumber(key: OptionalEnvKey, fallback: number): number {
+  const raw = envOptional(key);
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) throw new Error(`${key} must be a number, got ${JSON.stringify(raw)}`);
+  return n;
+}
+
+export function envFlag(key: OptionalEnvKey, fallback: boolean): boolean {
+  const raw = envOptional(key);
+  if (raw === undefined) return fallback;
+  return /^(1|true|yes|on)$/i.test(raw);
 }

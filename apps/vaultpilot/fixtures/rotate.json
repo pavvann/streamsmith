@@ -1,0 +1,108 @@
+{
+  "name": "rotate",
+  "note": "hand-built fixture: a 26 h observed window in which Steakhouse leads Gauntlet by 3.17 bps of share-value growth, both guardrails clear. Shapes match the share_value_growth / vault_flows_24h views; the numbers are illustrative, not a recorded run.",
+  "growth": [
+    {
+      "vaultAddress": "0x050ce30b927da55177a4914ec73480238bad56f0",
+      "firstBlockNumber": 51046200,
+      "firstBlockTimestamp": 1788880000,
+      "firstAssetsPerShareNormalized": "1.040742000000000000",
+      "lastBlockNumber": 51093000,
+      "lastBlockTimestamp": 1788973600,
+      "lastAssetsPerShareNormalized": "1.040800000000000000",
+      "growth": 0.0000557286,
+      "observedHours": 26.0,
+      "observationCount": 27
+    },
+    {
+      "vaultAddress": "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9",
+      "firstBlockNumber": 51046200,
+      "firstBlockTimestamp": 1788880000,
+      "firstAssetsPerShareNormalized": "1.039912000000000000",
+      "lastBlockNumber": 51093000,
+      "lastBlockTimestamp": 1788973600,
+      "lastAssetsPerShareNormalized": "1.040300000000000000",
+      "growth": 0.0003731094,
+      "observedHours": 26.0,
+      "observationCount": 27
+    }
+  ],
+  "flows": [
+    {
+      "vaultAddress": "0x050ce30b927da55177a4914ec73480238bad56f0",
+      "windowStartTimestamp": 1788887200,
+      "windowEndTimestamp": 1788973600,
+      "assetsInNormalized": "251340.204411",
+      "assetsOutNormalized": "119004.881230",
+      "netAssetsNormalized": "132335.323181",
+      "selfAssetsInNormalized": "0",
+      "selfAssetsOutNormalized": "0",
+      "depositCount": 33,
+      "withdrawCount": 7,
+      "flowsWithoutMetadata": 0
+    },
+    {
+      "vaultAddress": "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9",
+      "windowStartTimestamp": 1788887200,
+      "windowEndTimestamp": 1788973600,
+      "assetsInNormalized": "30110.000000",
+      "assetsOutNormalized": "90210.000000",
+      "netAssetsNormalized": "-60100.000000",
+      "selfAssetsInNormalized": "0",
+      "selfAssetsOutNormalized": "0",
+      "depositCount": 4,
+      "withdrawCount": 6,
+      "flowsWithoutMetadata": 0
+    }
+  ],
+  "sizes": [
+    {
+      "vaultAddress": "0x050ce30b927da55177a4914ec73480238bad56f0",
+      "totalAssetsNormalized": "41250000.114000",
+      "blockNumber": 51093000
+    },
+    {
+      "vaultAddress": "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9",
+      "totalAssetsNormalized": "12010500.900000",
+      "blockNumber": 51093000
+    }
+  ],
+  "pipeline": {
+    "refused": false,
+    "reason": null,
+    "detail": null,
+    "headBlock": 51093000,
+    "chainHead": 51093012,
+    "lagBlocks": 12,
+    "chainId": 8453,
+    "checkedAt": "2026-09-10T18:00:00.000Z"
+  },
+  "positions": [
+    {
+      "vaultId": "qwxu3riq3bvt5inw65jknkqf",
+      "assetsInVaultRaw": "50000000",
+      "assetsNormalized": "50",
+      "assetDecimals": 6,
+      "assetSymbol": "USDC"
+    },
+    {
+      "vaultId": "d5d6zyaety43rqx513osyexr",
+      "assetsInVaultRaw": "0",
+      "assetsNormalized": "0",
+      "assetDecimals": 6,
+      "assetSymbol": "USDC"
+    }
+  ],
+  "liquidity": [
+    {
+      "vaultId": "qwxu3riq3bvt5inw65jknkqf",
+      "availableNormalized": "2500000",
+      "maxWithdrawNormalized": "50"
+    },
+    {
+      "vaultId": "d5d6zyaety43rqx513osyexr",
+      "availableNormalized": "1500000",
+      "maxWithdrawNormalized": "0"
+    }
+  ]
+}

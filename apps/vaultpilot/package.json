@@ -9,14 +9,30 @@
   },
   "scripts": {
     "spike": "tsx src/spike.ts",
-    "typecheck": "tsc --noEmit"
+    "agent:once": "tsx src/loop.ts once",
+    "agent:watch": "tsx src/loop.ts watch",
+    "agent:serve": "tsx src/serve.ts",
+    "demo:denied": "tsx src/demo.ts denied",
+    "demo:deposit": "tsx src/demo.ts deposit",
+    "demo:rotate": "tsx src/demo.ts rotate",
+    "web:dev": "next dev web",
+    "web:build": "next build web",
+    "web:start": "next start web",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@privy-io/node": "^0.34.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/react": "^19.2.18",
+    "next": "^15.5.25",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "tsx": "^4.20.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.11"
   }
 }
