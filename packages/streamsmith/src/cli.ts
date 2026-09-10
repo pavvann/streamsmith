@@ -2,6 +2,7 @@
 // streamsmith <command> — see README.md. Exit codes: gate 0/10/20/30 (pass/build/run/assertions), 1 usage or
 // config error, 40 hosted deploy waiting for the human to stage the DB secret.
 import { parseArgs } from "node:util";
+import { readdir } from "node:fs/promises";
 import { join, isAbsolute, relative } from "node:path";
 import { createInterface } from "node:readline";
 import { createCtx, paths, type Ctx } from "./util/ctx.ts";
@@ -107,7 +108,6 @@ async function applyViewsAfterDeploy(ctx: Ctx, v: Values, ss: StreamsmithConfig,
 }
 
 async function findReceiptForRun(ctx: Ctx, runId: string): Promise<string | undefined> {
-  const { readdir } = await import("node:fs/promises");
   const dir = paths.receipts(ctx);
   if (!(await exists(dir))) return undefined;
   const f = (await readdir(dir)).filter((x) => x.endsWith(`-${runId}.json`))[0];
@@ -120,7 +120,8 @@ export async function main(argv: string[]): Promise<number> {
   const [cmd, sub, ...rest] = positionals;
   if (!cmd || b(v, "help")) {
     process.stdout.write(USAGE + "\n");
-    return cmd ? 0 : 1;
+    // an explicit --help is a request, not a usage error; bare `streamsmith` is a usage error
+    return b(v, "help") ? 0 : 1;
   }
   const ctx = await createCtx({ ...(s(v, "root") ? { root: s(v, "root")! } : {}) });
   const ssPath = paths.specs(ctx, "streamsmith.yaml");

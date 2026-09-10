@@ -1,0 +1,21 @@
+{
+  "name": "streamsmith",
+  "description": "Promotion pipeline for a Substreams package: run the executable quality gate in specs/gate.yaml, publish the .spkg, deploy the ClickHouse sink, and emit a Deployment Receipt that a fail-closed MCP server verifies before answering.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Streamsmith (ETHOnline 2026)"
+  },
+  "homepage": "https://github.com/pavvann/streamsmith",
+  "repository": "https://github.com/pavvann/streamsmith",
+  "license": "MIT",
+  "keywords": [
+    "substreams",
+    "clickhouse",
+    "erc-4626",
+    "base",
+    "quality-gate",
+    "deployment-receipt",
+    "mcp",
+    "provenance"
+  ]
+}

@@ -12,3 +12,5 @@ runs/**/raw/
 .DS_Store
 vendor/
 .substreams.env
+.portal-device-code
+.portal-token.json

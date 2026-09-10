@@ -15,7 +15,7 @@ export interface ViewsRecord {
   present: boolean;
   sha256?: string;
   statements: number;
-  /** statements executed, in order (first 120 chars each) */
+  /** statements executed, in order, whitespace collapsed */
   applied: string[];
   /** views present in the database after applying (engine View / MaterializedView) */
   views: string[];
@@ -115,8 +115,8 @@ export async function applyViews(ctx: Ctx, o: ApplyViewsOptions): Promise<ViewsR
     }
   }
   for (const st of statements) {
-    await chQuery(ctx, o.url, st);
-    rec.applied.push(st.replace(/\s+/g, " ").slice(0, 120));
+    await chQuery(ctx, o.url, st, undefined, o.database);
+    rec.applied.push(st.replace(/\s+/g, " "));
   }
   rec.views = await chViewNames(ctx, o.url, o.database);
   rec.appliedAt = ctx.now().toISOString();

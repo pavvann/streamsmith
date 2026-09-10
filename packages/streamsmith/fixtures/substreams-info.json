@@ -15,7 +15,7 @@
       "value_type": "int64",
       "update_policy": "set_if_not_exists",
       "initial_block": 51001200,
-      "hash": "e1cecb1771fdbd745ba42c7f194627c24085ac55"
+      "hash": "9b6ebcb6396c199abcca4feed89b2bbced5c71b9"
     },
     {
       "name": "map_vault_probe",
@@ -37,7 +37,7 @@
       ],
       "output_type": "proto:vaultflows.v1.Events",
       "initial_block": 51001200,
-      "hash": "1f7fff8f578f901af673856698b121a1c67eef15"
+      "hash": "58950ab582007b1d30f5313860d713cf52a62734"
     },
     {
       "name": "store_vault_meta",
@@ -51,7 +51,7 @@
       "value_type": "proto:vaultflows.v1.VaultMeta",
       "update_policy": "set_if_not_exists",
       "initial_block": 51001200,
-      "hash": "61405fbb8338c9503a888d018e2038fbeb6bb8bb"
+      "hash": "802a113e21d38ff0696256f840d01896d9030647"
     },
     {
       "name": "map_flows",
@@ -77,7 +77,7 @@
       ],
       "output_type": "proto:vaultflows.v1.Events",
       "initial_block": 51001200,
-      "hash": "af697e133efa2c7565b0bf853399f4153bdbced2"
+      "hash": "0ba6dbc9e387322b242948df8dcb59ac24748fdb"
     },
     {
       "name": "map_share_value_observations",
@@ -94,7 +94,7 @@
       ],
       "output_type": "proto:vaultflows.v1.Events",
       "initial_block": 51001200,
-      "hash": "7e21449aecfc80a4adcad59842929b6f409dd3af"
+      "hash": "289dd33882db87eba287fc118e8d6ce8ef8f0b05"
     },
     {
       "name": "map_events",
@@ -115,7 +115,7 @@
       ],
       "output_type": "proto:vaultflows.v1.Events",
       "initial_block": 51001200,
-      "hash": "1f9e1dff75f677a6493655ab5e9126384b045459"
+      "hash": "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a"
     },
     {
       "name": "erc4626:map_events",
@@ -132,22 +132,1955 @@
     }
   ],
   "proto_packages": [
-    "erc4626.v1",
-    "schema",
-    "sf.codegen.conversation.v1",
-    "sf.substreams.v1.test",
-    "sf.substreams.sink.sql.service.v1",
-    "sf.substreams.index.v1",
-    "sf.substreams.sink.sql.v1",
-    "vaultflows.v1",
-    "sf.substreams.rpc.v2",
-    "sf.firehose.v2",
     "google.protobuf",
-    "sf.substreams",
-    "sf.substreams.v1",
-    "sf.substreams.rpc.v4",
+    "sf.substreams.index.v1",
+    "sf.substreams.sink.service.v1",
+    "erc4626.v1",
+    "sf.substreams.v1.test",
+    "vaultflows.v1",
     "sf.substreams.internal.v2",
+    "sf.firehose.v2",
+    "sf.substreams.sink.sql.service.v1",
+    "sf.substreams.sink.sql.v1",
+    "sf.substreams.v1",
+    "sf.substreams.rpc.v2",
     "sf.substreams.rpc.v3",
-    "sf.substreams.sink.service.v1"
-  ]
+    "sf.substreams.rpc.v4",
+    "sf.substreams",
+    "schema",
+    "sf.codegen.conversation.v1"
+  ],
+  "proto_messages_by_package": {
+    "erc4626.v1": [
+      {
+        "name": "Events",
+        "package": "erc4626.v1",
+        "type": "Message",
+        "file": "v1/erc4626.proto",
+        "proto": "message Events {\n  repeated Transaction transactions = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Transaction",
+        "package": "erc4626.v1",
+        "type": "Message",
+        "file": "v1/erc4626.proto",
+        "proto": "message Transaction {\n  bytes hash = 1;\n  bytes from = 2;\n  optional bytes to = 3;\n  uint64 nonce = 5;\n  string gas_price = 6; // uint256\n  uint64 gas_limit = 7;\n  uint64 gas_used = 8;\n  string value = 9; // uint256\n  repeated Log logs = 10;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Log",
+        "package": "erc4626.v1",
+        "type": "Message",
+        "file": "v1/erc4626.proto",
+        "proto": "message Log {\n  bytes address = 1; // vault contract\n  uint64 ordinal = 2;\n  repeated bytes topics = 3;\n  bytes data = 4;\n  // Call metadata (only available on chains with DetailLevel: EXTENDED)\n  optional Call call = 5;\n  // Native block/log position fields\n  uint32 block_index = 6;\n  oneof log {\n    // events\n    Deposit deposit = 10;\n    Withdraw withdraw = 11;\n  }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Call",
+        "package": "erc4626.v1",
+        "type": "Message",
+        "file": "v1/erc4626.proto",
+        "proto": "message Call {\n  uint32 index = 1;\n  uint64 begin_ordinal = 2;\n  uint64 end_ordinal = 3;\n  bytes caller = 4; // sender\n  bytes address = 5; // recipient\n  string value = 6; // uint256\n  uint64 gas_consumed = 7;\n  uint64 gas_limit = 8;\n  uint32 depth = 9;\n  uint32 parent_index = 10;\n  CallType call_type = 11;\n}",
+        "documentation": "Call metadata (only available on chains with DetailLevel: EXTENDED)",
+        "nested_messages": null
+      },
+      {
+        "name": "Deposit",
+        "package": "erc4626.v1",
+        "type": "Message",
+        "file": "v1/erc4626.proto",
+        "proto": "message Deposit {\n  bytes sender = 10; // address\n  bytes owner = 11; // address\n  string assets = 12; // uint256 (underlying deposited)\n  string shares = 13; // uint256 (vault shares minted)\n}",
+        "documentation": "Deposit(address indexed sender, address indexed owner, uint256 assets, uint256 shares)",
+        "nested_messages": null
+      },
+      {
+        "name": "Withdraw",
+        "package": "erc4626.v1",
+        "type": "Message",
+        "file": "v1/erc4626.proto",
+        "proto": "message Withdraw {\n  bytes sender = 10; // address\n  bytes receiver = 11; // address\n  bytes owner = 12; // address\n  string assets = 13; // uint256 (underlying withdrawn)\n  string shares = 14; // uint256 (vault shares burned)\n}",
+        "documentation": "Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares)",
+        "nested_messages": null
+      },
+      {
+        "name": "CallType",
+        "package": "erc4626.v1",
+        "type": "enum",
+        "file": "v1/erc4626.proto",
+        "proto": "enum CallType {\n  CALL_TYPE_UNSPECIFIED = 0;\n  CALL_TYPE_CALL = 1;\n  CALL_TYPE_CALLCODE = 2;\n  CALL_TYPE_DELEGATE = 3;\n  CALL_TYPE_STATIC = 4;\n  CALL_TYPE_CREATE = 5;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "google.protobuf": [
+      {
+        "name": "FileDescriptorSet",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message FileDescriptorSet {\n  repeated FileDescriptorProto file = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "FileDescriptorProto",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message FileDescriptorProto {\n  optional string name = 1; // file name, relative to root of source tree\n  optional string package = 2; // e.g. \"foo\", \"foo.bar\", etc.\n  // Names of files imported by this file.\n  repeated string dependency = 3;\n  // Indexes of the public imported files in the dependency list above.\n  repeated int32 public_dependency = 10;\n  // Indexes of the weak imported files in the dependency list.\n  // For Google-internal migration only. Do not use.\n  repeated int32 weak_dependency = 11;\n  // All top-level definitions in this file.\n  repeated DescriptorProto message_type = 4;\n  repeated EnumDescriptorProto enum_type = 5;\n  repeated ServiceDescriptorProto service = 6;\n  repeated FieldDescriptorProto extension = 7;\n  optional FileOptions options = 8;\n  // This field contains optional information about the original source code.\n  // You may safely remove this entire field without harming runtime\n  // functionality of the descriptors -- the information is needed only by\n  // development tools.\n  optional SourceCodeInfo source_code_info = 9;\n  // The syntax of the proto file.\n  // The supported values are \"proto2\" and \"proto3\".\n  optional string syntax = 12;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "DescriptorProto",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message DescriptorProto {\n  optional string name = 1;\n  repeated FieldDescriptorProto field = 2;\n  repeated FieldDescriptorProto extension = 6;\n  repeated DescriptorProto nested_type = 3;\n  repeated EnumDescriptorProto enum_type = 4;\n  message ExtensionRange {\n    optional int32 start = 1; // Inclusive.\n    optional int32 end = 2; // Exclusive.\n    optional ExtensionRangeOptions options = 3;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "DescriptorProto.ExtensionRange",
+            "package": "google.protobuf",
+            "type": "Message",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "message ExtensionRange {\n    optional int32 start = 1; // Inclusive.\n    optional int32 end = 2; // Exclusive.\n    optional ExtensionRangeOptions options = 3;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "DescriptorProto.ReservedRange",
+            "package": "google.protobuf",
+            "type": "Message",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "message ReservedRange {\n    optional int32 start = 1; // Inclusive.\n    optional int32 end = 2; // Exclusive.\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "ExtensionRangeOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message ExtensionRangeOptions {\n  // The parser stores options it doesn't recognize here. See above.\n  repeated UninterpretedOption uninterpreted_option = 999;\n  extensions 1000 to max;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "FieldDescriptorProto",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message FieldDescriptorProto {\n  enum Type {\n    // 0 is reserved for errors.\n    // Order is weird for historical reasons.\n    TYPE_DOUBLE = 1;\n    TYPE_FLOAT = 2;\n    // Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT64 if\n    // negative values are likely.\n    TYPE_INT64 = 3;\n    TYPE_UINT64 = 4;\n    // Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT32 if\n    // negative values are likely.\n    TYPE_INT32 = 5;\n    TYPE_FIXED64 = 6;\n    TYPE_FIXED32 = 7;\n    TYPE_BOOL = 8;\n    TYPE_STRING = 9;\n    // Tag-delimited aggregate.\n    // Group type is deprecated and not supported in proto3. However, Proto3\n    // implementations should still be able to parse the group wire format and\n    // treat group fields as unknown fields.\n    TYPE_GROUP = 10;\n    TYPE_MESSAGE = 11; // Length-delimited aggregate.\n    // New in version 2.\n    TYPE_BYTES = 12;\n    TYPE_UINT32 = 13;\n    TYPE_ENUM = 14;\n    TYPE_SFIXED32 = 15;\n    TYPE_SFIXED64 = 16;\n    TYPE_SINT32 = 17; // Uses ZigZag encoding.\n    TYPE_SINT64 = 18; // Uses ZigZag encoding.\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "FieldDescriptorProto.Type",
+            "package": "google.protobuf",
+            "type": "Enum",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "enum Type {\n    // 0 is reserved for errors.\n    // Order is weird for historical reasons.\n    TYPE_DOUBLE = 1;\n    TYPE_FLOAT = 2;\n    // Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT64 if\n    // negative values are likely.\n    TYPE_INT64 = 3;\n    TYPE_UINT64 = 4;\n    // Not ZigZag encoded.  Negative numbers take 10 bytes.  Use TYPE_SINT32 if\n    // negative values are likely.\n    TYPE_INT32 = 5;\n    TYPE_FIXED64 = 6;\n    TYPE_FIXED32 = 7;\n    TYPE_BOOL = 8;\n    TYPE_STRING = 9;\n    // Tag-delimited aggregate.\n    // Group type is deprecated and not supported in proto3. However, Proto3\n    // implementations should still be able to parse the group wire format and\n    // treat group fields as unknown fields.\n    TYPE_GROUP = 10;\n    TYPE_MESSAGE = 11; // Length-delimited aggregate.\n    // New in version 2.\n    TYPE_BYTES = 12;\n    TYPE_UINT32 = 13;\n    TYPE_ENUM = 14;\n    TYPE_SFIXED32 = 15;\n    TYPE_SFIXED64 = 16;\n    TYPE_SINT32 = 17; // Uses ZigZag encoding.\n    TYPE_SINT64 = 18; // Uses ZigZag encoding.\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "FieldDescriptorProto.Label",
+            "package": "google.protobuf",
+            "type": "Enum",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "enum Label {\n    // 0 is reserved for errors\n    LABEL_OPTIONAL = 1;\n    LABEL_REQUIRED = 2;\n    LABEL_REPEATED = 3;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "OneofDescriptorProto",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message OneofDescriptorProto {\n  optional string name = 1;\n  optional OneofOptions options = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "EnumDescriptorProto",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message EnumDescriptorProto {\n  optional string name = 1;\n  repeated EnumValueDescriptorProto value = 2;\n  optional EnumOptions options = 3;\n  // Range of reserved numeric values. Reserved values may not be used by\n  // entries in the same enum. Reserved ranges may not overlap.\n  //\n  // Note that this is distinct from DescriptorProto.ReservedRange in that it\n  // is inclusive such that it can appropriately represent the entire int32\n  // domain.\n  message EnumReservedRange {\n    optional int32 start = 1; // Inclusive.\n    optional int32 end = 2; // Inclusive.\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "EnumDescriptorProto.EnumReservedRange",
+            "package": "google.protobuf",
+            "type": "Message",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "message EnumReservedRange {\n    optional int32 start = 1; // Inclusive.\n    optional int32 end = 2; // Inclusive.\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "EnumValueDescriptorProto",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message EnumValueDescriptorProto {\n  optional string name = 1;\n  optional int32 number = 2;\n  optional EnumValueOptions options = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ServiceDescriptorProto",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message ServiceDescriptorProto {\n  optional string name = 1;\n  repeated MethodDescriptorProto method = 2;\n  optional ServiceOptions options = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "MethodDescriptorProto",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message MethodDescriptorProto {\n  optional string name = 1;\n  // Input and output type names.  These are resolved in the same way as\n  // FieldDescriptorProto.type_name, but must refer to a message type.\n  optional string input_type = 2;\n  optional string output_type = 3;\n  optional MethodOptions options = 4;\n  // Identifies if client streams multiple client messages\n  optional bool client_streaming = 5 [default = false];\n  // Identifies if server streams multiple server messages\n  optional bool server_streaming = 6 [default = false];\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "FileOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message FileOptions {\n  // Sets the Java package where classes generated from this .proto will be\n  // placed.  By default, the proto package is used, but this is often\n  // inappropriate because proto packages do not normally start with backwards\n  // domain names.\n  optional string java_package = 1;\n  // Controls the name of the wrapper Java class generated for the .proto file.\n  // That class will always contain the .proto file's getDescriptor() method as\n  // well as any top-level extensions defined in the .proto file.\n  // If java_multiple_files is disabled, then all the other classes from the\n  // .proto file will be nested inside the single wrapper outer class.\n  optional string java_outer_classname = 8;\n  // If enabled, then the Java code generator will generate a separate .java\n  // file for each top-level message, enum, and service defined in the .proto\n  // file.  Thus, these types will *not* be nested inside the wrapper class\n  // named by java_outer_classname.  However, the wrapper class will still be\n  // generated to contain the file's getDescriptor() method as well as any\n  // top-level extensions defined in the file.\n  optional bool java_multiple_files = 10 [default = false];\n  // This option does nothing.\n  optional bool java_generate_equals_and_hash = 20 [deprecated = true];\n  // If set true, then the Java2 code generator will generate code that\n  // throws an exception whenever an attempt is made to assign a non-UTF-8\n  // byte sequence to a string field.\n  // Message reflection will do the same.\n  // However, an extension field still accepts non-UTF-8 byte sequences.\n  // This option has no effect on when used with the lite runtime.\n  optional bool java_string_check_utf8 = 27 [default = false];\n  // Generated classes can be optimized for speed or code size.\n  enum OptimizeMode {\n    SPEED = 1; // Generate complete code for parsing, serialization,\n    // etc.\n    CODE_SIZE = 2; // Use ReflectionOps to implement these methods.\n    LITE_RUNTIME = 3; // Generate code using MessageLite and the lite runtime.\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "FileOptions.OptimizeMode",
+            "package": "google.protobuf",
+            "type": "Enum",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "enum OptimizeMode {\n    SPEED = 1; // Generate complete code for parsing, serialization,\n    // etc.\n    CODE_SIZE = 2; // Use ReflectionOps to implement these methods.\n    LITE_RUNTIME = 3; // Generate code using MessageLite and the lite runtime.\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "MessageOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message MessageOptions {\n  // Set true to use the old proto1 MessageSet wire format for extensions.\n  // This is provided for backwards-compatibility with the MessageSet wire\n  // format.  You should not use this for any other reason:  It's less\n  // efficient, has fewer features, and is more complicated.\n  //\n  // The message must be defined exactly as follows:\n  //   message Foo {\n  //     option message_set_wire_format = true;\n  //     extensions 4 to max;\n  //   }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "FieldOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message FieldOptions {\n  // The ctype option instructs the C++ code generator to use a different\n  // representation of the field than it normally would.  See the specific\n  // options below.  This option is not yet implemented in the open source\n  // release -- sorry, we'll try to include it in a future version!\n  optional CType ctype = 1 [default = STRING];\n  enum CType {\n    // Default mode.\n    STRING = 0;\n    CORD = 1;\n    STRING_PIECE = 2;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "FieldOptions.CType",
+            "package": "google.protobuf",
+            "type": "Enum",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "enum CType {\n    // Default mode.\n    STRING = 0;\n    CORD = 1;\n    STRING_PIECE = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "FieldOptions.JSType",
+            "package": "google.protobuf",
+            "type": "Enum",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "enum JSType {\n    // Use the default type.\n    JS_NORMAL = 0;\n    // Use JavaScript strings.\n    JS_STRING = 1;\n    // Use JavaScript numbers.\n    JS_NUMBER = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "OneofOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message OneofOptions {\n  // The parser stores options it doesn't recognize here. See above.\n  repeated UninterpretedOption uninterpreted_option = 999;\n  extensions 1000 to max;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "EnumOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message EnumOptions {\n  // Set this option to true to allow mapping different tag names to the same\n  // value.\n  optional bool allow_alias = 2;\n  // Is this enum deprecated?\n  // Depending on the target platform, this can emit Deprecated annotations\n  // for the enum, or it will be completely ignored; in the very least, this\n  // is a formalization for deprecating enums.\n  optional bool deprecated = 3 [default = false];\n  reserved 5;\n  // The parser stores options it doesn't recognize here. See above.\n  repeated UninterpretedOption uninterpreted_option = 999;\n  extensions 1000 to max;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "EnumValueOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message EnumValueOptions {\n  // Is this enum value deprecated?\n  // Depending on the target platform, this can emit Deprecated annotations\n  // for the enum value, or it will be completely ignored; in the very least,\n  // this is a formalization for deprecating enum values.\n  optional bool deprecated = 1 [default = false];\n  // The parser stores options it doesn't recognize here. See above.\n  repeated UninterpretedOption uninterpreted_option = 999;\n  extensions 1000 to max;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ServiceOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message ServiceOptions {\n  // Note:  Field numbers 1 through 32 are reserved for Google's internal RPC\n  //   framework.  We apologize for hoarding these numbers to ourselves, but\n  //   we were already using them long before we decided to release Protocol\n  //   Buffers.\n  // Is this service deprecated?\n  // Depending on the target platform, this can emit Deprecated annotations\n  // for the service, or it will be completely ignored; in the very least,\n  // this is a formalization for deprecating services.\n  optional bool deprecated = 33 [default = false];\n  // The parser stores options it doesn't recognize here. See above.\n  repeated UninterpretedOption uninterpreted_option = 999;\n  extensions 1000 to max;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "MethodOptions",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message MethodOptions {\n  // Note:  Field numbers 1 through 32 are reserved for Google's internal RPC\n  //   framework.  We apologize for hoarding these numbers to ourselves, but\n  //   we were already using them long before we decided to release Protocol\n  //   Buffers.\n  // Is this method deprecated?\n  // Depending on the target platform, this can emit Deprecated annotations\n  // for the method, or it will be completely ignored; in the very least,\n  // this is a formalization for deprecating methods.\n  optional bool deprecated = 33 [default = false];\n  // Is this method side-effect-free (or safe in HTTP parlance), or idempotent,\n  // or neither? HTTP based RPC implementation may choose GET verb for safe\n  // methods, and PUT verb for idempotent methods instead of the default POST.\n  enum IdempotencyLevel {\n    IDEMPOTENCY_UNKNOWN = 0;\n    NO_SIDE_EFFECTS = 1; // implies idempotent\n    IDEMPOTENT = 2; // idempotent, but may have side effects\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "MethodOptions.IdempotencyLevel",
+            "package": "google.protobuf",
+            "type": "Enum",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "enum IdempotencyLevel {\n    IDEMPOTENCY_UNKNOWN = 0;\n    NO_SIDE_EFFECTS = 1; // implies idempotent\n    IDEMPOTENT = 2; // idempotent, but may have side effects\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "UninterpretedOption",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message UninterpretedOption {\n  // The name of the uninterpreted option.  Each string represents a segment in\n  // a dot-separated name.  is_extension is true iff a segment represents an\n  // extension (denoted with parentheses in options specs in .proto files).\n  // E.g.,{ [\"foo\", false], [\"bar.baz\", true], [\"moo\", false] }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "UninterpretedOption.NamePart",
+            "package": "google.protobuf",
+            "type": "Message",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "message NamePart {\n    required string name_part = 1;\n    required bool is_extension = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "SourceCodeInfo",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message SourceCodeInfo {\n  // A Location identifies a piece of source code in a .proto file which\n  // corresponds to a particular definition.  This information is intended\n  // to be useful to IDEs, code indexers, documentation generators, and similar\n  // tools.\n  //\n  // For example, say we have a file like:\n  //   message Foo {\n  //     optional string foo = 1;\n  //   }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "SourceCodeInfo.Location",
+            "package": "google.protobuf",
+            "type": "Message",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "message Location {\n    // Identifies which part of the FileDescriptorProto was defined at this\n    // location.\n    //\n    // Each element is a field number or an index.  They form a path from\n    // the root FileDescriptorProto to the place where the definition occurs.\n    // For example, this path:\n    //   [ 4, 3, 2, 7, 1 ]\n    // refers to:\n    //   file.message_type(3)  // 4, 3\n    //       .field(7)         // 2, 7\n    //       .name()           // 1\n    // This is because FileDescriptorProto.message_type has field number 4:\n    //   repeated DescriptorProto message_type = 4;\n    // and DescriptorProto.field has field number 2:\n    //   repeated FieldDescriptorProto field = 2;\n    // and FieldDescriptorProto.name has field number 1:\n    //   optional string name = 1;\n    //\n    // Thus, the above path gives the location of a field name.  If we removed\n    // the last element:\n    //   [ 4, 3, 2, 7 ]\n    // this path refers to the whole field declaration (from the beginning\n    // of the label to the terminating semicolon).\n    repeated int32 path = 1 [packed = true];\n    // Always has exactly three or four elements: start line, start column,\n    // end line (optional, otherwise assumed same as start line), end column.\n    // These are packed into a single field for efficiency.  Note that line\n    // and column numbers are zero-based -- typically you will want to add\n    // 1 to each before displaying to a user.\n    repeated int32 span = 2 [packed = true];\n    // If this SourceCodeInfo represents a complete declaration, these are any\n    // comments appearing before and after the declaration which appear to be\n    // attached to the declaration.\n    //\n    // A series of line comments appearing on consecutive lines, with no other\n    // tokens appearing on those lines, will be treated as a single comment.\n    //\n    // leading_detached_comments will keep paragraphs of comments that appear\n    // before (but not connected to) the current element. Each paragraph,\n    // separated by empty lines, will be one comment element in the repeated\n    // field.\n    //\n    // Only the comment content is provided; comment markers (e.g. //) are\n    // stripped out.  For block comments, leading whitespace and an asterisk\n    // will be stripped from the beginning of each line other than the first.\n    // Newlines are included in the output.\n    //\n    // Examples:\n    //\n    //   optional int32 foo = 1;  // Comment attached to foo.\n    //   // Comment attached to bar.\n    //   optional int32 bar = 2;\n    //\n    //   optional string baz = 3;\n    //   // Comment attached to baz.\n    //   // Another line attached to baz.\n    //\n    //   // Comment attached to moo.\n    //   //\n    //   // Another line attached to moo.\n    //   optional double moo = 4;\n    //\n    //   // Detached comment for corge. This is not leading or trailing comments\n    //   // to moo or corge because there are blank lines separating it from\n    //   // both.\n    //\n    //   // Detached comment for corge paragraph 2.\n    //\n    //   optional string corge = 5;\n    //   /* Block comment attached\n    //    * to corge.  Leading asterisks\n    //    * will be removed. */\n    //   /* Block comment attached to\n    //    * grault. */\n    //   optional int32 grault = 6;\n    //\n    //   // ignored detached comments.\n    optional string leading_comments = 3;\n    optional string trailing_comments = 4;\n    repeated string leading_detached_comments = 6;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "GeneratedCodeInfo",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/descriptor.proto",
+        "proto": "message GeneratedCodeInfo {\n  // An Annotation connects some span of text in generated code to an element\n  // of its generating .proto file.\n  repeated Annotation annotation = 1;\n  message Annotation {\n    // Identifies the element in the original source .proto file. This field\n    // is formatted the same as SourceCodeInfo.Location.path.\n    repeated int32 path = 1 [packed = true];\n    // Identifies the filesystem path to the original source .proto.\n    optional string source_file = 2;\n    // Identifies the starting offset in bytes in the generated code\n    // that relates to the identified object.\n    optional int32 begin = 3;\n    // Identifies the ending offset in bytes in the generated code that\n    // relates to the identified offset. The end offset should be one past\n    // the last relevant byte (so the length of the text = end - begin).\n    optional int32 end = 4;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "GeneratedCodeInfo.Annotation",
+            "package": "google.protobuf",
+            "type": "Message",
+            "file": "google/protobuf/descriptor.proto",
+            "proto": "message Annotation {\n    // Identifies the element in the original source .proto file. This field\n    // is formatted the same as SourceCodeInfo.Location.path.\n    repeated int32 path = 1 [packed = true];\n    // Identifies the filesystem path to the original source .proto.\n    optional string source_file = 2;\n    // Identifies the starting offset in bytes in the generated code\n    // that relates to the identified object.\n    optional int32 begin = 3;\n    // Identifies the ending offset in bytes in the generated code that\n    // relates to the identified offset. The end offset should be one past\n    // the last relevant byte (so the length of the text = end - begin).\n    optional int32 end = 4;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "Any",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/any.proto",
+        "proto": "message Any {\n  // A URL/resource name that uniquely identifies the type of the serialized\n  // protocol buffer message. This string must contain at least\n  // one \"/\" character. The last segment of the URL's path must represent\n  // the fully qualified name of the type (as in\n  // `path/google.protobuf.Duration`). The name should be in a canonical form\n  // (e.g., leading \".\" is not accepted).\n  //\n  // In practice, teams usually precompile into the binary all types that they\n  // expect it to use in the context of Any. However, for URLs which use the\n  // scheme `http`, `https`, or no scheme, one can optionally set up a type\n  // server that maps type URLs to message definitions as follows:\n  //\n  // * If no scheme is provided, `https` is assumed.\n  // * An HTTP GET on the URL must yield a [google.protobuf.Type][]\n  //   value in binary format, or produce an error.\n  // * Applications are allowed to cache lookup results based on the\n  //   URL, or have them precompiled into a binary to avoid any\n  //   lookup. Therefore, binary compatibility needs to be preserved\n  //   on changes to types. (Use versioned type names to manage\n  //   breaking changes.)\n  //\n  // Note: this functionality is not currently available in the official\n  // protobuf release, and it is not used for type URLs beginning with\n  // type.googleapis.com.\n  //\n  // Schemes other than `http`, `https` (or the empty scheme) might be\n  // used with implementation specific semantics.\n  //\n  string type_url = 1;\n  // Must be a valid serialized protocol buffer of the above specified type.\n  bytes value = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Timestamp",
+        "package": "google.protobuf",
+        "type": "Message",
+        "file": "google/protobuf/timestamp.proto",
+        "proto": "message Timestamp {\n  // Represents seconds of UTC time since Unix epoch\n  // 1970-01-01T00:00:00Z. Must be from 0001-01-01T00:00:00Z to\n  // 9999-12-31T23:59:59Z inclusive.\n  int64 seconds = 1;\n  // Non-negative fractions of a second at nanosecond resolution. Negative\n  // second values with fractions must still have non-negative nanos values\n  // that count forward in time. Must be from 0 to 999,999,999\n  // inclusive.\n  int32 nanos = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "schema": [
+      {
+        "name": "Table",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message Table {\n  string name = 1;\n  optional string child_of = 2;\n  optional ClickhouseTableOptions clickhouse_table_options = 200;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Int128",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message Int128 {\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "UInt128",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message UInt128 {\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Int256",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message Int256 {\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "UInt256",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message UInt256 {\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Decimal128",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message Decimal128 {\n  int32 scale = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Decimal256",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message Decimal256 {\n  int32 scale = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "StringConvertion",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message StringConvertion {\n  oneof convertion {\n    Int128 int128 = 2;\n    UInt128 uint128 = 3;\n    Int256 int256 = 4;\n    UInt256 uint256 = 6;\n    Decimal128 decimal128 = 50;\n    Decimal256 decimal256 = 51;\n  }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Column",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message Column {\n  optional string name = 1;\n  optional string foreign_key = 2;\n  bool unique = 3;\n  bool primary_key = 4;\n  StringConvertion convertTo = 5;\n  bool inline = 6;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ClickhouseTableOptions",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message ClickhouseTableOptions {\n  repeated ClickhouseOrderByField order_by_fields = 1;\n  repeated ClickhousePartitionByField partition_fields = 2;\n  repeated ClickhouseIndexField index_fields = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ClickhousePartitionByField",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message ClickhousePartitionByField {\n  string name = 1;\n  Function function = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ClickhouseOrderByField",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message ClickhouseOrderByField {\n  string name = 1;\n  bool descending = 2;\n  Function function = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ClickhouseIndexField",
+        "package": "schema",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "message ClickhouseIndexField {\n  string name = 1;\n  string field_name = 2;\n  IndexType type = 3;\n  uint32 granularity = 4;\n  Function function = 5;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "IndexType",
+        "package": "schema",
+        "type": "enum",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "enum IndexType {\n  minmax = 0;\n  set = 1;\n  ngrambf_v1 = 2;\n  tokenbf_v1 = 3;\n  bloom_filter = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Function",
+        "package": "schema",
+        "type": "enum",
+        "file": "sf/substreams/sink/sql/schema/v1/schema.proto",
+        "proto": "enum Function {\n  unset = 0;\n  toYYYYMM = 1;\n  toYYYYDD = 2;\n  toYear = 3;\n  toMonth = 4;\n  toDate = 5;\n  toStartOfMonth = 6;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.codegen.conversation.v1": [
+      {
+        "name": "Empty",
+        "package": "sf.codegen.conversation.v1",
+        "type": "Message",
+        "file": "sf/codegen/conversation/v1/conversation.proto",
+        "proto": "message Empty {\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "UserInput",
+        "package": "sf.codegen.conversation.v1",
+        "type": "Message",
+        "file": "sf/codegen/conversation/v1/conversation.proto",
+        "proto": "message UserInput {\n  uint32 msg_id = 1;\n  uint32 from_msg_id = 2;\n  string from_action_id = 3;\n  oneof entry {\n    Start start = 11;\n    TextInput text_input = 15;\n    Selection selection = 17;\n    Confirmation confirmation = 18;\n    Upload file = 16;\n    DownloadedFiles downloaded_files = 20;\n    LocalFile local_file = 21;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "UserInput.TextInput",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message TextInput {\n    string value = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "UserInput.LocalFile",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message LocalFile {\n    bytes value = 1;\n    optional string error = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "UserInput.Start",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Start {\n    string generator_id = 1;\n    Hydrate hydrate = 2;\n    uint32 version = 3;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "UserInput.Hydrate",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Hydrate {\n    string saved_state = 1;\n    bytes signature = 2;\n    uint32 last_msg_id = 3;\n    bool reset_conversation = 4;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "UserInput.Upload",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Upload {\n    string mime_type = 1;\n    string filename = 2;\n    bytes content = 3;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "UserInput.Selection",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Selection {\n    string label = 1;\n    string value = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "UserInput.Confirmation",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Confirmation {\n    bool affirmative = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "UserInput.DownloadedFiles",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message DownloadedFiles {\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "SystemOutput",
+        "package": "sf.codegen.conversation.v1",
+        "type": "Message",
+        "file": "sf/codegen/conversation/v1/conversation.proto",
+        "proto": "message SystemOutput {\n  uint32 msg_id = 1;\n  uint32 from_msg_id = 2;\n  string action_id = 3;\n  string state = 4;\n  bytes state_signature = 5;\n  oneof entry {\n    Message message = 15;\n    ImageWithText image_with_text = 16;\n    ListSelect list_select = 17;\n    TextInput text_input = 18;\n    Confirm confirm = 21;\n    Loading loading = 19;\n    DownloadFiles download_files = 20;\n    LocalFile local_file = 22;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "SystemOutput.Message",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Message {\n    string markdown = 1;\n    string style = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SystemOutput.ImageWithText",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message ImageWithText {\n    string img_url = 1;\n    string markdown = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SystemOutput.ListSelect",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message ListSelect {\n    string id = 1;\n    repeated string labels = 2;\n    repeated string values = 3;\n    repeated string image_urls = 4;\n    string instructions = 6;\n    bool select_many = 8;\n    SelectType select_type = 7;\n    string select_button_label = 5;\n    string default_value = 9;\n    enum SelectType {\n      DROPDOWN = 0;\n      BUTTONS = 1;\n    }",
+            "documentation": "",
+            "nested_messages": [
+              {
+                "name": "SystemOutput.ListSelect.SelectType",
+                "package": "sf.codegen.conversation.v1",
+                "type": "Enum",
+                "file": "sf/codegen/conversation/v1/conversation.proto",
+                "proto": "enum SelectType {\n      DROPDOWN = 0;\n      BUTTONS = 1;\n    }",
+                "documentation": "",
+                "nested_messages": null
+              }
+            ]
+          },
+          {
+            "name": "SystemOutput.TextInput",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message TextInput {\n    string value = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SystemOutput.LocalFile",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message LocalFile {\n    bytes value = 1;\n    optional string error = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SystemOutput.Loading",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Loading {\n    bool loading = 1;\n    string label = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SystemOutput.DownloadFiles",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message DownloadFiles {\n    repeated DownloadFile files = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SystemOutput.DownloadFile",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message DownloadFile {\n    string filename = 1;\n    string type = 2;\n    bytes content = 3;\n    string description = 4;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SystemOutput.Confirm",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Confirm {\n    string prompt = 1;\n    string description = 4;\n    string accept_button_label = 2;\n    string decline_button_label = 3;\n    Button default_button = 5;\n    enum Button {\n      UNSET = 0;\n      CONFIRM = 1;\n      DECLINE = 2;\n    }",
+            "documentation": "",
+            "nested_messages": [
+              {
+                "name": "SystemOutput.Confirm.Button",
+                "package": "sf.codegen.conversation.v1",
+                "type": "Enum",
+                "file": "sf/codegen/conversation/v1/conversation.proto",
+                "proto": "enum Button {\n      UNSET = 0;\n      CONFIRM = 1;\n      DECLINE = 2;\n    }",
+                "documentation": "",
+                "nested_messages": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "DiscoveryRequest",
+        "package": "sf.codegen.conversation.v1",
+        "type": "Message",
+        "file": "sf/codegen/conversation/v1/conversation.proto",
+        "proto": "message DiscoveryRequest {\n  string search_terms = 1;\n  uint64 client_version = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "DiscoveryResponse",
+        "package": "sf.codegen.conversation.v1",
+        "type": "Message",
+        "file": "sf/codegen/conversation/v1/conversation.proto",
+        "proto": "message DiscoveryResponse {\n  repeated Generator generators = 1;\n  message Generator {\n    string id = 1;\n    string title = 2;\n    string description = 3;\n    string icon_url = 4;\n    string endpoint = 5;\n    string group = 6;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "DiscoveryResponse.Generator",
+            "package": "sf.codegen.conversation.v1",
+            "type": "Message",
+            "file": "sf/codegen/conversation/v1/conversation.proto",
+            "proto": "message Generator {\n    string id = 1;\n    string title = 2;\n    string description = 3;\n    string icon_url = 4;\n    string endpoint = 5;\n    string group = 6;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      }
+    ],
+    "sf.firehose.v2": [
+      {
+        "name": "SingleBlockRequest",
+        "package": "sf.firehose.v2",
+        "type": "Message",
+        "file": "sf/firehose/v2/firehose.proto",
+        "proto": "message SingleBlockRequest {\n  oneof reference {\n    BlockNumber block_number = 3;\n    BlockHashAndNumber block_hash_and_number = 4;\n    Cursor cursor = 5;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "SingleBlockRequest.BlockNumber",
+            "package": "sf.firehose.v2",
+            "type": "Message",
+            "file": "sf/firehose/v2/firehose.proto",
+            "proto": "message BlockNumber {\n    uint64 num = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SingleBlockRequest.BlockHashAndNumber",
+            "package": "sf.firehose.v2",
+            "type": "Message",
+            "file": "sf/firehose/v2/firehose.proto",
+            "proto": "message BlockHashAndNumber {\n    uint64 num = 1;\n    string hash = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "SingleBlockRequest.Cursor",
+            "package": "sf.firehose.v2",
+            "type": "Message",
+            "file": "sf/firehose/v2/firehose.proto",
+            "proto": "message Cursor {\n    string cursor = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "SingleBlockResponse",
+        "package": "sf.firehose.v2",
+        "type": "Message",
+        "file": "sf/firehose/v2/firehose.proto",
+        "proto": "message SingleBlockResponse {\n  google.protobuf.Any block = 1;\n  BlockMetadata metadata = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Request",
+        "package": "sf.firehose.v2",
+        "type": "Message",
+        "file": "sf/firehose/v2/firehose.proto",
+        "proto": "message Request {\n  int64 start_block_num = 1;\n  string cursor = 2;\n  uint64 stop_block_num = 3;\n  bool final_blocks_only = 4;\n  repeated google.protobuf.Any transforms = 10;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Response",
+        "package": "sf.firehose.v2",
+        "type": "Message",
+        "file": "sf/firehose/v2/firehose.proto",
+        "proto": "message Response {\n  google.protobuf.Any block = 1;\n  ForkStep step = 6;\n  string cursor = 10;\n  BlockMetadata metadata = 12;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "BlockMetadata",
+        "package": "sf.firehose.v2",
+        "type": "Message",
+        "file": "sf/firehose/v2/firehose.proto",
+        "proto": "message BlockMetadata {\n  uint64 num = 1;\n  string id = 2;\n  uint64 parent_num = 3;\n  string parent_id = 4;\n  uint64 lib_num = 5;\n  google.protobuf.Timestamp time = 6;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "InfoRequest",
+        "package": "sf.firehose.v2",
+        "type": "Message",
+        "file": "sf/firehose/v2/firehose.proto",
+        "proto": "message InfoRequest {\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "InfoResponse",
+        "package": "sf.firehose.v2",
+        "type": "Message",
+        "file": "sf/firehose/v2/firehose.proto",
+        "proto": "message InfoResponse {\n  string chain_name = 1;\n  repeated string chain_name_aliases = 2;\n  uint64 first_streamable_block_num = 3;\n  string first_streamable_block_id = 4;\n  BlockIdEncoding block_id_encoding = 5;\n  repeated string block_features = 10;\n  enum BlockIdEncoding {\n    BLOCK_ID_ENCODING_UNSET = 0;\n    BLOCK_ID_ENCODING_HEX = 1;\n    BLOCK_ID_ENCODING_0X_HEX = 2;\n    BLOCK_ID_ENCODING_BASE58 = 3;\n    BLOCK_ID_ENCODING_BASE64 = 4;\n    BLOCK_ID_ENCODING_BASE64URL = 5;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "InfoResponse.BlockIdEncoding",
+            "package": "sf.firehose.v2",
+            "type": "Enum",
+            "file": "sf/firehose/v2/firehose.proto",
+            "proto": "enum BlockIdEncoding {\n    BLOCK_ID_ENCODING_UNSET = 0;\n    BLOCK_ID_ENCODING_HEX = 1;\n    BLOCK_ID_ENCODING_0X_HEX = 2;\n    BLOCK_ID_ENCODING_BASE58 = 3;\n    BLOCK_ID_ENCODING_BASE64 = 4;\n    BLOCK_ID_ENCODING_BASE64URL = 5;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "ForkStep",
+        "package": "sf.firehose.v2",
+        "type": "enum",
+        "file": "sf/firehose/v2/firehose.proto",
+        "proto": "enum ForkStep {\n  STEP_UNSET = 0;\n  STEP_NEW = 1;\n  STEP_UNDO = 2;\n  STEP_FINAL = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams": [
+      {
+        "name": "FieldOptions",
+        "package": "sf.substreams",
+        "type": "Message",
+        "file": "sf/substreams/options.proto",
+        "proto": "message FieldOptions {\n  // this option informs the `substreams pack` command that it should treat the corresponding manifest value as a path to a file, putting its content as bytes in this field.\n  // must be applied to a `bytes` or `string` field\n  bool load_from_file = 1;\n  // this option informs the `substreams pack` command that it should treat the corresponding manifest value as a path to a folder, zipping its content and putting the zip content as bytes in this field.\n  // must be applied to a `bytes` field\n  bool zip_from_folder = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams.index.v1": [
+      {
+        "name": "Keys",
+        "package": "sf.substreams.index.v1",
+        "type": "Message",
+        "file": "sf/substreams/index/v1/keys.proto",
+        "proto": "message Keys {\n  repeated string keys = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams.internal.v2": [
+      {
+        "name": "ProcessRangeRequest",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message ProcessRangeRequest {\n  reserved 1, 8;\n  uint64 stop_block_num = 2 [deprecated = true];\n  string output_module = 3;\n  sf.substreams.v1.Modules modules = 4;\n  uint32 stage = 5;\n  string metering_config = 6;\n  uint64 first_streamable_block = 7;\n  map<string, string> wasm_extension_configs = 9;\n  string merged_blocks_store = 10;\n  string state_store = 11;\n  string state_store_default_tag = 12;\n  uint64 segment_size = 13;\n  string block_type = 14;\n  uint64 segment_number = 15;\n  bool production_mode = 16;\n  bool stream_output = 17;\n  map<string, string> foundational_store_endpoints = 18;\n  int64 eth_call_fallback_to_latest_duration = 19;\n  int64 eth_call_fallback_to_number_duration = 20;\n  uint64 store_size_limit = 21;\n  uint64 merged_blocks_bundle_size = 22;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ProcessRangeResponse",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message ProcessRangeResponse {\n  reserved 1, 2, 3;\n  oneof type {\n    Failed failed = 4;\n    Completed completed = 5;\n    Update update = 6;\n    BlockScopedData block_scoped_data = 7;\n  }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "BlockScopedData",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message BlockScopedData {\n  google.protobuf.Any output = 1;\n  sf.substreams.v1.Clock clock = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Update",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message Update {\n  uint64 duration_ms = 1;\n  uint64 progress_blocks = 2;\n  uint64 total_bytes_read = 3;\n  uint64 total_bytes_written = 4;\n  repeated ModuleStats modules_stats = 5;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ModuleStats",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message ModuleStats {\n  string name = 1;\n  uint64 processing_time_ms = 2;\n  uint64 store_operation_time_ms = 3;\n  uint64 store_read_count = 4;\n  repeated ExternalCallMetric external_call_metrics = 5;\n  uint64 store_write_count = 10;\n  uint64 store_deleteprefix_count = 11;\n  uint64 store_size_bytes = 12;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ExternalCallMetric",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message ExternalCallMetric {\n  string name = 1;\n  uint64 count = 2;\n  uint64 time_ms = 3;\n  uint64 failed_count = 4;\n  uint64 in_flight_count = 5;\n  uint64 oldest_in_flight_ms = 6;\n  uint64 oldest_in_flight_block = 7;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Completed",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message Completed {\n  reserved 2;\n  repeated BlockRange all_processed_ranges = 1;\n  uint64 processed_blocks = 3;\n  bool streaming_mode = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Failed",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message Failed {\n  string reason = 1;\n  repeated string logs = 2;\n  bool logs_truncated = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "BlockRange",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "message BlockRange {\n  uint64 start_block = 2;\n  uint64 end_block = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "WASMModuleType",
+        "package": "sf.substreams.internal.v2",
+        "type": "enum",
+        "file": "sf/substreams/intern/v2/service.proto",
+        "proto": "enum WASMModuleType {\n  WASM_MODULE_TYPE_UNSPECIFIED = 0;\n  WASM_MODULE_TYPE_RPC_CALL = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ModuleOutput",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/deltas.proto",
+        "proto": "message ModuleOutput {\n  string module_name = 1;\n  oneof data {\n    google.protobuf.Any map_output = 2;\n    sf.substreams.v1.StoreDeltas store_deltas = 3;\n  }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Operations",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/deltas.proto",
+        "proto": "message Operations {\n  repeated Operation operations = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Operation",
+        "package": "sf.substreams.internal.v2",
+        "type": "Message",
+        "file": "sf/substreams/intern/v2/deltas.proto",
+        "proto": "message Operation {\n  Type type = 1;\n  uint64 ord = 2;\n  string key = 3;\n  bytes value = 4;\n  enum Type {\n    SET = 0;\n    SET_BYTES = 1;\n    SET_IF_NOT_EXISTS = 2;\n    SET_BYTES_IF_NOT_EXISTS = 3;\n    APPEND = 4;\n    DELETE_PREFIX = 5;\n    SET_MAX_BIG_INT = 6;\n    SET_MAX_INT64 = 7;\n    SET_MAX_FLOAT64 = 8;\n    SET_MAX_BIG_DECIMAL = 9;\n    SET_MIN_BIG_INT = 10;\n    SET_MIN_INT64 = 11;\n    SET_MIN_FLOAT64 = 12;\n    SET_MIN_BIG_DECIMAL = 13;\n    SUM_BIG_INT = 14;\n    SUM_INT64 = 15;\n    SUM_FLOAT64 = 16;\n    SUM_BIG_DECIMAL = 17;\n    SET_SUM_INT64 = 18;\n    SET_SUM_FLOAT64 = 19;\n    SET_SUM_BIG_INT = 20;\n    SET_SUM_BIG_DECIMAL = 21;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "Operation.Type",
+            "package": "sf.substreams.internal.v2",
+            "type": "Enum",
+            "file": "sf/substreams/intern/v2/deltas.proto",
+            "proto": "enum Type {\n    SET = 0;\n    SET_BYTES = 1;\n    SET_IF_NOT_EXISTS = 2;\n    SET_BYTES_IF_NOT_EXISTS = 3;\n    APPEND = 4;\n    DELETE_PREFIX = 5;\n    SET_MAX_BIG_INT = 6;\n    SET_MAX_INT64 = 7;\n    SET_MAX_FLOAT64 = 8;\n    SET_MAX_BIG_DECIMAL = 9;\n    SET_MIN_BIG_INT = 10;\n    SET_MIN_INT64 = 11;\n    SET_MIN_FLOAT64 = 12;\n    SET_MIN_BIG_DECIMAL = 13;\n    SUM_BIG_INT = 14;\n    SUM_INT64 = 15;\n    SUM_FLOAT64 = 16;\n    SUM_BIG_DECIMAL = 17;\n    SET_SUM_INT64 = 18;\n    SET_SUM_FLOAT64 = 19;\n    SET_SUM_BIG_INT = 20;\n    SET_SUM_BIG_DECIMAL = 21;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      }
+    ],
+    "sf.substreams.rpc.v2": [
+      {
+        "name": "Request",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message Request {\n  int64 start_block_num = 1;\n  string start_cursor = 2;\n  uint64 stop_block_num = 3;\n  // With final_block_only, you only receive blocks that are irreversible:\n  // 'final_block_height' will be equal to current block and no 'undo_signal' will ever be sent\n  bool final_blocks_only = 4;\n  // Substreams has two mode when executing your module(s) either development mode or production\n  // mode. Development and production modes impact the execution of Substreams, important aspects\n  // of execution include:\n  // * The time required to reach the first byte.\n  // * The speed that large ranges get executed.\n  // * The module logs and outputs sent back to the client.\n  //\n  // By default, the engine runs in developer mode, with richer and deeper output. Differences\n  // between production and development modes include:\n  // * Forward parallel execution is enabled in production mode and disabled in development mode\n  // * The time required to reach the first byte in development mode is faster than in production mode.\n  //\n  // Specific attributes of development mode include:\n  // * The client will receive all of the executed module's logs.\n  // * It's possible to request specific store snapshots in the execution tree (via `debug_initial_store_snapshot_for_modules`).\n  // * Multiple module's output is possible.\n  //\n  // With production mode`, however, you trade off functionality for high speed enabling forward\n  // parallel execution of module ahead of time.\n  bool production_mode = 5;\n  string output_module = 6;\n  sf.substreams.v1.Modules modules = 7;\n  // Available only in developer mode\n  repeated string debug_initial_store_snapshot_for_modules = 10;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Response",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message Response {\n  oneof message {\n    SessionInit session = 1; // Always sent first\n    ModulesProgress progress = 2; // Progress of data preparation, before sending in the stream of `data` events.\n    BlockScopedData block_scoped_data = 3;\n    BlockUndoSignal block_undo_signal = 4;\n    Error fatal_error = 5;\n    // Available only in developer mode, and only if `debug_initial_store_snapshot_for_modules` is set.\n    InitialSnapshotData debug_snapshot_data = 10;\n    // Available only in developer mode, and only if `debug_initial_store_snapshot_for_modules` is set.\n    InitialSnapshotComplete debug_snapshot_complete = 11;\n  }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "BlockUndoSignal",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message BlockUndoSignal {\n  sf.substreams.v1.BlockRef last_valid_block = 1;\n  string last_valid_cursor = 2;\n}",
+        "documentation": "BlockUndoSignal informs you that every bit of data\n with a block number above 'last_valid_block' has been reverted\n on-chain. Delete that data and restart from 'last_valid_cursor'",
+        "nested_messages": null
+      },
+      {
+        "name": "BlockScopedData",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message BlockScopedData {\n  MapModuleOutput output = 1;\n  sf.substreams.v1.Clock clock = 2;\n  string cursor = 3;\n  // Non-deterministic, allows substreams-sink to let go of their undo data.\n  uint64 final_block_height = 4;\n  repeated MapModuleOutput debug_map_outputs = 10;\n  repeated StoreModuleOutput debug_store_outputs = 11;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "SessionInit",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message SessionInit {\n  string trace_id = 1;\n  uint64 resolved_start_block = 2;\n  uint64 linear_handoff_block = 3;\n  uint64 max_parallel_workers = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "InitialSnapshotComplete",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message InitialSnapshotComplete {\n  string cursor = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "InitialSnapshotData",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message InitialSnapshotData {\n  string module_name = 1;\n  repeated StoreDelta deltas = 2;\n  uint64 sent_keys = 4;\n  uint64 total_keys = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "MapModuleOutput",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message MapModuleOutput {\n  string name = 1;\n  google.protobuf.Any map_output = 2;\n  // DebugOutputInfo is available in non-production mode only\n  OutputDebugInfo debug_info = 10;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "StoreModuleOutput",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message StoreModuleOutput {\n  string name = 1;\n  repeated StoreDelta debug_store_deltas = 2;\n  OutputDebugInfo debug_info = 10;\n}",
+        "documentation": "StoreModuleOutput are produced for store modules in development mode.\n It is not possible to retrieve store models in production, with parallelization\n enabled. If you need the deltas directly, write a pass through mapper module\n that will get them down to you.",
+        "nested_messages": null
+      },
+      {
+        "name": "OutputDebugInfo",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message OutputDebugInfo {\n  repeated string logs = 1;\n  // LogsTruncated is a flag that tells you if you received all the logs or if they\n  // were truncated because you logged too much (fixed limit currently is set to 128 KiB).\n  bool logs_truncated = 2;\n  bool cached = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ModulesProgress",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message ModulesProgress {\n  reserved 1;\n  // List of jobs running on tier2 servers\n  repeated Job running_jobs = 2;\n  // Execution statistics for each module\n  repeated ModuleStats modules_stats = 3;\n  // Stages definition and completed block ranges\n  repeated Stage stages = 4;\n  ProcessedBytes processed_bytes = 5;\n}",
+        "documentation": "ModulesProgress is a message that is sent every 500ms",
+        "nested_messages": null
+      },
+      {
+        "name": "ProcessedBytes",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message ProcessedBytes {\n  uint64 total_bytes_read = 1;\n  uint64 total_bytes_written = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Error",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message Error {\n  string module = 1;\n  string reason = 2;\n  repeated string logs = 3;\n  // FailureLogsTruncated is a flag that tells you if you received all the logs or if they\n  // were truncated because you logged too much (fixed limit currently is set to 128 KiB).\n  bool logs_truncated = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Job",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message Job {\n  uint32 stage = 1;\n  uint64 start_block = 2;\n  uint64 stop_block = 3;\n  uint64 processed_blocks = 4;\n  uint64 duration_ms = 5;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Stage",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message Stage {\n  repeated string modules = 1;\n  repeated BlockRange completed_ranges = 2;\n}",
+        "documentation": "Stages definition and completed block ranges",
+        "nested_messages": null
+      },
+      {
+        "name": "ModuleStats",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message ModuleStats {\n  // name of the module\n  string name = 1;\n  // total_processed_blocks is the sum of blocks sent to that module code\n  uint64 total_processed_block_count = 2;\n  // total_processing_time_ms is the sum of all time spent running that module code\n  uint64 total_processing_time_ms = 3;\n  // // external_calls are chain-specific intrinsics, like \"Ethereum RPC calls\".\n  repeated ExternalCallMetric external_call_metrics = 4;\n  // total_store_operation_time_ms is the sum of all time spent running that module code waiting for a store operation (ex: read, write, delete...)\n  uint64 total_store_operation_time_ms = 5;\n  // total_store_read_count is the sum of all the store Read operations called from that module code\n  uint64 total_store_read_count = 6;\n  // total_store_write_count is the sum of all store Write operations called from that module code (store-only)\n  uint64 total_store_write_count = 10;\n  // total_store_deleteprefix_count is the sum of all store DeletePrefix operations called from that module code (store-only)\n  // note that DeletePrefix can be a costly operation on large stores\n  uint64 total_store_deleteprefix_count = 11;\n  // store_size_bytes is the uncompressed size of the full KV store for that module, from the last 'merge' operation (store-only)\n  uint64 store_size_bytes = 12;\n  // total_store_merging_time_ms is the time spent merging partial stores into a full KV store for that module (store-only)\n  uint64 total_store_merging_time_ms = 13;\n  // store_currently_merging is true if there is a merging operation (partial store to full KV store) on the way.\n  bool store_currently_merging = 14;\n  // highest_contiguous_block is the highest block in the highest merged full KV store of that module (store-only)\n  uint64 highest_contiguous_block = 15;\n}",
+        "documentation": "ModuleStats gathers metrics and statistics from each module, running on tier1 or tier2\n All the 'count' and 'time_ms' values may include duplicate for each stage going over that module",
+        "nested_messages": null
+      },
+      {
+        "name": "ExternalCallMetric",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message ExternalCallMetric {\n  string name = 1;\n  uint64 count = 2;\n  uint64 time_ms = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "StoreDelta",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message StoreDelta {\n  enum Operation {\n    UNSET = 0;\n    CREATE = 1;\n    UPDATE = 2;\n    DELETE = 3;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "StoreDelta.Operation",
+            "package": "sf.substreams.rpc.v2",
+            "type": "Enum",
+            "file": "sf/substreams/rpc/v2/service.proto",
+            "proto": "enum Operation {\n    UNSET = 0;\n    CREATE = 1;\n    UPDATE = 2;\n    DELETE = 3;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "BlockRange",
+        "package": "sf.substreams.rpc.v2",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v2/service.proto",
+        "proto": "message BlockRange {\n  uint64 start_block = 2;\n  uint64 end_block = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams.rpc.v3": [
+      {
+        "name": "Request",
+        "package": "sf.substreams.rpc.v3",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v3/service.proto",
+        "proto": "message Request {\n  reserved 15;\n  int64 start_block_num = 1;\n  string start_cursor = 2;\n  uint64 stop_block_num = 3;\n  bool final_blocks_only = 4;\n  bool production_mode = 5;\n  string output_module = 6;\n  sf.substreams.v1.Package package = 7;\n  map<string, string> params = 8;\n  string network = 9;\n  repeated string debug_initial_store_snapshot_for_modules = 10;\n  bool noop_mode = 11;\n  uint64 limit_processed_blocks = 12;\n  repeated string dev_output_modules = 13;\n  uint64 progress_messages_interval_ms = 14;\n  bool partial_blocks = 16;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams.rpc.v4": [
+      {
+        "name": "EstimateRequest",
+        "package": "sf.substreams.rpc.v4",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v4/estimate.proto",
+        "proto": "message EstimateRequest {\n  sf.substreams.v1.Package package = 1;\n  string output_module = 2;\n  int64 start_block_num = 3;\n  uint64 stop_block_num = 4;\n  double sample_percentage = 5;\n  map<string, string> params = 6;\n  string network = 7;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "EstimateResponse",
+        "package": "sf.substreams.rpc.v4",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v4/estimate.proto",
+        "proto": "message EstimateResponse {\n  oneof message {\n    EstimateProgress progress = 1;\n    Estimate estimate = 2;\n  }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "EstimateProgress",
+        "package": "sf.substreams.rpc.v4",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v4/estimate.proto",
+        "proto": "message EstimateProgress {\n  uint64 completed_segments = 1;\n  uint64 total_segments = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Estimate",
+        "package": "sf.substreams.rpc.v4",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v4/estimate.proto",
+        "proto": "message Estimate {\n  reserved 6;\n  uint64 resolved_start_block = 1;\n  uint64 resolved_stop_block = 2;\n  uint64 segment_block_count = 3;\n  uint32 stage_count = 4;\n  uint64 blocks_to_process = 5;\n  uint64 total_blocks_to_process_uncached = 7;\n  uint64 estimated_egress_bytes = 8;\n  double bytes_per_block = 9;\n  Sampling sampling = 10;\n  uint64 framing_bytes_per_message = 11;\n  uint64 estimated_message_count = 12;\n  bool block_filtered = 13;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Sampling",
+        "package": "sf.substreams.rpc.v4",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v4/estimate.proto",
+        "proto": "message Sampling {\n  reserved 2;\n  double percentage = 1;\n  string note = 3;\n  uint64 sampled_blocks = 4;\n  uint64 sampled_bytes = 5;\n  repeated SampledSegment segments = 6;\n  uint64 sampled_messages = 7;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "SampledSegment",
+        "package": "sf.substreams.rpc.v4",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v4/estimate.proto",
+        "proto": "message SampledSegment {\n  uint64 start_block = 1;\n  uint64 stop_block = 2;\n  uint64 uncompressed_bytes = 3;\n  bool from_cache = 4;\n  bool size_from_metadata = 5;\n  uint64 represented_start_block = 6;\n  uint64 represented_blocks = 7;\n  uint64 estimated_bytes = 8;\n  uint64 message_count = 9;\n  uint64 processed_blocks = 10;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Response",
+        "package": "sf.substreams.rpc.v4",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v4/service.proto",
+        "proto": "message Response {\n  oneof message {\n    sf.substreams.rpc.v2.SessionInit session = 1;\n    sf.substreams.rpc.v2.ModulesProgress progress = 2;\n    BlockScopedDatas block_scoped_datas = 3;\n    sf.substreams.rpc.v2.BlockUndoSignal block_undo_signal = 4;\n    sf.substreams.rpc.v2.Error fatal_error = 5;\n    sf.substreams.rpc.v2.InitialSnapshotData debug_snapshot_data = 10;\n    sf.substreams.rpc.v2.InitialSnapshotComplete debug_snapshot_complete = 11;\n  }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "BlockScopedDatas",
+        "package": "sf.substreams.rpc.v4",
+        "type": "Message",
+        "file": "sf/substreams/rpc/v4/service.proto",
+        "proto": "message BlockScopedDatas {\n  repeated sf.substreams.rpc.v2.BlockScopedData items = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams.sink.service.v1": [
+      {
+        "name": "DeployRequest",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message DeployRequest {\n  sf.substreams.v1.Package substreams_package = 1;\n  bool development_mode = 2;\n  repeated Parameter parameters = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Parameter",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message Parameter {\n  string key = 1;\n  string value = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "DeployResponse",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message DeployResponse {\n  DeploymentStatus status = 1;\n  // deployment_id is a short name (max 8 characters) that uniquely identifies your deployment\n  string deployment_id = 2;\n  map<string, string> services = 3;\n  string reason = 4;\n  string motd = 5;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "UpdateRequest",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message UpdateRequest {\n  sf.substreams.v1.Package substreams_package = 1;\n  string deployment_id = 2;\n  bool reset = 3;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "UpdateResponse",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message UpdateResponse {\n  DeploymentStatus status = 1;\n  map<string, string> services = 2;\n  string reason = 3;\n  string motd = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "InfoRequest",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message InfoRequest {\n  string deployment_id = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "InfoResponse",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message InfoResponse {\n  DeploymentStatus status = 1;\n  map<string, string> services = 2;\n  string reason = 3;\n  PackageInfo package_info = 4;\n  SinkProgress progress = 5;\n  string motd = 6;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "SinkProgress",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message SinkProgress {\n  uint64 last_processed_block = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "PackageInfo",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message PackageInfo {\n  string name = 1;\n  string version = 2;\n  string output_module_name = 3;\n  string output_module_hash = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ListRequest",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message ListRequest {\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ListResponse",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message ListResponse {\n  repeated DeploymentWithStatus deployments = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "DeploymentWithStatus",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message DeploymentWithStatus {\n  string id = 1;\n  DeploymentStatus status = 2;\n  string reason = 3;\n  PackageInfo package_info = 4;\n  SinkProgress progress = 5;\n  string motd = 6;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "RemoveRequest",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message RemoveRequest {\n  string deployment_id = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "RemoveResponse",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message RemoveResponse {\n  DeploymentStatus previous_status = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "PauseRequest",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message PauseRequest {\n  string deployment_id = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "PauseResponse",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message PauseResponse {\n  DeploymentStatus previous_status = 1;\n  DeploymentStatus new_status = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "StopRequest",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message StopRequest {\n  string deployment_id = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "StopResponse",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message StopResponse {\n  DeploymentStatus previous_status = 1;\n  DeploymentStatus new_status = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ResumeRequest",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message ResumeRequest {\n  string deployment_id = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ResumeResponse",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "message ResumeResponse {\n  DeploymentStatus previous_status = 1;\n  DeploymentStatus new_status = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "DeploymentStatus",
+        "package": "sf.substreams.sink.service.v1",
+        "type": "enum",
+        "file": "sf/substreams/sink/service/v1/service.proto",
+        "proto": "enum DeploymentStatus {\n  UNKNOWN = 0;\n  RUNNING = 1;\n  FAILING = 2;\n  PAUSED = 3;\n  STOPPED = 4;\n  STARTING = 5;\n  PAUSING = 6;\n  STOPPING = 7;\n  REMOVING = 8;\n  RESUMING = 9;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams.sink.sql.service.v1": [
+      {
+        "name": "Service",
+        "package": "sf.substreams.sink.sql.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/services/v1/services.proto",
+        "proto": "message Service {\n  string schema = 1 [(sf.substreams.options) = { load_from_file: true }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "Service.Engine",
+            "package": "sf.substreams.sink.sql.service.v1",
+            "type": "Enum",
+            "file": "sf/substreams/sink/sql/services/v1/services.proto",
+            "proto": "enum Engine {\n    unset = 0;\n    postgres = 1;\n    clickhouse = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "DBTConfig",
+        "package": "sf.substreams.sink.sql.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/services/v1/services.proto",
+        "proto": "message DBTConfig {\n  bytes files = 1 [\n    (sf.substreams.options) = { zip_from_folder: true }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "HasuraFrontend",
+        "package": "sf.substreams.sink.sql.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/services/v1/services.proto",
+        "proto": "message HasuraFrontend {\n  bool enabled = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "PostgraphileFrontend",
+        "package": "sf.substreams.sink.sql.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/services/v1/services.proto",
+        "proto": "message PostgraphileFrontend {\n  bool enabled = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "PGWebFrontend",
+        "package": "sf.substreams.sink.sql.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/services/v1/services.proto",
+        "proto": "message PGWebFrontend {\n  bool enabled = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "RESTFrontend",
+        "package": "sf.substreams.sink.sql.service.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/services/v1/services.proto",
+        "proto": "message RESTFrontend {\n  bool enabled = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams.sink.sql.v1": [
+      {
+        "name": "Service",
+        "package": "sf.substreams.sink.sql.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/v1/deprecated.proto",
+        "proto": "message Service {\n  string schema = 1 [(sf.substreams.options) = { load_from_file: true }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "Service.Engine",
+            "package": "sf.substreams.sink.sql.v1",
+            "type": "Enum",
+            "file": "sf/substreams/sink/sql/v1/deprecated.proto",
+            "proto": "enum Engine {\n    unset = 0;\n    postgres = 1;\n    clickhouse = 2;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "DBTConfig",
+        "package": "sf.substreams.sink.sql.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/v1/deprecated.proto",
+        "proto": "message DBTConfig {\n  bytes files = 1 [\n    (sf.substreams.options) = { zip_from_folder: true }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "HasuraFrontend",
+        "package": "sf.substreams.sink.sql.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/v1/deprecated.proto",
+        "proto": "message HasuraFrontend {\n  bool enabled = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "PostgraphileFrontend",
+        "package": "sf.substreams.sink.sql.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/v1/deprecated.proto",
+        "proto": "message PostgraphileFrontend {\n  bool enabled = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "PGWebFrontend",
+        "package": "sf.substreams.sink.sql.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/v1/deprecated.proto",
+        "proto": "message PGWebFrontend {\n  bool enabled = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "RESTFrontend",
+        "package": "sf.substreams.sink.sql.v1",
+        "type": "Message",
+        "file": "sf/substreams/sink/sql/v1/deprecated.proto",
+        "proto": "message RESTFrontend {\n  bool enabled = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "sf.substreams.v1": [
+      {
+        "name": "Modules",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/modules.proto",
+        "proto": "message Modules {\n  repeated Module modules = 1;\n  repeated Binary binaries = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Binary",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/modules.proto",
+        "proto": "message Binary {\n  string type = 1;\n  bytes content = 2;\n}",
+        "documentation": "Binary represents some code compiled to its binary form.",
+        "nested_messages": null
+      },
+      {
+        "name": "Module",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/modules.proto",
+        "proto": "message Module {\n  string name = 1;\n  oneof kind {\n    KindMap kind_map = 2;\n    KindStore kind_store = 3;\n    KindBlockIndex kind_block_index = 10;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "Module.BlockFilter",
+            "package": "sf.substreams.v1",
+            "type": "Message",
+            "file": "sf/substreams/v1/modules.proto",
+            "proto": "message BlockFilter {\n    string module = 1;\n    oneof query {\n      string query_string = 2;\n      QueryFromParams query_from_params = 3; // QueryFromStore query_from_store_keys = 3;\n    }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "Module.QueryFromParams",
+            "package": "sf.substreams.v1",
+            "type": "Message",
+            "file": "sf/substreams/v1/modules.proto",
+            "proto": "message QueryFromParams {\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "Module.KindMap",
+            "package": "sf.substreams.v1",
+            "type": "Message",
+            "file": "sf/substreams/v1/modules.proto",
+            "proto": "message KindMap {\n    string output_type = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "Module.KindStore",
+            "package": "sf.substreams.v1",
+            "type": "Message",
+            "file": "sf/substreams/v1/modules.proto",
+            "proto": "message KindStore {\n    // The `update_policy` determines the functions available to mutate the store\n    // (like `set()`, `set_if_not_exists()` or `sum()`, etc..) in\n    // order to ensure that parallel operations are possible and deterministic\n    //\n    // Say a store cumulates keys from block 0 to 1M, and a second store\n    // cumulates keys from block 1M to 2M. When we want to use this\n    // store as a dependency for a downstream module, we will merge the\n    // two stores according to this policy.\n    UpdatePolicy update_policy = 1;\n    string value_type = 2;\n    enum UpdatePolicy {\n      UPDATE_POLICY_UNSET = 0;\n      // Provides a store where you can `set()` keys, and the latest key wins\n      UPDATE_POLICY_SET = 1;\n      // Provides a store where you can `set_if_not_exists()` keys, and the first key wins\n      UPDATE_POLICY_SET_IF_NOT_EXISTS = 2;\n      // Provides a store where you can `add_*()` keys, where two stores merge by summing its values.\n      UPDATE_POLICY_ADD = 3;\n      // Provides a store where you can `min_*()` keys, where two stores merge by leaving the minimum value.\n      UPDATE_POLICY_MIN = 4;\n      // Provides a store where you can `max_*()` keys, where two stores merge by leaving the maximum value.\n      UPDATE_POLICY_MAX = 5;\n      // Provides a store where you can `append()` keys, where two stores merge by concatenating the bytes in order.\n      UPDATE_POLICY_APPEND = 6;\n      // Provides a store with both `set()` and `sum()` functions.\n      UPDATE_POLICY_SET_SUM = 7;\n    }",
+            "documentation": "",
+            "nested_messages": [
+              {
+                "name": "Module.KindStore.UpdatePolicy",
+                "package": "sf.substreams.v1",
+                "type": "Enum",
+                "file": "sf/substreams/v1/modules.proto",
+                "proto": "enum UpdatePolicy {\n      UPDATE_POLICY_UNSET = 0;\n      // Provides a store where you can `set()` keys, and the latest key wins\n      UPDATE_POLICY_SET = 1;\n      // Provides a store where you can `set_if_not_exists()` keys, and the first key wins\n      UPDATE_POLICY_SET_IF_NOT_EXISTS = 2;\n      // Provides a store where you can `add_*()` keys, where two stores merge by summing its values.\n      UPDATE_POLICY_ADD = 3;\n      // Provides a store where you can `min_*()` keys, where two stores merge by leaving the minimum value.\n      UPDATE_POLICY_MIN = 4;\n      // Provides a store where you can `max_*()` keys, where two stores merge by leaving the maximum value.\n      UPDATE_POLICY_MAX = 5;\n      // Provides a store where you can `append()` keys, where two stores merge by concatenating the bytes in order.\n      UPDATE_POLICY_APPEND = 6;\n      // Provides a store with both `set()` and `sum()` functions.\n      UPDATE_POLICY_SET_SUM = 7;\n    }",
+                "documentation": "",
+                "nested_messages": null
+              }
+            ]
+          },
+          {
+            "name": "Module.KindBlockIndex",
+            "package": "sf.substreams.v1",
+            "type": "Message",
+            "file": "sf/substreams/v1/modules.proto",
+            "proto": "message KindBlockIndex {\n    string output_type = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          },
+          {
+            "name": "Module.Input",
+            "package": "sf.substreams.v1",
+            "type": "Message",
+            "file": "sf/substreams/v1/modules.proto",
+            "proto": "message Input {\n    oneof input {\n      Source source = 1;\n      Map map = 2;\n      Store store = 3;\n      Params params = 4;\n    }",
+            "documentation": "",
+            "nested_messages": [
+              {
+                "name": "Module.Input.Source",
+                "package": "sf.substreams.v1",
+                "type": "Message",
+                "file": "sf/substreams/v1/modules.proto",
+                "proto": "message Source {\n      string type = 1; // ex: \"sf.ethereum.type.v1.Block\"\n    }",
+                "documentation": "",
+                "nested_messages": null
+              },
+              {
+                "name": "Module.Input.Map",
+                "package": "sf.substreams.v1",
+                "type": "Message",
+                "file": "sf/substreams/v1/modules.proto",
+                "proto": "message Map {\n      string module_name = 1; // ex: \"block_to_pairs\"\n    }",
+                "documentation": "",
+                "nested_messages": null
+              },
+              {
+                "name": "Module.Input.Store",
+                "package": "sf.substreams.v1",
+                "type": "Message",
+                "file": "sf/substreams/v1/modules.proto",
+                "proto": "message Store {\n      string module_name = 1;\n      Mode mode = 2;\n      enum Mode {\n        UNSET = 0;\n        GET = 1;\n        DELTAS = 2;\n      }",
+                "documentation": "",
+                "nested_messages": [
+                  {
+                    "name": "Module.Input.Store.Mode",
+                    "package": "sf.substreams.v1",
+                    "type": "Enum",
+                    "file": "sf/substreams/v1/modules.proto",
+                    "proto": "enum Mode {\n        UNSET = 0;\n        GET = 1;\n        DELTAS = 2;\n      }",
+                    "documentation": "",
+                    "nested_messages": null
+                  }
+                ]
+              },
+              {
+                "name": "Module.Input.Params",
+                "package": "sf.substreams.v1",
+                "type": "Message",
+                "file": "sf/substreams/v1/modules.proto",
+                "proto": "message Params {\n      string value = 1;\n    }",
+                "documentation": "",
+                "nested_messages": null
+              }
+            ]
+          },
+          {
+            "name": "Module.Output",
+            "package": "sf.substreams.v1",
+            "type": "Message",
+            "file": "sf/substreams/v1/modules.proto",
+            "proto": "message Output {\n    string type = 1;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      },
+      {
+        "name": "Package",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/package.proto",
+        "proto": "message Package {\n  // Needs to be one so this file can be used _directly_ as a\n  // buf `Image` andor a ProtoSet for grpcurl and other tools\n  repeated google.protobuf.FileDescriptorProto proto_files = 1;\n  reserved 2 to 4;\n  uint64 version = 5;\n  Modules modules = 6;\n  repeated ModuleMetadata module_meta = 7;\n  repeated PackageMetadata package_meta = 8;\n  // Source network for Substreams to fetch its data from.\n  string network = 9;\n  google.protobuf.Any sink_config = 10;\n  string sink_module = 11;\n  // image is the bytes to a JPEG, WebP or PNG file. Max size is 2 MiB\n  bytes image = 12;\n  map<string, NetworkParams> networks = 13;\n  map<string, string> block_filters = 14;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "NetworkParams",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/package.proto",
+        "proto": "message NetworkParams {\n  map<string, uint64> initialBlocks = 1;\n  map<string, string> params = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "PackageMetadata",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/package.proto",
+        "proto": "message PackageMetadata {\n  string version = 1;\n  string url = 2;\n  string name = 3;\n  string doc = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ModuleMetadata",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/package.proto",
+        "proto": "message ModuleMetadata {\n  // Corresponds to the index in `Package.metadata.package_meta`\n  uint64 package_index = 1;\n  string doc = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Clock",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/clock.proto",
+        "proto": "message Clock {\n  string id = 1;\n  uint64 number = 2;\n  google.protobuf.Timestamp timestamp = 3;\n}",
+        "documentation": "Clock is a pointer to a block with added timestamp",
+        "nested_messages": null
+      },
+      {
+        "name": "BlockRef",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/clock.proto",
+        "proto": "message BlockRef {\n  string id = 1;\n  uint64 number = 2;\n}",
+        "documentation": "BlockRef is a pointer to a block to which we don't know the timestamp",
+        "nested_messages": null
+      },
+      {
+        "name": "StoreDeltas",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/deltas.proto",
+        "proto": "message StoreDeltas {\n  repeated StoreDelta store_deltas = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "StoreDelta",
+        "package": "sf.substreams.v1",
+        "type": "Message",
+        "file": "sf/substreams/v1/deltas.proto",
+        "proto": "message StoreDelta {\n  Operation operation = 1;\n  uint64 ordinal = 2;\n  string key = 3;\n  bytes old_value = 4;\n  bytes new_value = 5;\n  enum Operation {\n    UNSET = 0;\n    CREATE = 1;\n    UPDATE = 2;\n    DELETE = 3;\n  }",
+        "documentation": "",
+        "nested_messages": [
+          {
+            "name": "StoreDelta.Operation",
+            "package": "sf.substreams.v1",
+            "type": "Enum",
+            "file": "sf/substreams/v1/deltas.proto",
+            "proto": "enum Operation {\n    UNSET = 0;\n    CREATE = 1;\n    UPDATE = 2;\n    DELETE = 3;\n  }",
+            "documentation": "",
+            "nested_messages": null
+          }
+        ]
+      }
+    ],
+    "sf.substreams.v1.test": [
+      {
+        "name": "Block",
+        "package": "sf.substreams.v1.test",
+        "type": "Message",
+        "file": "sf/substreams/v1/test/test.proto",
+        "proto": "message Block {\n  string id = 1;\n  uint64 number = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "MapResult",
+        "package": "sf.substreams.v1.test",
+        "type": "Message",
+        "file": "sf/substreams/v1/test/test.proto",
+        "proto": "message MapResult {\n  uint64 block_number = 1;\n  string block_hash = 2;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Boolean",
+        "package": "sf.substreams.v1.test",
+        "type": "Message",
+        "file": "sf/substreams/v1/test/test.proto",
+        "proto": "message Boolean {\n  bool result = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "Array",
+        "package": "sf.substreams.v1.test",
+        "type": "Message",
+        "file": "sf/substreams/v1/test/test.proto",
+        "proto": "message Array {\n  repeated string result = 1;\n}",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ],
+    "vaultflows.v1": [
+      {
+        "name": "Events",
+        "package": "vaultflows.v1",
+        "type": "Message",
+        "file": "vaultflows.proto",
+        "proto": "message Events {\n  repeated VaultFlow vault_flows = 1;\n  repeated ShareValueObservation share_value_observations = 2;\n  repeated VaultMeta vaults = 3;\n  repeated ShareTransfer share_transfers = 4;\n}",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "VaultFlow",
+        "package": "vaultflows.v1",
+        "type": "Message",
+        "file": "vaultflows.proto",
+        "proto": "message VaultFlow {\n  option (schema.table) = {\n    name: \"vault_flows\",\n    clickhouse_table_options: {\n      order_by_fields: [\n        { name: \"id\" }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ShareValueObservation",
+        "package": "vaultflows.v1",
+        "type": "Message",
+        "file": "vaultflows.proto",
+        "proto": "message ShareValueObservation {\n  option (schema.table) = {\n    name: \"share_value_observations\",\n    clickhouse_table_options: {\n      order_by_fields: [\n        { name: \"id\" }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "VaultMeta",
+        "package": "vaultflows.v1",
+        "type": "Message",
+        "file": "vaultflows.proto",
+        "proto": "message VaultMeta {\n  option (schema.table) = {\n    name: \"vaults\",\n    clickhouse_table_options: {\n      order_by_fields: [ { name: \"id\" }",
+        "documentation": "",
+        "nested_messages": null
+      },
+      {
+        "name": "ShareTransfer",
+        "package": "vaultflows.v1",
+        "type": "Message",
+        "file": "vaultflows.proto",
+        "proto": "message ShareTransfer {\n  option (schema.table) = {\n    name: \"share_transfers\",\n    clickhouse_table_options: {\n      order_by_fields: [\n        { name: \"id\" }",
+        "documentation": "",
+        "nested_messages": null
+      }
+    ]
+  }
 }

@@ -1,5 +1,5 @@
 // specs/gate.yaml loader — executes the file as written by A2b (see its "Runner contract" header).
-import YAML from "yaml";
+import { parseSpecYaml } from "../util/yaml.ts";
 import { readText } from "../util/fsx.ts";
 
 export type Severity = "fail" | "warn";
@@ -213,8 +213,18 @@ export function parseGateConfig(raw: Rec): GateConfig {
   return cfg;
 }
 
+/**
+ * gate.yaml is full of unquoted 0x-prefixed hex scalars (vault addresses, tx hashes, block hashes). See
+ * src/util/yaml.ts: the `yaml` default schema resolves those as hex integers, so they must be parsed with the
+ * HEX/OCT int tags removed. Never quote them in specs/gate.yaml instead — the file is frozen evidence.
+ */
+export function parseGateYaml(text: string): Rec {
+  const raw = parseSpecYaml<Rec>(text);
+  if (!isRec(raw)) throw new Error("gate.yaml: empty or invalid");
+  return raw;
+}
+
 export async function loadGateConfig(path: string): Promise<GateConfig> {
-  const raw = YAML.parse(await readText(path)) as Rec;
-  if (!isRec(raw)) throw new Error(`gate.yaml: empty or invalid at ${path}`);
+  const raw = parseGateYaml(await readText(path));
   return parseGateConfig(raw);
 }

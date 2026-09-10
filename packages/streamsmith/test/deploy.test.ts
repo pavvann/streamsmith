@@ -96,7 +96,7 @@ describe("self-managed sink", () => {
   it("builds the from-proto command and parses the DSN without leaking secrets", () => {
     const { cmd, args } = buildSinkCommand({ runId: "r", streamsmith: ss, dsn: "clickhouse://sink:sinkpass@localhost:9000/vaultflows", spkg: "erc4626-flows-v0.1.0.spkg", endpoint: "base-mainnet.streamingfast.io:443", cursorFile: "runs/r/cursor.txt" });
     expect(cmd).toBe("substreams-sink-sql");
-    expect(args).toEqual(["from-proto", "clickhouse://sink:sinkpass@localhost:9000/vaultflows", "erc4626-flows-v0.1.0.spkg", "map_events", "-e", "base-mainnet.streamingfast.io:443", "--network", "base", "-s", "49276800", "--clickhouse-cursor-file-path", "runs/r/cursor.txt"]);
+    expect(args).toEqual(["from-proto", "clickhouse://sink:sinkpass@localhost:9000/vaultflows", "erc4626-flows-v0.1.0.spkg", "map_events", "-e", "base-mainnet.streamingfast.io:443", "--network", "base", "-s", "51001200", "--clickhouse-cursor-file-path", "runs/r/cursor.txt"]);
     const cli = buildSinkCommand({ runId: "r", streamsmith: ss, dsn: "d", spkg: "s", endpoint: "e", flavor: "substreams-cli", stopBlock: 5 });
     expect(cli.cmd).toBe("substreams");
     expect(cli.args.slice(0, 2)).toEqual(["sink", "clickhouse"]);
@@ -144,10 +144,12 @@ describe("views after deploy (packages/erc4626-flows/sql/views.sql, optional)", 
     const repo = await makeTempRepo();
     try {
       const bodies: string[] = [];
+      const urls: string[] = [];
       let tablesPresent = false;
-      const fetch = async (_url: string, init?: RequestInit) => {
+      const fetch = async (url: string, init?: RequestInit) => {
         const body = String(init?.body ?? "");
         bodies.push(body);
+        urls.push(url);
         if (body.includes("system.tables") && body.includes("name IN")) return new Response(tablesPresent ? "vault_flows\nshare_value_observations\nvaults\nshare_transfers\n" : "vault_flows\n");
         if (body.includes("engine IN ('View'")) return new Response("share_value_growth\nvault_flows_24h\n");
         return new Response("");
@@ -168,12 +170,16 @@ describe("views after deploy (packages/erc4626-flows/sql/views.sql, optional)", 
       expect(missing.applied).toEqual([]);
       tablesPresent = true;
       bodies.length = 0;
+      urls.length = 0;
       const ok = await applyViews(ctx, { url: "http://localhost:8123/", database: "default", requiredTables: tables, waitSeconds: 30 });
       expect(ok.skipped).toBeUndefined();
       expect(ok.applied).toEqual(["CREATE OR REPLACE VIEW vault_flows_24h AS SELECT vault FROM vault_flows WHERE _deleted_ = 0", "CREATE OR REPLACE VIEW share_value_growth AS SELECT vault FROM share_value_observations WHERE _deleted_ = 0 AND call_ok = 1"]);
       expect(ok.views).toEqual(["share_value_growth", "vault_flows_24h"]);
       expect(ok.sha256).toHaveLength(64);
       expect(bodies.filter((b) => b.startsWith("CREATE OR REPLACE VIEW"))).toHaveLength(2);
+      // the DDL body uses unqualified table names, so the session database has to travel with the request —
+      // without it ClickHouse resolves them against `default` and the views land in the wrong database
+      expect(urls.filter((_, i) => bodies[i]!.startsWith("CREATE OR REPLACE VIEW"))).toEqual(["http://localhost:8123/?database=default", "http://localhost:8123/?database=default"]);
       expect(bodies[0]).toMatch(/SELECT name FROM system.tables WHERE database = 'default' AND name IN \('vault_flows', 'share_value_observations', 'vaults', 'share_transfers'\)/);
     } finally {
       await repo.cleanup();

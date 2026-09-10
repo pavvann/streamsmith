@@ -4,12 +4,13 @@ import { readFile } from "node:fs/promises";
 import { assembleReceipt, validateReceipt, writeReceipt, receiptHash, checkReceiptAgainstLive, hostFingerprint, normalizeSql, receiptFileName, type Receipt } from "../src/receipt.ts";
 import { loadStreamsmithConfig } from "../src/config/streamsmith.ts";
 import { validateAgainstSchema } from "../src/schema/jsonschema.ts";
-import { REPO_ROOT, makeTempRepo } from "./helpers.ts";
+import { REPO_ROOT, makeTempRepo, infoFixture } from "./helpers.ts";
 
 const schema = JSON.parse(await readFile(join(REPO_ROOT, "specs", "receipt.schema.json"), "utf8"));
 const ss = await loadStreamsmithConfig(join(REPO_ROOT, "specs", "streamsmith.yaml"));
 const gate = { passed: true, ranges: ["51092254:51092454", "51092254:51092454", "51092998:51093002"], assertions: [{ name: "rows_gt", passed: true, detail: "5 rows" }, { name: "log_index_matches_rpc", passed: true, detail: "skipped" }], toolVersions: { substreams: "1.22.0" } };
-const MH = "1f9e1dff75f677a6493655ab5e9126384b045459";
+// map_events module hash of the local build (fixtures/substreams-info.json, refreshed by `pnpm fixtures`)
+const MH = (await infoFixture()).modules!.find((m) => m.name === "map_events")!.hash!;
 const HASHES = { map_events: MH, map_flows: "af697e133efa2c7565b0bf853399f4153bdbced2" };
 const H = "a".repeat(64);
 
@@ -81,7 +82,7 @@ describe("receipt", () => {
     const live = { packageHash: H, sinkSchemaHash: "c".repeat(64), headBlock: 51100000, chainHead: 51100100 };
     expect(checkReceiptAgainstLive(r, live)).toMatchObject({ ok: true, reasons: [], provenance: { lagBlocks: 100, packageHash: H } });
     expect(checkReceiptAgainstLive(r, { ...live, packageHash: "d".repeat(64) }).reasons[0]).toMatch(/package hash mismatch/);
-    expect(checkReceiptAgainstLive(r, { ...live, outputModuleHash: "ff" }).reasons[0]).toMatch(/output module hash mismatch: live ff vs receipt 1f9e1dff/);
+    expect(checkReceiptAgainstLive(r, { ...live, outputModuleHash: "ff" }).reasons[0]).toMatch(new RegExp(`output module hash mismatch: live ff vs receipt ${MH}`));
     expect(checkReceiptAgainstLive(r, { ...live, outputModuleHash: MH }).ok).toBe(true);
     expect(checkReceiptAgainstLive(r, live).provenance.outputModuleHash).toBe(MH);
     expect(checkReceiptAgainstLive(r, { ...live, sinkSchemaHash: undefined }).reasons[0]).toMatch(/schema hash unavailable/);

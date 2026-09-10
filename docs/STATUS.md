@@ -36,3 +36,8 @@
 - 20:10 IST: ClickHouse Cloud provisioned and verified (sink/ro users). Privy treasurer + agent authorization keys received and stored. Privy spike still waits on the two fee-wrapper vault_ids + gas sponsorship.
 - 20:35 IST: Privy spike PASS (wallet 0xcdC8…fDC, policy, agent signer, positions, denials). A6b done: mcpgen + generated MCP green (73 tests, 7 tools, fail-closed chain). Solo team confirmed.
 - 20:55 IST: ETHGlobal registration done; fee-wrapper addresses recorded (10% fee → disclose). Competitor noted: Sourcemark (Graph+Hedera+Bazantic paid read layer with provenance gate) → sharpen messaging: lead with 'one prompt → deployed ERC-4626 pipeline → money moved', receipt/refusal as supporting trust mechanism.
+
+## Sept 10 (IST 22:10)
+- A4c done: Streamsmith green (75/75), real E2E on live data (gate 18/18, receipt, mcp, views). A9 done: enum→string, 171 flow rows in local ClickHouse (kill criterion met). A6b done: mcpgen green.
+- Published erc4626-flows v0.1.0 to substreams.dev; Portal login done; hosted deployment depdehi448c87998ebb763b created, awaiting ClickHouse secret entry by Pawan.
+- Usage 58% at 21:40 IST; no new agents; A10 (Vaultpilot) still running.

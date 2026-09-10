@@ -1,4 +1,4 @@
-import YAML from "yaml";
+import { parseSpecYaml } from "../util/yaml.ts";
 import { readText } from "../util/fsx.ts";
 import { sha256Canonical } from "../util/hash.ts";
 
@@ -31,7 +31,7 @@ export interface StreamsmithConfig {
 }
 
 export async function loadStreamsmithConfig(path: string): Promise<StreamsmithConfig> {
-  const raw = YAML.parse(await readText(path)) as Record<string, unknown>;
+  const raw = parseSpecYaml<Record<string, unknown>>(await readText(path));
   const req = <T>(k: string): T => {
     if (raw[k] === undefined || raw[k] === null) throw new Error(`streamsmith.yaml: missing "${k}"`);
     return raw[k] as T;

@@ -9,7 +9,7 @@ import type { RpcEvidence } from "../src/gate/rpc.ts";
 import { runFixture, schemaFixture, infoFixture, REPO_ROOT } from "./helpers.ts";
 import type { SubstreamsInfo } from "../src/proto/descriptor.ts";
 
-const SPEC = "11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b";
+let SPEC: string; // specs/gate.yaml descriptorHash.expectedSpecSha256 — read, never hardcoded
 const G = "0x050ce30b927da55177a4914ec73480238bad56f0";
 const STK = "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9";
 
@@ -18,6 +18,7 @@ const texts: Record<string, string> = {};
 const runs: Record<string, ParsedRun> = {};
 beforeAll(async () => {
   gate = await loadGateConfig(join(REPO_ROOT, "specs", "gate.yaml"));
+  SPEC = gate.expectedSpecSha256!;
   ss = await loadStreamsmithConfig(join(REPO_ROOT, "specs", "streamsmith.yaml"));
   schema = await schemaFixture();
   info = await infoFixture();
@@ -60,7 +61,7 @@ describe("every assertion in specs/gate.yaml has an evaluator", () => {
   });
 
   it("spec_unmodified / descriptor_hash_match compare the normalized hashes and honour the renderer self-check", () => {
-    expect(one("spec_unmodified", inputs(GOOD)).detail).toMatch(/match: specs\/vaultflows.proto normalized descriptor sha256 11b959fc.* \(renderer self-check ok\)/);
+    expect(one("spec_unmodified", inputs(GOOD)).detail).toMatch(new RegExp(`^match: specs/vaultflows.proto normalized descriptor sha256 ${SPEC} vs expected ${SPEC} \\(renderer self-check ok\\)$`));
     expect(one("spec_unmodified", inputs(GOOD, { descriptor: { ...descriptorOk(), specHash: "ab" } }))).toMatchObject({ passed: false });
     expect(one("descriptor_hash_match", inputs(GOOD, { descriptor: { ...descriptorOk(), spkgHash: "ab" } })).detail).toMatch(/MISMATCH/);
     expect(one("descriptor_hash_match", inputs(GOOD, { descriptor: { ...descriptorOk(), spkgHash: undefined } })).detail).toMatch(/no spkg-side hash/);
@@ -80,7 +81,7 @@ describe("every assertion in specs/gate.yaml has an evaluator", () => {
     const netParams = structuredClone(info); netParams.networks = { base: { params: { map_flows: "other" } } };
     expect(one("params_match", inputs(GOOD, { spkgInfo: netParams })).detail).toMatch(/networks.base.params.map_flows differs/);
     expect(one("params_match", inputs(GOOD, { spkgInfo: undefined, spkgInfoError: "spkg not found" })).detail).toMatch(/spkg not found/);
-    expect(one("spkg_metadata", inputs(GOOD)).detail).toMatch(/erc4626-flows v0.1.0 on base; map_events -> proto:vaultflows.v1.Events \(module hash 1f9e1dff/);
+    expect(one("spkg_metadata", inputs(GOOD)).detail).toBe(`erc4626-flows v0.1.0 on base; map_events -> proto:vaultflows.v1.Events (module hash ${info.modules!.find((m) => m.name === "map_events")!.hash})`);
     const wrongVersion = structuredClone(info); wrongVersion.version = "v0.2.0";
     expect(one("spkg_metadata", inputs(GOOD, { spkgInfo: wrongVersion })).detail).toMatch(/version "v0.2.0" != "v0.1.0"/);
   });
@@ -91,7 +92,7 @@ describe("every assertion in specs/gate.yaml has an evaluator", () => {
     expect(one("known_vault_present", inputs(GOOD)).passed).toBe(true);
     const kv = one("known_vault_present", inputs(BAD));
     expect(kv.passed).toBe(false);
-    expect(kv.detail).toMatch(new RegExp(`${STK}: 0/1 rows with meta_valid && call_ok`));
+    expect(kv.detail).toMatch(new RegExp(`${STK}: 0/3 rows with meta_valid && call_ok`));
     expect(one("reference_flows_present", inputs(GOOD)).detail).toMatch(/4 reference rows present in 5 vault_flows rows; chain_id 8453/);
     const rf = one("reference_flows_present", inputs(BAD));
     expect(rf.passed).toBe(false);
@@ -112,7 +113,7 @@ describe("every assertion in specs/gate.yaml has an evaluator", () => {
     expect(op.detail).toMatch(/0 rows at block 51093000 \(want exactly 1\)/);
     expect(op.detail).toMatch(/observation: 1 observation rows off the 1800-block grid/);
     // an observation row inside the primary range fails the "primary has zero observation rows" clause
-    expect(one("observation_present", inputs({ ...GOOD, primary: "observation" })).detail).toMatch(/primary: 1 observation rows but no multiple of 1800 in 51092254:51092454/);
+    expect(one("observation_present", inputs({ ...GOOD, primary: "observation" })).detail).toMatch(/primary: 2 observation rows but no multiple of 1800 in 51092254:51092454/);
     expect(one("observation_matches_reference", inputs(GOOD)).detail).toMatch(/4 values match the listed eth_call reference at block 51093000/);
     expect(one("observation_matches_reference", inputs(BAD)).detail).toMatch(new RegExp(`${G}: no row at block 51093000`));
   });
@@ -157,7 +158,7 @@ describe("every assertion in specs/gate.yaml has an evaluator", () => {
   });
 
   it("output_decodes_against_contract rejects unknown fields and flags the legacy call_status object", () => {
-    expect(one("output_decodes_against_contract", inputs(GOOD)).detail).toMatch(/7 lines decode as vaultflows.v1.Events with unknown fields rejected/);
+    expect(one("output_decodes_against_contract", inputs(GOOD)).detail).toMatch(/11 lines decode as vaultflows.v1.Events with unknown fields rejected/);
     const bad = one("output_decodes_against_contract", inputs(BAD));
     expect(bad.passed).toBe(false);
     expect(bad.detail).toMatch(/unknown field "unknownTable" in .vaultflows.v1.Events/);
@@ -168,10 +169,11 @@ describe("every assertion in specs/gate.yaml has an evaluator", () => {
 
   it("banned_words scans the listed files case-insensitively and tolerates a missing README", () => {
     expect(one("banned_words", inputs(GOOD)).detail).toBe("5 patterns, 0 matches in 5 files");
-    const hit = one("banned_words", inputs(GOOD, { files: { ...files, "packages/erc4626-flows/README.md": "Great Yield and APY here\nshare price\nno tvl mention\nrisky business" } }));
+    const hit = one("banned_words", inputs(GOOD, { files: { ...files, "packages/erc4626-flows/README.md": "Great Yield and APY here\nshare price\nnothing to report\nrisky business" } }));
     expect(hit.passed).toBe(false);
     expect(hit.detail).toMatch(/README.md:1: Great Yield and APY here \(y\[i\]eld\)/);
     expect(hit.detail).toMatch(/README.md:2: share price/);
+    // line 3 matches no pattern and must not be reported
     expect(hit.detail).toMatch(/README.md:4: risky business/);
     expect(hit.detail).not.toMatch(/README.md:3/);
   });

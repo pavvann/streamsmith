@@ -2,7 +2,7 @@
   "name": "@ethonline26/streamsmith",
   "version": "0.1.0",
   "private": true,
-  "description": "Streamsmith: promotion pipeline for Substreams packages — gate, publish, deploy, receipt, manifest, case study.",
+  "description": "Streamsmith: promotion pipeline for Substreams packages \u2014 gate, publish, deploy, receipt, manifest, case study.",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -18,7 +18,8 @@
     "streamsmith": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "fixtures": "tsx scripts/refresh-fixtures.mts"
   },
   "dependencies": {
     "yaml": "^2.9.0"

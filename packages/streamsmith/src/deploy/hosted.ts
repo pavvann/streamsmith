@@ -43,7 +43,9 @@ export function summarizeState(s: DeploymentStateSummary): { headBlock?: number;
   if (exec?.currentBlock !== undefined) out.headBlock = exec.currentBlock;
   if (exec?.headBlock !== undefined) out.chainHead = exec.headBlock;
   if (out.headBlock !== undefined && out.chainHead !== undefined) out.lagBlocks = Math.max(0, out.chainHead - out.headBlock);
-  if (exec?.headBlockTimeDrift !== undefined) out.lagSeconds = exec.headBlockTimeDrift;
+  // head_block_time_drift is an int64 in the Portal proto but arrives fractional over JSON (e.g. 24.5);
+  // specs/receipt.schema.json lagSeconds is an integer, so it is cast like the int64 it claims to be.
+  if (exec?.headBlockTimeDrift !== undefined) out.lagSeconds = Math.trunc(exec.headBlockTimeDrift);
   return out;
 }
 

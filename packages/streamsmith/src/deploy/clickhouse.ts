@@ -13,9 +13,14 @@ export function redactUrl(url: string): string {
   }
 }
 
-/** POST a query; returns the raw response body (default format TSV). */
-export async function chQuery(ctx: Ctx, url: string, sql: string, format?: string): Promise<string> {
+/**
+ * POST a query; returns the raw response body (default format TSV).
+ * `database` sets the session database (`?database=`), which is what unqualified table names in a
+ * `CREATE VIEW` body resolve against — without it they resolve to `default` wherever the views land.
+ */
+export async function chQuery(ctx: Ctx, url: string, sql: string, format?: string, database?: string): Promise<string> {
   const u = new URL(url);
+  if (database) u.searchParams.set("database", database);
   const headers: Record<string, string> = { "Content-Type": "text/plain" };
   if (u.username || u.password) {
     headers.Authorization = `Basic ${Buffer.from(`${decodeURIComponent(u.username)}:${decodeURIComponent(u.password)}`).toString("base64")}`;

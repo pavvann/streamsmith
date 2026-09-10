@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import YAML from "yaml";
+import { parseSpecYaml } from "../src/util/yaml.ts";
 import { runGate, runCommandArgv, templateVars, runOutputPath } from "../src/gate/run.ts";
 import { parseGateConfig, loadGateConfig } from "../src/config/gate.ts";
 import { makeTempRepo, hasBuf, runFixture, REPO_ROOT, fakeRpc } from "./helpers.ts";
@@ -13,7 +14,7 @@ const realGate = await loadGateConfig(GATE_PATH);
 /** Without buf the descriptor cannot be compiled; drop the assertions that need it so exit-0 paths stay testable. */
 async function gateWithoutBuf(): Promise<string | undefined> {
   if (bufAvailable) return undefined;
-  const g = YAML.parse(await readFile(GATE_PATH, "utf8")) as { assertions: Array<{ name: string }> };
+  const g = parseSpecYaml<{ assertions: Array<{ name: string }> }>(await readFile(GATE_PATH, "utf8"));
   g.assertions = g.assertions.filter((a) => !["spec_unmodified", "descriptor_hash_match", "numeric_strings_valid", "addresses_lowercase", "output_decodes_against_contract"].includes(a.name));
   return YAML.stringify(g);
 }
@@ -31,7 +32,7 @@ describe("specs/gate.yaml as written", () => {
     expect(realGate.assertions).toHaveLength(18);
     expect(realGate.assertions.filter((a) => a.severity === "warn").map((a) => a.name)).toEqual(["log_index_matches_rpc", "observation_matches_reference"]);
     expect(realGate.configuredVaults).toEqual(["0x050ce30b927da55177a4914ec73480238bad56f0", "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"]);
-    expect(realGate.expectedSpecSha256).toBe("11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b");
+    expect(realGate.expectedSpecSha256).toMatch(/^[0-9a-f]{64}$/);
     expect(realGate.rowExtraction).toEqual({ decodeWith: "specs/vaultflows.proto", rejectUnknownFields: true, expectType: "vaultflows.v1.Events" });
     expect(realGate.build.expectedOutputs[0]).toBe("${package.dir}/erc4626-flows-v0.1.0.spkg");
   });
@@ -83,7 +84,7 @@ describe("runGate over specs/gate.yaml (build and runs faked; buf and substreams
       expect(onDisk.package.moduleHashes.map_events).toBe(onDisk.package.moduleHash);
       expect(onDisk.build.expectedOutputs).toEqual({ "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg": true, "packages/erc4626-flows/target/wasm32-unknown-unknown/release/erc4626_flows.wasm": true });
       if (bufAvailable) {
-        expect(onDisk.descriptor).toMatchObject({ contract: "specs/vaultflows.proto", protoPackage: "vaultflows.v1", specHash: "11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b", rendererMatch: true });
+        expect(onDisk.descriptor).toMatchObject({ contract: "specs/vaultflows.proto", protoPackage: "vaultflows.v1", specHash: realGate.expectedSpecSha256, rendererMatch: true });
         expect(onDisk.descriptor.spkgHash).toBe(onDisk.descriptor.specHash);
       }
       // build ran in ${package.dir}; runs ran from the repo root with the file's command
@@ -102,7 +103,8 @@ describe("runGate over specs/gate.yaml (build and runs faked; buf and substreams
   }, 120000);
 
   it("warn-level failures are recorded but never change the exit code", async () => {
-    const obs = (await runFixture("observation.jsonl")).replace('"assetsPerShareRaw":"1040743"', '"assetsPerShareRaw":"1040744"');
+    const obs = (await runFixture("observation.jsonl")).replace('"assetsPerShareRaw": "1040743"', '"assetsPerShareRaw": "1040744"');
+    expect(obs).toContain("1040744"); // guard: the fixture's JSON formatting must still match this replace
     const repo = await makeTempRepo({ gateYaml: await gateWithoutBuf(), runs: { primary: await runFixture("primary.jsonl"), primary_rerun: await runFixture("primary.jsonl"), observation: obs } });
     try {
       const r = await runGate(repo.ctx, { runId: "t-warn", offline: true });

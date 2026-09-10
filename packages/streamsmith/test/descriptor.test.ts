@@ -2,26 +2,29 @@ import { describe, it, expect } from "vitest";
 import { mkdtemp, writeFile, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import YAML from "yaml";
 import { specDescriptor, spkgDescriptor, normalizedDescriptorHash, makeContractWorkspace, substreamsInfo } from "../src/proto/descriptor.ts";
 import { ProcessRunner } from "../src/util/exec.ts";
 import { createCtx } from "../src/util/ctx.ts";
 import { moduleHashesOf } from "../src/gate/run.ts";
 import { makeTempRepo, hasBuf, hasPython3, hasSubstreams, fdsFixture, pathExists, REPO_ROOT, REAL_SPKG } from "./helpers.ts";
+import { parseSpecYaml } from "../src/util/yaml.ts";
 
-const EXPECTED = "11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b";
 const bufAvailable = await hasBuf();
 const pythonAvailable = await hasPython3();
 const substreamsAvailable = await hasSubstreams();
 const realSpkgPresent = await pathExists(REAL_SPKG);
-const gateYaml = YAML.parse(await readFile(join(REPO_ROOT, "specs", "gate.yaml"), "utf8")) as { descriptorHash: { expectedSpecSha256: string; referenceScript: string } };
+const gateYaml = parseSpecYaml<{ descriptorHash: { expectedSpecSha256: string; referenceScript: string } }>(await readFile(join(REPO_ROOT, "specs", "gate.yaml"), "utf8"));
+// The one source of truth for the expected contract hash. It changes whenever specs/vaultflows.proto changes.
+const EXPECTED = gateYaml.descriptorHash.expectedSpecSha256;
 
 describe("normalized descriptor hash (specs/gate.yaml descriptorHash.algorithm, steps 3-5)", () => {
   it("reproduces expectedSpecSha256 from buf's FileDescriptorSet JSON (fixtures/vaultflows.fds.json)", async () => {
     const { hash, canonical } = normalizedDescriptorHash(await fdsFixture(), "vaultflows.v1");
-    expect(gateYaml.descriptorHash.expectedSpecSha256).toBe(EXPECTED);
+    expect(EXPECTED).toMatch(/^[0-9a-f]{64}$/);
     expect(hash).toBe(EXPECTED);
-    expect(canonical.startsWith('{"dependency":["sf/substreams/sink/sql/schema/v1/schema.proto"],"enumType":')).toBe(true);
+    expect(canonical.startsWith('{"dependency":["sf/substreams/sink/sql/schema/v1/schema.proto"],"messageType":')).toBe(true);
+    // no enum fields in the contract: substreams-sink-sql 4.13.1 from-proto panics on a populated proto3 enum
+    expect(canonical).not.toMatch(/"enumType"/);
     expect(canonical).not.toMatch(/jsonName|sourceCodeInfo|"name":"vaultflows.proto"/);
     expect(canonical).toMatch(/"\[schema.table\]":\{"clickhouseTableOptions"/);
   });
@@ -104,16 +107,21 @@ describe.skipIf(!bufAvailable)("descriptor hashing with buf", () => {
     }
   }, 60000);
 
-  it.skipIf(!realSpkgPresent)("the local build packages/erc4626-flows/erc4626-flows-v0.1.0.spkg carries the frozen contract", async () => {
+  /**
+   * This is gate.yaml `descriptor_hash_match` against the artifact on disk: the .spkg must embed the current
+   * contract. A failure here means packages/erc4626-flows needs `substreams build` (this package never builds it),
+   * and the gate would fail for the same reason.
+   */
+  it.skipIf(!realSpkgPresent || !substreamsAvailable)("the local build packages/erc4626-flows/erc4626-flows-v0.1.0.spkg carries the frozen contract", async () => {
     const ctx = await createCtx({ root: REPO_ROOT, log: () => {} });
+    const info = await substreamsInfo(ctx, REAL_SPKG, { expandNetworks: true });
+    expect(info).toMatchObject({ name: "erc4626-flows", version: "v0.1.0", network: "base" });
+    const hashes = moduleHashesOf(info);
+    expect(hashes.map_events).toMatch(/^[0-9a-f]{40}$/);
+    expect(Object.keys(hashes)).toEqual(expect.arrayContaining(["map_flows", "map_share_value_observations", "map_vault_probe", "map_events"]));
+
+    expect(info.proto_source_code?.["vaultflows.v1"]?.some((f) => f.filename.endsWith("vaultflows.proto"))).toBe(true);
     const d = await spkgDescriptor(ctx, REAL_SPKG, "vaultflows.v1");
-    expect(d.hash).toBe(EXPECTED);
-    if (substreamsAvailable) {
-      const info = await substreamsInfo(ctx, REAL_SPKG, { expandNetworks: true });
-      expect(info).toMatchObject({ name: "erc4626-flows", version: "v0.1.0", network: "base" });
-      const hashes = moduleHashesOf(info);
-      expect(hashes.map_events).toMatch(/^[0-9a-f]{40}$/);
-      expect(Object.keys(hashes)).toEqual(expect.arrayContaining(["map_flows", "map_share_value_observations", "map_vault_probe", "map_events"]));
-    }
+    expect(d.hash, "the local .spkg embeds a different contract than specs/vaultflows.proto — rebuild it with `substreams build` in packages/erc4626-flows").toBe(EXPECTED);
   }, 60000);
 });

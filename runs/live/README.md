@@ -11,7 +11,7 @@ populated enum field (`docs/build/sink-spike.md`). spkg used: `packages/erc4626-
 
 | file | command | result |
 |---|---|---|
-| `observation-51092998-51093002.jsonl` | `substreams run … map_share_value_observations -s 51092998 -t 51093002 --limit-processed-blocks 0` | exit 0, 4 s. 1 line at block 51093000: both vaults, assets_per_share 1040743 / 1039913 (= `convertToAssets(1e18)` read directly at that block by A2b). Byte-identical to the pre-change recording (`ShareValueObservation` has no enum field). |
+| `observation-51092998-51093002.jsonl` | `substreams run … map_events -s 51092998 -t 51093002 --limit-processed-blocks 0` (gate observation run; regenerated with map_events on Sept 10 22:10 IST) | exit 0, 4 s. 1 line at block 51093000: both vaults, assets_per_share 1040743 / 1039913 (= `convertToAssets(1e18)` read directly at that block by A2b). Byte-identical to the pre-change recording (`ShareValueObservation` has no enum field). |
 | `primary-51092254-51092454.jsonl` | `substreams run … map_events -s 51092254 -t 51092454 --limit-processed-blocks 0` | exit 0, 138 s (82,646 processed blocks, 200 received). 34 lines, 42 VaultFlow rows (Gauntlet `0x050c…56f0` 33 `deposit` + 7 `withdraw`, Steakhouse `0xbeef…73c9` 1 + 1), 1 chain-wide VaultMeta first-sight; execution rates in [1.039911979329258999, 1.040742235620567645]; every row `callOk` and `metaValid`. |
 
 `raw/` holds the unedited stdout/stderr/exit of the primary run.

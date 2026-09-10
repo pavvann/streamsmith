@@ -43,7 +43,7 @@ describe("jsonl parsing against the current specs/vaultflows.proto", () => {
     expect(str(flow, "id")).toBe("8453-51092263-406");
     expect(num(flow, "block_number")).toBe(51092263);
     expect(num(flow, "log_index")).toBe(406);
-    expect(flow.direction).toBe("FLOW_DIRECTION_DEPOSIT");
+    expect(flow.direction).toBe("deposit"); // plain string since A9: the from-proto sink panics on proto3 enums
     expect(flow.vault).toBe("0x050ce30b927da55177a4914ec73480238bad56f0");
     expect(flow.__block).toBe(51092263);
     expect(callStatus(flow)).toEqual({ ok: true, error: "" }); // call_error omitted in protojson -> ""
@@ -64,7 +64,7 @@ describe("jsonl parsing against the current specs/vaultflows.proto", () => {
       '{"@block":2,"@data":{"vaultFlows":[]}}',
       '{"@module":"map_events","@block":3,"@type":"vaultflows.v1.Events","@data":{"vaultFlows":[{"id":"x","extra":1}]}}',
       '{"@module":"map_events","@block":4,"@type":"vaultflows.v1.Events","@data":{"vaultFlows":[{"id":"x","blockNumber":"4","block_number":"4"}]}}',
-      '{"@module":"map_events","@block":5,"@type":"vaultflows.v1.Events","@data":{"vaultFlows":[{"id":"x","direction":"SIDEWAYS"}]}}',
+      '{"@module":"map_events","@block":5,"@type":"vaultflows.v1.Events","@data":{"vaultFlows":[{"id":"x","direction":2}]}}',
       '{"@module":"map_events","@block":6,"@type":"vaultflows.v1.Events","@data":"nope"}',
     ].join("\n");
     const run = decodeRun("x", text, opts());
@@ -72,7 +72,7 @@ describe("jsonl parsing against the current specs/vaultflows.proto", () => {
     expect(run.decodeErrors).toEqual([
       'line 3 (block 3): $.vaultFlows[0]: unknown field "extra" in .vaultflows.v1.VaultFlow',
       'line 4 (block 4): $.vaultFlows[0]: field "block_number" given twice (proto and JSON name)',
-      'line 5 (block 5): $.vaultFlows[0].direction: unknown enum value "SIDEWAYS" for .vaultflows.v1.FlowDirection',
+      'line 5 (block 5): $.vaultFlows[0].direction: expected string, got number',
       "line 6 (block 6): @data is not an object",
     ]);
     // snake_case rows (protojson accepts proto names too) decode fine

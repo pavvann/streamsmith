@@ -5,13 +5,16 @@ import { runMcp, mcpgenArgs, parseManifestLine } from "../src/mcp.ts";
 import { assembleReceipt, writeReceipt, loadReceipt } from "../src/receipt.ts";
 import { loadStreamsmithConfig } from "../src/config/streamsmith.ts";
 import { sha256Hex } from "../src/util/hash.ts";
-import { makeTempRepo, type TempRepo } from "./helpers.ts";
+import { makeTempRepo, infoFixture, type TempRepo } from "./helpers.ts";
+
+// The real module hash of map_events in the local build (fixtures/substreams-info.json, refreshed by `pnpm fixtures`).
+const MAP_EVENTS_HASH = (await infoFixture()).modules!.find((m) => m.name === "map_events")!.hash!;
 
 const gate = { passed: true, ranges: ["51092254:51092454"], assertions: [{ name: "rows_gt", passed: true, detail: "5 rows" }] };
 
 async function receiptIn(repo: TempRepo): Promise<string> {
   const ss = await loadStreamsmithConfig(join(repo.root, "specs", "streamsmith.yaml"));
-  const r = assembleReceipt({ streamsmith: ss, gate, packageHash: "a".repeat(64), outputModuleHash: "1f9e1dff75f677a6493655ab5e9126384b045459", protoDescriptorHash: "b".repeat(64), sinkSchemaHash: "c".repeat(64), runId: "m1", createdAt: "2026-09-11T10:00:00.000Z" });
+  const r = assembleReceipt({ streamsmith: ss, gate, packageHash: "a".repeat(64), outputModuleHash: MAP_EVENTS_HASH, protoDescriptorHash: "b".repeat(64), sinkSchemaHash: "c".repeat(64), runId: "m1", createdAt: "2026-09-11T10:00:00.000Z" });
   const w = await writeReceipt(repo.root, r);
   return join("receipts", w.path.split("/").pop()!);
 }
@@ -58,7 +61,7 @@ describe("streamsmith mcp", () => {
       expect(call.args.slice(0, 5)).toEqual(["--filter", "@ethonline26/mcpgen", "generate", "--receipt", join(repo.root, receiptPath)]);
       const updated = await loadReceipt(join(repo.root, receiptPath));
       expect(updated.mcpManifestHash).toBe(sha256Hex(manifestBody));
-      expect(updated.outputModuleHash).toBe("1f9e1dff75f677a6493655ab5e9126384b045459");
+      expect(updated.outputModuleHash).toBe(MAP_EVENTS_HASH);
       const rec = JSON.parse(await readFile(join(repo.root, "runs", "m1", "mcp.json"), "utf8"));
       expect(rec.mcpManifestHash).toBe(r.record.mcpManifestHash);
       expect(rec.receiptHash).toHaveLength(64);

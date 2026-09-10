@@ -101,3 +101,56 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
    erc4626-flows-v0.1.0.spkg#format=binpb --as-file-descriptor-set -o -#format=json` piped into the gate's
    20-line Python reference gave the same normalized descriptor hash as the source proto
    (`ce7f7823…`), so "did the built package drift from the public contract" stayed a one-liner across the change.
+
+## 2026-09-10 — A4c Streamsmith finish: YAML hex, tsx, unqualified DDL (sub-agent A4c)
+
+1. **The `yaml` npm package silently turns every unquoted `0x…` address and tx hash into a float, and nothing in
+   the failure looks like a parser problem.** `specs/gate.yaml` records vault addresses, tx hashes and block
+   hashes the way every other tool in this stack writes them — unquoted, lowercase, `0x`-prefixed. The YAML 1.2
+   core schema has HEX and OCT formats on the `int` tag, so `yaml@2.9.0` resolves
+   `0x050ce30b927da55177a4914ec73480238bad56f0` to `2.8811…e+46` (a double: already lossy past 2^53, and
+   irreversible — the original text is gone). Every address comparison in the gate then compared a string with a
+   number and failed, and the reported failures were data-shaped ("no vault_flows row matching …", "0/42 rows with
+   meta_valid"), which sent two earlier passes hunting in the evaluators and the fixtures. Tried: nothing in the
+   `yaml` README, the `ParseOptions` docs or the error output mentions this; there is no warning, no strict mode,
+   and `intAsBigInt: true` makes it a BigInt instead of a string — still not the address. Fix:
+   `YAML.parse(text, { customTags: (tags) => tags.filter((t) => t.format !== "HEX" && t.format !== "OCT") })`,
+   in one loader used by both spec files (`packages/streamsmith/src/util/yaml.ts`), never by quoting the frozen
+   spec file. Expected: `yaml` to document that the core schema eats hex scalars, or to offer a
+   `keepHexAsString`/`schema: "core-no-hex"` option, since "YAML file full of 0x hex" is the norm for anything
+   touching an EVM chain. Cost: ~2 h across three agents before the root cause was named; 15 min to fix and pin
+   with a regression test (`test/yaml.test.ts`) that asserts the loaded values equal the exact strings in
+   `docs/build/vaults.md`. Anyone writing a config loader for chain data hits this.
+2. **`tsx@4.23.13` cannot parse a file containing a dynamic `import()`, and the error names the wrong line.** One
+   `const { readdir } = await import("node:fs/promises");` inside `src/cli.ts` made every invocation of the CLI die
+   with `Error: Parse error /…/src/cli.ts:2:113` from inside tsx's own dynamic-import rewriting pass (line 2 is a
+   comment; the position is meaningless). The whole CLI was unrunnable, while 65 in-process tests that import
+   `main()` directly and vitest (esbuild, not tsx) all passed — so nothing caught it. Fix: use a static import.
+   Expected: a parse error that points at the construct it choked on. Lesson worth generalising: **if you ship a
+   CLI, one test must spawn the real entry point in a child process** — importing the module is not the same code
+   path as running the binary. Added `test/cli.test.ts` cases that spawn `bin/streamsmith.js`. Cost: ~20 min.
+3. **`--import tsx` in a launcher resolves against the cwd, not the launcher.** `bin/streamsmith.js` spawned
+   `node --import tsx src/cli.ts`; run from the repo root (which is where a workspace CLI is meant to run, and
+   where `--root` defaults) Node looked for `tsx` in the root's `node_modules` and exited with
+   `ERR_MODULE_NOT_FOUND`. pnpm's strict, per-package `node_modules` makes this the default outcome, not an edge
+   case. Fix: `import.meta.resolve("tsx")` (with a `createRequire` fallback) so the loader is resolved relative to
+   the launcher. Expected: the tsx docs' `--import tsx` recipe to mention it only works when the cwd can resolve
+   the package. Cost: 10 min.
+4. **ClickHouse view DDL needs the session database in the request, and getting it wrong creates the views in the
+   wrong place instead of failing.** `packages/erc4626-flows/sql/views.sql` uses unqualified table names (correct:
+   the database is deployment configuration, not part of the contract). Streamsmith was POSTing each `CREATE OR
+   REPLACE VIEW` without `?database=`, so ClickHouse resolved `vault_flows` against `default` while the tables were
+   in `vaultflows` — here it happened to error (`Unknown table expression identifier 'default.vault_flows'`), but
+   with a `default` database that also holds tables it would have silently created two views over the wrong data.
+   Note the asymmetry: the pre-flight `system.tables` check embeds the database in the SQL and therefore passed,
+   which makes the mismatch look like a views.sql bug. Fix: pass `database` on the query URL for every applied
+   statement; regression test asserts the URL. After the fix both views built over the real sunk rows on the first
+   try. Cost: 15 min.
+5. **Positive: `substreams info --json` is the right primitive for a receipt, and the whole gate runs offline from
+   recorded jsonl.** `--reuse-runs --offline` over the two tracked live runs (`runs/live/`) re-evaluates all 18
+   assertions of `specs/gate.yaml` in ~2 s with no endpoint, no token and no database — 42 flow rows, 2
+   observations, exit 0 — and `substreams info` supplies both `outputModuleHash` and the full `moduleHashes` map
+   for the receipt with a single read-only call on the `.spkg`. That combination (recorded run + read-only package
+   introspection) is what made a real end-to-end verification possible on a machine with 1.5 GB of disk and no
+   ability to rebuild. Worth copying: keep every paid run's raw jsonl in the repo, and make the gate able to
+   evaluate it without re-running.
