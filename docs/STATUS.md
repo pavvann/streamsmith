@@ -21,3 +21,4 @@
 - A6 launched: mcpgen (proto+receipt-driven MCP with fail-closed checks) + views.sql.
 - Still blocked on Pawan: disk cleanup approval (1.5 GB free), `substreams auth`, ClickHouse Cloud, Privy dashboard, wallet funding. No live streaming possible yet → kill-criterion slipped; new target for first live row: as soon as the token lands.
 - 13:20 IST: Pawan approved cleanup; caches + Docker VM data + cargo registry removed; 12 GB free. A7 launched: local Docker ClickHouse + local Rust build + spkg hash vs CI.
+- A7 done: local ClickHouse up; Rust 1.88 toolchain; local build green (35 s). Finding: spkg sha256 is NOT reproducible (proto file order random, wasm host-dependent) → receipt gains `outputModuleHash` (required) and `moduleHashes`; packageHash documented as artifact identity only. Cargo.lock committed. Still no token → no live run.

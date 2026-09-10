@@ -186,3 +186,66 @@ sink:
 2. **ClickHouse container not running.** `docker run … clickhouse/clickhouse-server:latest` → `docker: failed to register layer: write /usr/bin/clickhouse: input/output error`; retry `docker pull` → `Error response from daemon: error creating temporary lease: write /var/lib/desktop-containerd/daemon/io.containerd.metadata.v1.bolt/meta.db: input/output error`. Both are the Docker Desktop VM hitting the full host disk. Commands and DSNs are written in `docs/build/clickhouse-local.md`, **unverified**.
 3. **No `SUBSTREAMS_API_TOKEN`** anywhere → no `substreams run` performed (per brief).
 4. **erc4626 not on substreams.dev** → cannot `imports: erc4626: erc4626@v0.1.0`; import by local path/spkg (`vendor/substreams-evm/spkg/erc4626-v0.1.0.spkg`) or by an `https://…spkg` URL we host ourselves.
+
+## Local build (Sept 10) — sub-agent A7
+
+Everything in this section was executed on this machine on 2026-09-10 (macOS arm64), repo at `c142d93` (main). `packages/erc4626-flows/` and `specs/vaultflows.proto` are byte-identical to CI commit `18ab2eb` (`git diff --quiet 18ab2eb HEAD -- packages/erc4626-flows specs/vaultflows.proto`).
+
+### Toolchain
+
+| Step | Result |
+|---|---|
+| `rustup toolchain install 1.88 --profile minimal --target wasm32-unknown-unknown` | 16 s; `1.88-aarch64-apple-darwin installed - rustc 1.88.0 (6b00bc388 2025-06-23)`. rustup also self-updated 1.29.0 → 1.29.1. |
+| `cargo --version` in `packages/erc4626-flows/` | `cargo 1.88.0 (873a06493 2025-05-10)`, `rustc 1.88.0`; `rustup show active-toolchain` → `1.88-aarch64-apple-darwin (overridden by …/packages/erc4626-flows/rust-toolchain.toml)`. On this first invocation rustup downloaded the `rustfmt` component by itself (`rust-toolchain.toml` lists `components = ["rustfmt"]`; `--profile minimal` had not installed it). |
+| substreams CLI | 1.22.0 (Commit be35ad3) — same as CI |
+| Docker | client 29.1.3 / server 28.1.1, ClickHouse container up (see `clickhouse-local.md`) |
+
+### Timings (cold caches; `packages/erc4626-flows/`)
+
+| Command | Exit | Wall clock | Notes |
+|---|---|---|---|
+| `cargo test --all-targets -- --nocapture` | 0 | **32 s** (compile 31.65 s incl. crate downloads) | `13 passed; 0 failed` (all in `pure::tests`). CI: 3 s with rust-cache hit. |
+| `substreams build` | 0 | **35 s** (cargo release 32.61 s + protogen) | log: protogen → `🦀 Rust binary detected` → `Finished release` → `📦 Package created successfully at erc4626-flows-v0.1.0.spkg`. CI: 3 s (cache hit). |
+| `substreams pack -o erc4626-flows-v0.1.0.spkg` | 0 | **< 1 s** | |
+| `substreams build` again, no source change | 0 | 1 s | `⚡ Protobuf generation skipped (no changes detected)`, cargo `Finished … in 0.27s` |
+
+### Exact output paths (for the Streamsmith gate)
+
+- spkg: `packages/erc4626-flows/erc4626-flows-v0.1.0.spkg` (absolute: `/Users/pawan/Code/hacks/ethonline26/packages/erc4626-flows/erc4626-flows-v0.1.0.spkg`), 938,767 bytes. `substreams build` and `substreams pack -o erc4626-flows-v0.1.0.spkg` write the same path (default name `<package.name>-<version>.spkg`, in the cwd).
+- wasm: `packages/erc4626-flows/target/wasm32-unknown-unknown/release/erc4626_flows.wasm`, 423,852 bytes, sha256 `5553c06b1d6b5b8b2b8901ad70e5d6727d5e1b80647d7661b43132c2470f7819`.
+- Both match `specs/gate.yaml` → `build.expectedOutputs`. Exit code of `substreams build` is 0 on success (three runs).
+- Side effects of a build that are **not** gitignored: `packages/erc4626-flows/Cargo.lock` (untracked, created by cargo). Ignored: `*.spkg`, `target/`, regenerated `src/pb/{mod.rs,schema.rs,sf.codegen.conversation.v1.rs,sf.firehose.v2.rs,.last_generated_hash}`. The tracked `src/pb/vaultflows.v1.rs` / `erc4626.v1.rs` were regenerated identically (`git status` clean for them).
+
+### Module hashes (`substreams info erc4626-flows-v0.1.0.spkg`, local build)
+
+| Module | Kind | Local hash (Sept 10, macOS arm64) | CI hash (run 34396041869, ubuntu x86_64) |
+|---|---|---|---|
+| `store_vault_seen` | store | `e1cecb1771fdbd745ba42c7f194627c24085ac55` | `327de72c06fda841ed43617c77fc6894bd7564b5` |
+| `map_vault_probe` | map | `1f7fff8f578f901af673856698b121a1c67eef15` | `5a91a62db335eb94b041c346c518f80bf887a32f` |
+| `store_vault_meta` | store | `61405fbb8338c9503a888d018e2038fbeb6bb8bb` | `7f2debe118c1357fec57422d79ab0d27c618f3bc` |
+| `map_flows` | map | `af697e133efa2c7565b0bf853399f4153bdbced2` | `ecdf64769934c1bb1f66a28dbba3bc211661c06d` |
+| `map_share_value_observations` | map | `7e21449aecfc80a4adcad59842929b6f409dd3af` | `718300ded878c06b529a2089ca9e8b57b969de05` |
+| `map_events` (sink module) | map | `1f9e1dff75f677a6493655ab5e9126384b045459` | `f71e6edcb5a276beafded9205c6a90ff3b2e7744` |
+| `erc4626:map_events` (Pinax import) | map | `9d3e4a81797e43b37f46443144913096d3a3080c` | same |
+
+All modules `Initial block: 49276800` (import: 0), `Network: base`. Apart from the hashes, `diff` of the two `substreams info` outputs is empty.
+
+### sha256 comparison: local spkg vs CI artifact
+
+- CI artifact `erc4626-flows-v0.1.0-spkg` (run 34396041869, job 102615888265, branch `feat/erc4626-flows`, head `18ab2eb`), downloaded with `gh run download 34396041869 -n erc4626-flows-v0.1.0-spkg -D <scratchpad>/ci-spkg`: 936,635 bytes, sha256 `5fe24ea1e90bad9d4c32cc4a867fbf68412acc173935076c8461d11346835b87`.
+- Local (build#1 + pack#1): 938,767 bytes, sha256 `54fdb30d6dd3cc76906044e049bade1910126ece9e4104301e3b0393e14a48ff`. **Hashes do not match.**
+
+Why (measured by decoding both `sf.substreams.v1.Package` messages with a protobuf wire parser, `<scratchpad>/spkg_inspect.py`):
+
+1. **Our wasm differs.** CI `erc4626_flows.wasm` 421,720 bytes (sha256 `e9c0576a…`), local 423,852 bytes (`5553c06b…`), +2,132 bytes — exactly the spkg size difference. Same rustc/cargo (1.88.0 6b00bc388 / 873a06493), same dependency versions (the 15 crates whose panic-location paths are embedded are identical, e.g. `anyhow-1.0.104`, `bytes-1.12.1`; CI ran with a rust-cache hit so its log has no crate list). The embedded absolute paths differ (`/home/runner/.cargo/registry/…` ×62 vs `/Users/pawan/.cargo/registry/…` ×62, same prefix length, so paths alone do not explain the 2,132 bytes). The rest is host-dependent codegen (Linux x86_64 vs macOS arm64 host compiling for wasm32, lto=true); the exact cause was not isolated. No `--remap-path-prefix` is configured. Because the module hash covers the wasm bytes, **all six of our module hashes differ between CI and local**; the imported Pinax binary (365,414 bytes, `d1e0efe4…`) and its hash are identical in both.
+2. **The 24 embedded proto files are the same bytes in a different order** (e.g. CI: `… v1/erc4626.proto, sf/substreams/v1/deltas.proto, sf/firehose/v2/firehose.proto …`; local: `… v1/erc4626.proto, sf/substreams/sink/sql/services/v1/services.proto, sf/firehose/v2/firehose.proto …`). This ordering is not stable even locally: three consecutive local builds of unchanged source (wasm sha256 identical each time) produced three different spkg sha256s — build#2 `7862156175654a13df682d5a7d27a89c72ad40465ef77e0abb822149f7e1b27c`, pack#2 `c887f8b12318649ef4f8307ad7583ac9790fa2d684cbbc8e1b90046bada4978e`, build#3 `cf530fb80151a8b01e340e77f13d77a982ce457286fd6faa1a53b02d9a7c128a` — while `substreams info` module hashes stayed identical across all of them. Package/module meta (fields 7, 8) and `network` are byte-identical.
+
+Consequence for `specs/gate.yaml` `build.record.spkgSha256 → receipt.packageHash`: the spkg sha256 changes on every `substreams build`/`pack` of identical source, so it identifies one build artifact, not the source. The stable identity of the build is the `map_events` module hash (`1f9e1dff…` for this machine's builds), and a rerun on another OS will not reproduce even that.
+
+### Live run
+
+`/Users/pawan/Code/hacks/ethonline26/.env` does not exist, `SUBSTREAMS_API_TOKEN` is not in the environment, and there is no `.substreams.env` in the repo or `$HOME` → **no token; `substreams run` of the primary range (51092254–51092454) was not attempted.**
+
+### Disk after this session
+
+`df -h /System/Volumes/Data` → 9.6 GiB free (was 12 GiB). New: `packages/erc4626-flows/target/` 896 MB, ClickHouse image 839 MB, rust 1.88 toolchain (+ ~1.5 GB of cargo registry/deps in `~/.cargo`). CI spkg copy and analysis files live in the session scratchpad (`ci-spkg/erc4626-flows-v0.1.0.spkg`, `local-1.spkg`, `build-2.spkg`, `pack-2.spkg`, `build-3.spkg`, `ci-info.txt`, `local-info.txt`, `ci-job.log`, `spkg_inspect.py`).

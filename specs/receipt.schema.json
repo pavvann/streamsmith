@@ -5,33 +5,210 @@
   "description": "Machine-readable record binding a published Substreams package, its parameters, its sink schema, its deployment and its generated MCP manifest. The MCP fails closed when the live deployment no longer matches this receipt.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["receiptVersion","packageName","packageVersion","packageHash","outputModule","protoDescriptorHash","parametersHash","parameters","sinkSchemaHash","deploymentMode","chainId","network","startBlock","gate","createdAt"],
+  "required": [
+    "receiptVersion",
+    "packageName",
+    "packageVersion",
+    "packageHash",
+    "outputModule",
+    "protoDescriptorHash",
+    "parametersHash",
+    "parameters",
+    "sinkSchemaHash",
+    "deploymentMode",
+    "chainId",
+    "network",
+    "startBlock",
+    "gate",
+    "createdAt",
+    "outputModuleHash"
+  ],
   "properties": {
-    "receiptVersion": {"const": 1},
-    "packageName": {"type":"string"},
-    "packageVersion": {"type":"string","pattern":"^v?\\d+\\.\\d+\\.\\d+"},
-    "packageHash": {"type":"string","description":"sha256 of the .spkg bytes, hex, lowercase"},
-    "packageUrl": {"type":"string","description":"registry or https URL of the published spkg"},
-    "outputModule": {"type":"string"},
-    "protoDescriptorHash": {"type":"string","description":"sha256 of the normalized FileDescriptorSet of the public contract (specs/vaultflows.proto), hex"},
-    "parametersHash": {"type":"string","description":"sha256 of canonical JSON {vaults: sorted lowercase, sampleIntervalBlocks, chainId}"},
-    "parameters": {"type":"object","required":["vaults","sampleIntervalBlocks","chainId"],"properties":{"vaults":{"type":"array","items":{"type":"string","pattern":"^0x[0-9a-f]{40}$"}},"sampleIntervalBlocks":{"type":"integer","minimum":1},"chainId":{"type":"integer"}}},
-    "sinkSchemaHash": {"type":"string","description":"sha256 of the generated schema.sql / DDL applied to the sink"},
-    "sink": {"type":"object","properties":{"kind":{"enum":["clickhouse","postgres"]},"mode":{"enum":["from-proto","database-changes"]},"database":{"type":"string"},"hostFingerprint":{"type":"string","description":"sha256 of host:port, never the DSN"}}},
-    "mcpManifestHash": {"type":"string","description":"sha256 of the generated MCP tool manifest; absent until MCP generated"},
-    "deploymentMode": {"enum":["graph-market-hosted","self-managed-sink"]},
-    "deploymentId": {"type":"string"},
-    "chainId": {"type":"integer"},
-    "network": {"type":"string"},
-    "endpoint": {"type":"string"},
-    "startBlock": {"type":"integer"},
-    "headBlock": {"type":"integer"},
-    "lagBlocks": {"type":"integer"},
-    "lagSeconds": {"type":"integer"},
-    "gate": {"type":"object","required":["passed","ranges","assertions"],"properties":{"passed":{"type":"boolean"},"ranges":{"type":"array","items":{"type":"string","pattern":"^\\d+:\\d+$"}},"assertions":{"type":"array","items":{"type":"object","required":["name","passed"],"properties":{"name":{"type":"string"},"passed":{"type":"boolean"},"detail":{"type":"string"}}}},"toolVersions":{"type":"object"}}},
-    "registryPublishedAt": {"type":"string","format":"date-time"},
-    "deployedAt": {"type":"string","format":"date-time"},
-    "createdAt": {"type":"string","format":"date-time"},
-    "runId": {"type":"string","description":"links to runs/<runId>/manifest.json"}
+    "receiptVersion": {
+      "const": 1
+    },
+    "packageName": {
+      "type": "string"
+    },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^v?\\d+\\.\\d+\\.\\d+"
+    },
+    "packageHash": {
+      "type": "string",
+      "description": "sha256 of the exact .spkg bytes that were published/deployed, hex lowercase. Identifies the artifact, not the source: rebuilding identical source yields a different spkg hash (nondeterministic proto ordering). Use outputModuleHash for reproducibility claims."
+    },
+    "packageUrl": {
+      "type": "string",
+      "description": "registry or https URL of the published spkg"
+    },
+    "outputModule": {
+      "type": "string"
+    },
+    "protoDescriptorHash": {
+      "type": "string",
+      "description": "sha256 of the normalized FileDescriptorSet of the public contract (specs/vaultflows.proto), hex"
+    },
+    "parametersHash": {
+      "type": "string",
+      "description": "sha256 of canonical JSON {vaults: sorted lowercase, sampleIntervalBlocks, chainId}"
+    },
+    "parameters": {
+      "type": "object",
+      "required": [
+        "vaults",
+        "sampleIntervalBlocks",
+        "chainId"
+      ],
+      "properties": {
+        "vaults": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^0x[0-9a-f]{40}$"
+          }
+        },
+        "sampleIntervalBlocks": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "chainId": {
+          "type": "integer"
+        }
+      }
+    },
+    "sinkSchemaHash": {
+      "type": "string",
+      "description": "sha256 of the generated schema.sql / DDL applied to the sink"
+    },
+    "sink": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "clickhouse",
+            "postgres"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "from-proto",
+            "database-changes"
+          ]
+        },
+        "database": {
+          "type": "string"
+        },
+        "hostFingerprint": {
+          "type": "string",
+          "description": "sha256 of host:port, never the DSN"
+        }
+      }
+    },
+    "mcpManifestHash": {
+      "type": "string",
+      "description": "sha256 of the generated MCP tool manifest; absent until MCP generated"
+    },
+    "deploymentMode": {
+      "enum": [
+        "graph-market-hosted",
+        "self-managed-sink"
+      ]
+    },
+    "deploymentId": {
+      "type": "string"
+    },
+    "chainId": {
+      "type": "integer"
+    },
+    "network": {
+      "type": "string"
+    },
+    "endpoint": {
+      "type": "string"
+    },
+    "startBlock": {
+      "type": "integer"
+    },
+    "headBlock": {
+      "type": "integer"
+    },
+    "lagBlocks": {
+      "type": "integer"
+    },
+    "lagSeconds": {
+      "type": "integer"
+    },
+    "gate": {
+      "type": "object",
+      "required": [
+        "passed",
+        "ranges",
+        "assertions"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "ranges": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\d+:\\d+$"
+          }
+        },
+        "assertions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "passed"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "passed": {
+                "type": "boolean"
+              },
+              "detail": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "toolVersions": {
+          "type": "object"
+        }
+      }
+    },
+    "registryPublishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "deployedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "runId": {
+      "type": "string",
+      "description": "links to runs/<runId>/manifest.json"
+    },
+    "outputModuleHash": {
+      "type": "string",
+      "description": "Substreams module hash of outputModule (from `substreams info`). Stable across rebuilds of identical source on the same host toolchain; the reproducible identity. packageHash is NOT reproducible: spkg embeds proto files in nondeterministic order and wasm codegen is host-dependent (see docs/build/toolchain.md, Local build Sept 10)."
+    },
+    "moduleHashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "module name -> module hash for every module in the package, from `substreams info`."
+    }
   }
 }

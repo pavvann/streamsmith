@@ -1,15 +1,20 @@
 # Local ClickHouse for the sink (A1)
 
-**Status 2026-09-09: container NOT running.** The image pull failed twice because the host disk is full (see `docs/build/toolchain.md` → Blockers):
+**Status 2026-09-10 (A7): container RUNNING, all checks below verified.** Docker Desktop was restarted (`open -a Docker`; `docker info` answered after ~18 s; client 29.1.3, server 28.1.1). `docker run` pulled `clickhouse/clickhouse-server:latest` itself (image digest `sha256:fa394da808cc53f76d0344429421d6c422a6ee85fe7450135c0e3cff4df9bcbb`, 839 MB, server version **26.8.2.7**); HTTP answered `1` 6 s after the container started. Container id `58f63afd1b5f`. Steps 1–3 ran exactly as written (no command needed changing); results:
 
-```
-docker run … clickhouse/clickhouse-server:latest
-  → docker: failed to register layer: write /usr/bin/clickhouse: input/output error
-docker pull clickhouse/clickhouse-server:latest
-  → Error response from daemon: error creating temporary lease: write /var/lib/desktop-containerd/daemon/io.containerd.metadata.v1.bolt/meta.db: input/output error
-```
+| Check | Result |
+|---|---|
+| HTTP 8123 `sink` `SELECT 1` | `1` |
+| HTTP 8123 `ro` `SELECT 1` | `1` |
+| HTTP 8123 `ro` `currentDatabase()` with `?database=vaultflows` | `vaultflows` |
+| native 9000 `sink` `SELECT 1` (clickhouse-client in container) | `1` |
+| native 9000 `ro` `SELECT 1` | `1` |
+| host port check `nc -z localhost 9000` / `8123` | both open |
+| negative: `ro` `CREATE TABLE` over HTTP | `Code: 497. DB::Exception: ro: Not enough privileges … (ACCESS_DENIED)` |
+| `SHOW GRANTS FOR ro` | `GRANT SELECT ON vaultflows.* TO ro` |
+| `SHOW DATABASES` | `INFORMATION_SCHEMA, default, information_schema, system, vaultflows` |
 
-Everything below is the exact procedure to run once ≥ ~3 GB is free. Nothing here has been verified against a live container yet; the two `SELECT 1` checks at the end are the acceptance test.
+The 2026-09-09 failure (`failed to register layer … input/output error`, containerd `meta.db: input/output error`) was the host disk being full; Docker Desktop's VM data was deleted and recreated before this run, so the image was pulled fresh. No host volume is mounted (see §6): `docker rm` wipes the data.
 
 ## 1. Start (Docker Desktop must be running: `open -a Docker`, then wait for `docker info` to succeed)
 
