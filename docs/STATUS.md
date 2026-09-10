@@ -20,3 +20,4 @@
 - A4 killed by spend limit mid-refactor; WIP committed. Relaunched as A4b (finish CLI, align to gate.yaml, plugin packaging).
 - A6 launched: mcpgen (proto+receipt-driven MCP with fail-closed checks) + views.sql.
 - Still blocked on Pawan: disk cleanup approval (1.5 GB free), `substreams auth`, ClickHouse Cloud, Privy dashboard, wallet funding. No live streaming possible yet → kill-criterion slipped; new target for first live row: as soon as the token lands.
+- 13:20 IST: Pawan approved cleanup; caches + Docker VM data + cargo registry removed; 12 GB free. A7 launched: local Docker ClickHouse + local Rust build + spkg hash vs CI.
