@@ -196,7 +196,8 @@ function paramTable(t: ToolSpec): string {
     let type: string;
     switch (p.kind) {
       case "vault": type = `enum of ${p.values?.length ?? 0} receipt vault(s), optional`; break;
-      case "enumFilter": type = `enum ${(p.values ?? []).join(" | ")}, optional`; break;
+      // escape the pipe: this lands in a markdown table cell
+      case "enumFilter": type = `enum ${(p.values ?? []).map((v) => `\`${v}\``).join(" or ")}, optional`; break;
       case "windowHours": type = `integer ${p.min}..${p.max}${p.optional ? ", optional (omit = whole observed window)" : `, default ${p.default}`}`; break;
       case "limit": type = `integer ${p.min}..${p.max}, default ${p.default}`; break;
     }

@@ -28,7 +28,9 @@ describe("SQL builder never interpolates user strings", () => {
       expect(q.sql).toMatch(/LIMIT \{limit:UInt32\}$/);
       expect(q.params.limit).toBe("10");
       // the only braces in the SQL are typed placeholders
-      for (const m of q.sql.matchAll(/\{[^}]*\}/g)) expect(m[0]).toMatch(/^\{(vault:String|direction:Int32|windowHours:UInt32|limit:UInt32)\}$/);
+      // the only braces in the SQL are typed placeholders for this tool's own parameters
+      const allowed = new Set(["{windowHours:UInt32}", "{limit:UInt32}", ...t.params.filter((p) => p.chType).map((p) => `{${p.name}:${p.chType}}`)]);
+      for (const m of q.sql.matchAll(/\{[^}]*\}/g)) expect(allowed, `${t.name}: ${m[0]}`).toContain(m[0]);
     }
   });
 
@@ -38,12 +40,24 @@ describe("SQL builder never interpolates user strings", () => {
     expect(q.params.vault).toBe(manifest.vaults[0]);
   });
 
-  it("direction is mapped through the proto enum to an Int32 parameter", () => {
+  it("direction is bound in the representation the contract stores, and only the declared names are accepted", () => {
     const t = dataTools.find((x) => x.name === "vault_flows")!;
-    expect(buildToolQuery(t, { direction: "withdraw" }).params.direction).toBe("2");
-    expect(buildToolQuery(t, { direction: "deposit" }).params.direction).toBe("1");
+    const p = t.params.find((x) => x.name === "direction")!;
+    // `direction` is a String column in the contract (no proto enums: from-proto 4.13.1 panics on one), so the
+    // bound value is the name itself. If the column ever becomes an enum again, mcpgen resolves the number and
+    // this assertion follows the manifest instead of a hard-coded 1/2.
+    expect(p.chType).toBe("String");
+    expect(p.values).toEqual(["deposit", "withdraw"]);
+    for (const name of p.values!) {
+      const q = buildToolQuery(t, { direction: name });
+      expect(q.params.direction).toBe(String(p.valueMap![name]));
+      expect(q.sql).toContain(`direction = {direction:${p.chType}}`);
+      expect(q.sql, "the stored value must never be interpolated into the SQL text").not.toContain(String(p.valueMap![name]));
+    }
     expect(() => buildToolQuery(t, { direction: "2" })).toThrow(SqlBuildError);
     expect(() => buildToolQuery(t, { direction: "1 OR 1=1" })).toThrow(SqlBuildError);
+    expect(() => buildToolQuery(t, { direction: "deposit'" })).toThrow(SqlBuildError);
+    expect(() => buildToolQuery(t, { direction: "DEPOSIT" })).toThrow(SqlBuildError);
   });
 
   it("integer arguments are bounded and the window is anchored to the newest observed row", () => {

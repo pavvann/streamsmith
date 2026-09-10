@@ -2,19 +2,20 @@
   "receiptVersion": 1,
   "packageName": "erc4626-flows",
   "packageVersion": "v0.1.0",
-  "packageHash": "ee3ec8930c790036ac477aca1e821fbcd76a339e89a35d2b26a7976446d54d82",
-  "packageUrl": "https://spkg.io/pavvann/erc4626-flows-v0.1.0.spkg",
+  "packageHash": "662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0",
+  "packageUrl": "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0",
   "outputModule": "map_events",
-  "outputModuleHash": "3f6c0a9e1d2b4c8f7a5e6d1c0b9a8f7e6d5c4b3a",
+  "outputModuleHash": "a56f04211f28c507923e4d3949033e2c3d9c0fa1",
   "moduleHashes": {
-    "map_events": "3f6c0a9e1d2b4c8f7a5e6d1c0b9a8f7e6d5c4b3a",
-    "map_flows": "8b1d4e7a2c5f9083b6d1e4a7c0f3b6d9e2a5c8f1",
-    "map_share_value_observations": "c2e5a8b1d4f7093c6e9b2d5a8c1f4e7b0d3a6c9e",
-    "map_vault_probe": "5d8b1e4a7c0f3d6b9e2a5c8f1b4d7e0a3c6f9b2d",
-    "store_vault_seen": "e9c2f5a8b1d4e7f0a3c6b9d2e5f8a1c4b7d0e3f6",
-    "store_vault_meta": "1a4d7b0e3c6f9a2d5b8e1c4f7a0d3b6e9c2f5a8b"
+    "store_vault_seen": "529fb0e1ce97967282c01ade45dae2a062fbf549",
+    "map_vault_probe": "5f3a62377461dc2f88341dbff7529d6128086f0b",
+    "store_vault_meta": "7db2f7b6693023ad8f912c809bbec9f19c369ee0",
+    "map_flows": "bd5b67baff4d1841e93d58e5ac4c73c8aa19eb5f",
+    "map_share_value_observations": "863003784d521d5336d2dfaaceefc7df8a730b2d",
+    "map_events": "a56f04211f28c507923e4d3949033e2c3d9c0fa1",
+    "erc4626:map_events": "9d3e4a81797e43b37f46443144913096d3a3080c"
   },
-  "protoDescriptorHash": "11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b",
+  "protoDescriptorHash": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9",
   "parametersHash": "baa6ae91bb4047064c246d4541b33c8cf91c6e6a867be766a16c5be9524100cd",
   "parameters": {
     "vaults": [
@@ -50,16 +51,17 @@
       {
         "name": "rows_produced",
         "passed": true,
-        "detail": "vault_flows rows: 4"
+        "detail": "vault_flows rows: 42 over 51092254:51092454"
       },
       {
         "name": "known_vault_present",
-        "passed": true
+        "passed": true,
+        "detail": "both configured vaults produced rows"
       },
       {
         "name": "observation_present",
         "passed": true,
-        "detail": "block 51093000, both vaults"
+        "detail": "block 51093000, both vaults, call_ok"
       },
       {
         "name": "rpc_success_ratio",
@@ -68,17 +70,19 @@
       },
       {
         "name": "deterministic_rerun",
-        "passed": true
+        "passed": true,
+        "detail": "second run of 51092254:51092454 byte-identical"
       },
       {
         "name": "descriptor_hash_match",
         "passed": true,
-        "detail": "11b959fc"
+        "detail": "ce7f7823"
       }
     ],
     "toolVersions": {
-      "substreams": "v1.22.0",
-      "buf": "1.72.0"
+      "substreams": "1.22.0",
+      "buf": "1.72.0",
+      "substreams-sink-sql": "4.13.1"
     }
   },
   "registryPublishedAt": "2026-09-10T12:00:00Z",

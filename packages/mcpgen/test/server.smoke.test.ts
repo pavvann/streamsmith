@@ -64,7 +64,7 @@ describe("generated server over stdio", () => {
     const refusal = byId.get(3)!.result!;
     expect(refusal.isError).toBe(true);
     expect(refusal.structuredContent).toMatchObject({ refused: true, reason: "check_unavailable", tool: "vault_flows" });
-    expect((refusal.structuredContent as { provenance: { packageHash: string } }).provenance.packageHash).toBe("ee3ec8930c790036ac477aca1e821fbcd76a339e89a35d2b26a7976446d54d82");
+    expect((refusal.structuredContent as { provenance: { packageHash: string } }).provenance.packageHash).toBe("662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0");
 
     // an out-of-set vault is rejected by the protocol layer (zod enum) before the handler runs
     const bad = byId.get(4)!;

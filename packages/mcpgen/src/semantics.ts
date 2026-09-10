@@ -1,9 +1,15 @@
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 
+/**
+ * A closed-set filter on one column. `values` are the names the MCP client sees; how each name is *stored* is
+ * resolved from the contract, not declared here: a String column stores the name itself, an enum-backed Int32
+ * column stores the proto enum's number (see resolveFilterValues in manifest.ts). That way the semantics file
+ * survives a contract change of the column's representation.
+ */
 const filterSchema = z.object({
   column: z.string().regex(/^[a-z_][a-z0-9_]*$/),
-  values: z.record(z.string().regex(/^[a-z_][a-z0-9_]*$/), z.number().int()).optional(),
+  values: z.array(z.string().regex(/^[a-z_][a-z0-9_]*$/)).min(1),
   description: z.string().optional(),
 });
 

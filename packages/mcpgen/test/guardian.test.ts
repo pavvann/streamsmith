@@ -45,7 +45,7 @@ describe("fail-closed guardian", () => {
     expect(s.schema!.actualHash).toBe(manifest.expectedSchema.columnSetHash);
     expect(s.lagBlocks).toBe(100);
     expect(g.gate()).toBeNull();
-    const p = g.provenance({ hours: 24, endTimestamp: 1, startTimestamp: 0, column: "block_timestamp" });
+    const p = g.provenance({ hours: 24, endTimestamp: 1, startTimestamp: 0, column: "block_timestamp", source: "vault_flows", observedFromTimestamp: 0, observedToTimestamp: 1 });
     expect(p).toMatchObject({
       packageHash: manifest.package.packageHash,
       outputModuleHash: manifest.package.outputModuleHash,

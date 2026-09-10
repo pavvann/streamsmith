@@ -12,9 +12,10 @@ tables:
       (deposit-implied or withdraw-implied per direction). Rows with meta_valid = false carry "0" placeholders.
     filters:
       direction:
+        # Value names only; how they are stored is read off the contract (String column -> 'deposit').
         column: direction
-        values: { deposit: 1, withdraw: 2 }
-        description: Restrict to deposits (1) or withdrawals (2).
+        values: [deposit, withdraw]
+        description: Restrict to deposits or withdrawals.
   share_value_observations:
     tool: share_value_observations
     description: >-

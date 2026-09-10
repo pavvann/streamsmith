@@ -7,7 +7,8 @@ import { generate } from "../src/cli.ts";
 import { sha256Hex, sha256Canonical } from "../src/hash.ts";
 import { parseReceipt, receiptParametersCanonical, validateJsonSchema } from "../src/receipt.ts";
 import type { Manifest } from "../runtime/types.ts";
-import { FIXTURE_RECEIPT, GENERATED_DIR, PKG_ROOT, SPEC_PROTO, SPEC_RECEIPT_SCHEMA, VIEWS_SQL } from "./helpers.ts";
+import { parse as parseYaml } from "yaml";
+import { FIXTURE_RECEIPT, GENERATED_DIR, PKG_ROOT, SPEC_GATE_YAML, SPEC_PROTO, SPEC_RECEIPT_SCHEMA, VIEWS_SQL } from "./helpers.ts";
 
 const temps: string[] = [];
 async function tmp(): Promise<string> {
@@ -24,7 +25,10 @@ describe("fixture receipt", () => {
     expect(validateJsonSchema(json, schema)).toEqual([]);
     const { receipt } = parseReceipt(json, schema);
     expect(sha256Canonical(receiptParametersCanonical(receipt.parameters))).toBe(receipt.parametersHash);
-    expect(receipt.protoDescriptorHash).toBe("11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b");
+    // the fixture's descriptor hash is the one the gate expects for the current specs/vaultflows.proto,
+    // read from specs/gate.yaml so a contract change shows up here as a fixture mismatch, not as a stale literal
+    const gate = parseYaml(await readFile(SPEC_GATE_YAML, "utf8")) as { descriptorHash: { expectedSpecSha256: string } };
+    expect(receipt.protoDescriptorHash).toBe(gate.descriptorHash.expectedSpecSha256);
   });
 
   it("the validator refuses what the schema refuses", async () => {
@@ -60,7 +64,7 @@ describe("generator", () => {
     expect(m.expectedSchema.columnSetHash).toMatch(/^[0-9a-f]{64}$/);
     expect(m.toolsHash).toBe(sha256Canonical(m.tools));
     expect(m.receipt.sha256).toBe(sha256Hex(await readFile(FIXTURE_RECEIPT)));
-    expect(m.package).toMatchObject({ name: "erc4626-flows", version: "v0.1.0", outputModule: "map_events", outputModuleHash: "3f6c0a9e1d2b4c8f7a5e6d1c0b9a8f7e6d5c4b3a", chainId: 8453, deploymentMode: "self-managed-sink", startBlock: 51_001_200 });
+    expect(m.package).toMatchObject({ name: "erc4626-flows", version: "v0.1.0", outputModule: "map_events", outputModuleHash: "a56f04211f28c507923e4d3949033e2c3d9c0fa1", chainId: 8453, deploymentMode: "self-managed-sink", startBlock: 51_001_200 });
     expect(m.vaults).toEqual(["0x050ce30b927da55177a4914ec73480238bad56f0", "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"]);
     expect(m.policy).toMatchObject({ maxLagBlocksDefault: 300, checkIntervalSeconds: 60, queryTimeoutMs: 10_000, maxLimit: 500 });
     const vf = m.tools.find((t) => t.name === "vault_flows")!;

@@ -73,15 +73,15 @@ export function buildEarnPolicy(spec: EarnPolicySpec): BuiltEarnPolicy {
     chain_type: 'ethereum',
     rules: [
       {
-        name: `Allow earn_deposit into approved vaults, amount <= ${cap}`,
+        name: `earn_deposit approved vaults <= ${cap}`,
         method: 'earn_deposit',
         action: 'ALLOW',
         conditions: [vaultCondition, amountCondition],
       },
       {
         name: spec.capWithdrawals === false
-          ? 'Allow earn_withdraw from approved vaults'
-          : `Allow earn_withdraw from approved vaults, amount <= ${cap}`,
+          ? 'earn_withdraw approved vaults'
+          : `earn_withdraw approved vaults <= ${cap}`,
         method: 'earn_withdraw',
         action: 'ALLOW',
         conditions: spec.capWithdrawals === false ? [vaultCondition] : [vaultCondition, amountCondition],

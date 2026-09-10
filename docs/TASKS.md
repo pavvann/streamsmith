@@ -7,11 +7,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [x] T0.2 M P · (done Sept 10 13:08 IST; token in .env, .substreams.env ignored) `substreams auth` device login (Graph Market streaming key) → `SUBSTREAMS_API_TOKEN` in `.env`. Accept: `substreams run` returns blocks. dep: T1.1
 - [ ] T0.3 M P · Graph Market Portal device-code login for hosted sink (via `thegraph-market-api` skill flow). Accept: `ListDeployments` succeeds. dep: T1.1
 - [x] T0.4 M P+O · (done 20:05 IST: ap-south-1 service; db vaultflows; users sink (DDL/insert/views verified) and ro (read-only verified, writes refused, system.tables/columns readable); creds in .env as CH_CLOUD_*) ClickHouse Cloud
-- [~] T0.5 M P · (App ID/secret + treasurer & agent authorization keys in .env 20:10 IST; still need: 2 fee-wrapper vault_ids, gas sponsorship App-pays on Base) Privy dashboard: (1) app → App ID + secret; (2) Wallets › Authorization keys › two keys (treasurer, agent), save private keys; (3) Wallet infrastructure › Earn › deploy fee wrapper for Gauntlet USDC Prime and Steakhouse Prime Instant → two `vault_id`s; (4) Gas sponsorship › App pays › Base. Fill apps/vaultpilot/.env. Accept: `pnpm --filter @ethonline26/vaultpilot spike` passes.
+- [~] T0.5 M P · (everything in .env; spike passes; still to confirm in dashboard: both Earn vaults active + gas sponsorship App-pays on Base) Privy dashboard: (1) app → App ID + secret; (2) Wallets › Authorization keys › two keys (treasurer, agent), save private keys; (3) Wallet infrastructure › Earn › deploy fee wrapper for Gauntlet USDC Prime and Steakhouse Prime Instant → two `vault_id`s; (4) Gas sponsorship › App pays › Base. Fill apps/vaultpilot/.env. Accept: `pnpm --filter @ethonline26/vaultpilot spike` passes.
 - [ ] T0.6 S P · Privy: attempt Organization creation; report gated or not. Fallback: plain business-owned wallet.
-- [ ] T0.7 M P · Base wallet: ~50 USDC + ~$5 ETH; address in `.env`. Accept: balances visible on Basescan.
+- [ ] T0.7 M P · Fund the Privy business wallet `0xcdC8B69799bCb135C04A1052b918787125571fDC` with ~50 USDC on Base (gas is sponsored by the app; no ETH needed). Accept: balance on Basescan.
 - [ ] T0.8 M P · Microphone + 1080p screen capture ready for Sept 12.
-- [ ] T0.9 S P · Team: confirm 1 or 2 humans; if 2, assign Dev B (infra/Privy).
+- [x] T0.9 S P · Solo (confirmed 20:20 IST). Orchestrator sequences all streams.
 
 ## 1. Toolchain and spikes (Sept 9)
 - [x] T0.11 M P+O · (approved + run Sept 10 13:20 IST; 1.5 GB → 12 GB free) **Host disk ~1.6 GB free.** Pawan approves cleanup; orchestrator runs: `rm -rf ~/.cache/*` (3.8G), `rm -rf ~/Library/Caches/*` (5.0G), `brew cleanup`, `pnpm store prune`, empty Trash; Pawan checks ~/Downloads, ~/Movies. Target ≥15 GB free. Plan B: GitHub Codespace (needs `gh auth refresh -s codespace`).
@@ -22,7 +22,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [~] T1.5 M A8→A9 · (observations landed: 2 rows, restart-safe; vault_flows blocked by sink enum panic → direction becomes string, A9) Self-managed `substreams-sink-sql` (from-proto, ClickHouse) with Pinax erc4626 → local CH; cursor persistence; restart resumes. Accept: row count grows; restart no duplicates. dep: T1.4
 - [ ] T1.6 M A2 · Hosted sink spike on Graph Market with Pinax's published package → ClickHouse Cloud. Time-box 90 min. Accept: rows grow, head advances. Fail → T1.5 is the deploy path. dep: T0.3, T0.4
 - [ ] T1.7 M A1 · Block-context `eth_call` spike: in a module, at two historical processed blocks, batch `decimals()`, `convertToAssets(10^d)`, `totalAssets()`, `totalSupply()` for one pinned vault. Accept: deterministic block-specific values on rerun; documented in `docs/build/substreams-facts.md`. dep: T1.2, T0.2
-- [~] T1.8 M A3 · (code ready: `pnpm --filter @ethonline26/vaultpilot spike`; waits on T0.5 keys + fee-wrapper vault ids) Privy spike: server wallet, additional signer + policy (`earn` restricted to 2 vault ids + cap), read both pinned vault positions, allowed vs denied call. Accept: denial observed; Earn reachable. dep: T0.5
+- [x] T1.8 M A3+O · (PASS 20:30 IST; docs/build/privy-spike.md; over-cap test returned vault invalid_state, retest after sponsorship/active) Privy spike: server wallet, additional signer + policy (`earn` restricted to 2 vault ids + cap), read both pinned vault positions, allowed vs denied call. Accept: denial observed; Earn reachable. dep: T0.5
 - [ ] T1.9 M O · Record spike outcomes → choose `deploymentMode`, Privy control model. Update PROJECT.md §8/§11.
 
 ## 2. Public contract (frozen before the recorded run)
@@ -54,17 +54,17 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [~] T4.3 M A4c · `publish`: pack + registry publish; capture package hash + timestamp.
 - [~] T4.4 M A4c · `deploy`: hosted (Portal API) and self-managed modes; poll head/lag; `deploymentMode` recorded.
 - [~] T4.5 M A4c · (receipt.ts exists) Deployment Receipt generator (schema in PROJECT.md §4.1): hashes (package, proto descriptor, params, sink schema, MCP manifest), deployment, range, head, lag, gate evidence, timestamps.
-- [~] T4.6 M A6b · (packages/mcpgen) MCP generator from protobuf descriptors + receipt: typed read-only tools, parameterized SQL, limits/timeouts, provenance in every response, fail-closed on schema/lag mismatch (real check).
+- [x] T4.6 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) (packages/mcpgen) MCP generator from protobuf descriptors + receipt: typed read-only tools, parameterized SQL, limits/timeouts, provenance in every response, fail-closed on schema/lag mismatch (real check).
 - [~] T4.7 M A4c · Run manifest + case-study writer (`runs/<id>/manifest.json`, `case-studies/`).
 - [ ] T4.8 M A4 · Clean end-to-end rehearsal from a fresh directory, no human follow-up; fix tooling; restore clean baseline.
 
 ## 5. MCP for vault flows (Sept 11)
-- [~] T5.1 M A6b · Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
-- [~] T5.2 M A6b · Hand-tune descriptions/SQL for the demo question; windows; limits.
+- [x] T5.1 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
+- [x] T5.2 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Hand-tune descriptions/SQL for the demo question; windows; limits.
 - [ ] T5.3 M A4 · Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
 
 ## 6. Vaultpilot (Sept 11)
-- [~] T6.1 M A3 · (skeleton committed; methods are earn_deposit/earn_withdraw; daily cap app-side) Server (TS): Privy client, business wallet, agent authorization key as additional signer, policy JSON (earn → 2 vault ids, per-action cap, daily aggregation), revocation path documented.
+- [x] T6.1 M A3 · (live: wallet + policy + agent signer created; daily cap app-side) Server (TS): Privy client, business wallet, agent authorization key as additional signer, policy JSON (earn → 2 vault ids, per-action cap, daily aggregation), revocation path documented.
 - [ ] T6.2 M A3 · Earn deposit / withdraw / position for both vault ids; capture tx hashes. dep: T0.7
 - [ ] T6.3 M A3 · Decision service: observed-window share-value growth (min 24h obs), min differential, outflow guardrail, cooldown, staleness refusal via `pipeline_status`, `maxWithdraw`, self-action exclusion, idempotency, intermediate-failure handling (withdraw ok → deposit fail ⇒ idle + alert).
 - [ ] T6.4 M A3 · One-screen UI (Next.js): position, two observations + exact window, decision + rule, policy result, provenance, tx links, control/revocation info.

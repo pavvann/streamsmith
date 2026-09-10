@@ -10,9 +10,12 @@ export const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const REPO_ROOT = join(PKG_ROOT, "..", "..");
 export const SPEC_PROTO = join(REPO_ROOT, "specs", "vaultflows.proto");
 export const SPEC_RECEIPT_SCHEMA = join(REPO_ROOT, "specs", "receipt.schema.json");
+export const SPEC_GATE_YAML = join(REPO_ROOT, "specs", "gate.yaml");
 export const VIEWS_SQL = join(REPO_ROOT, "packages", "erc4626-flows", "sql", "views.sql");
 export const FIXTURE_RECEIPT = join(PKG_ROOT, "fixtures", "receipt.example.json");
 export const GENERATED_DIR = join(REPO_ROOT, "packages", "mcp-vaultflows");
+export const LIVE_PRIMARY_JSONL = join(REPO_ROOT, "runs", "live", "primary-51092254-51092454.jsonl");
+export const LIVE_OBSERVATION_JSONL = join(REPO_ROOT, "runs", "live", "observation-51092998-51093002.jsonl");
 
 export function readFixtureReceipt(): RuntimeReceipt {
   return JSON.parse(readFileSync(FIXTURE_RECEIPT, "utf8")) as RuntimeReceipt;
@@ -42,7 +45,10 @@ export interface FakeWorld {
 /** ClickHouse fake routed on the SQL text the runtime builds. Records every query. */
 export class FakeClickHouse implements ClickHouseClient {
   calls: SqlQuery[] = [];
-  constructor(public world: FakeWorld) {}
+  world: FakeWorld;
+  constructor(world: FakeWorld) {
+    this.world = world;
+  }
   async query(q: SqlQuery): Promise<ClickHouseResult> {
     this.calls.push(q);
     if (this.world.failClickhouse) throw new Error(this.world.failClickhouse);
@@ -67,7 +73,14 @@ export class FakeClickHouse implements ClickHouseClient {
 }
 
 export class FakeChainHead implements ChainHead {
-  constructor(public blockNumber: number, public chainId = 8453, public fail?: string) {}
+  blockNumber: number;
+  chainId: number;
+  fail?: string;
+  constructor(blockNumber: number, chainId = 8453, fail?: string) {
+    this.blockNumber = blockNumber;
+    this.chainId = chainId;
+    this.fail = fail;
+  }
   async head(): Promise<{ blockNumber: number; chainId: number }> {
     if (this.fail) throw new Error(this.fail);
     return { blockNumber: this.blockNumber, chainId: this.chainId };

@@ -12,8 +12,12 @@ export interface ParamSpec {
   column?: string;
   /** vault / enumFilter: the closed set of accepted values (vault addresses or enum keys) */
   values?: string[];
-  /** enumFilter: key -> stored integer (proto enum number) */
-  valueMap?: Record<string, number>;
+  /**
+   * enumFilter: tool-facing value name -> the value stored in ClickHouse. A String column stores the name
+   * itself; an enum-backed Int32 column stores the proto enum's number. Resolved from the contract at
+   * generation time (mcpgen src/manifest.ts resolveFilterValues), never guessed at runtime.
+   */
+  valueMap?: Record<string, string | number>;
   /** ClickHouse type of the bound parameter: String | Int32 | UInt32 */
   chType?: string;
   min?: number;

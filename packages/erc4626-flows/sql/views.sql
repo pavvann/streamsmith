@@ -4,6 +4,11 @@
 --
 -- Rules
 -- - Table and column names are exactly the proto's `schema.table` names and field names.
+-- - `direction` is a String column holding exactly 'deposit' or 'withdraw' (the contract has no enum fields:
+--   substreams-sink-sql 4.13.1 from-proto panics on a populated proto3 enum), so it is compared to a quoted
+--   literal, never to 1 / 2.
+-- - Each statement below must be applied on its own: ClickHouse over HTTP rejects a multi-statement body with
+--   "Multi-statements are not allowed" (code 62). mcpgen's views parser returns one `ddl` per view for that reason.
 -- - Every read of a base table filters `_deleted_ = 0` (ReplacingMergeTree tombstones on reorgs,
 --   docs/build/substreams-facts.md (d) 7). Views are not materialized, so they see merged and unmerged parts alike.
 -- - Numeric strings are never empty; "0" with meta_valid = false / call_ok = false means "not computable" and is
@@ -40,10 +45,10 @@ SELECT
   vault,
   toUInt64(window_end) AS window_end_timestamp,
   toUInt64(window_end - 86400) AS window_start_timestamp,
-  countIf(direction = 1) AS deposit_count,
-  countIf(direction = 2) AS withdraw_count,
-  sumIf(assets_normalized, direction = 1 AND meta_valid = true) AS assets_in_normalized,
-  sumIf(assets_normalized, direction = 2 AND meta_valid = true) AS assets_out_normalized,
+  countIf(direction = 'deposit') AS deposit_count,
+  countIf(direction = 'withdraw') AS withdraw_count,
+  sumIf(assets_normalized, direction = 'deposit' AND meta_valid = true) AS assets_in_normalized,
+  sumIf(assets_normalized, direction = 'withdraw' AND meta_valid = true) AS assets_out_normalized,
   assets_in_normalized - assets_out_normalized AS net_assets_normalized,
   countIf(meta_valid = false) AS flows_without_metadata
 FROM vault_flows

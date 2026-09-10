@@ -7,9 +7,9 @@
   "package": {
     "name": "erc4626-flows",
     "version": "v0.1.0",
-    "packageHash": "ee3ec8930c790036ac477aca1e821fbcd76a339e89a35d2b26a7976446d54d82",
+    "packageHash": "662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0",
     "outputModule": "map_events",
-    "outputModuleHash": "3f6c0a9e1d2b4c8f7a5e6d1c0b9a8f7e6d5c4b3a",
+    "outputModuleHash": "a56f04211f28c507923e4d3949033e2c3d9c0fa1",
     "deploymentMode": "self-managed-sink",
     "deploymentId": "fixture-local-clickhouse",
     "chainId": 8453,
@@ -17,24 +17,24 @@
     "startBlock": 51001200
   },
   "receipt": {
-    "sha256": "ffcd65813fc63956f2da8fc4a6cb61e5927fc0e869984e931275cbb0dd8769a4",
+    "sha256": "53e7e9bb5f2b61d6168b607d566c904ee23ae8927394f1a56beee6fc0a4dc672",
     "parametersHash": "baa6ae91bb4047064c246d4541b33c8cf91c6e6a867be766a16c5be9524100cd",
-    "protoDescriptorHash": "11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b",
+    "protoDescriptorHash": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9",
     "sinkSchemaHash": "48f86177bf2be6fc0bdd60357aac6a097c6d0226d3585601c50ad6399210a46d"
   },
   "inputs": {
     "proto": {
       "file": "vaultflows.proto",
-      "sha256": "74331b0148cae439757c40e552849e4fd67d41086e5eaf0799d6a50a1bd42469",
+      "sha256": "4b384338de2d82c0610deb95ac9a02254162d0fbc4e5fc44316b5b5ba0817178",
       "package": "vaultflows.v1"
     },
     "views": {
       "file": "views.sql",
-      "sha256": "6eb2ce209f1c14c9f396bd012a14f626ff0b98455946d13241f1a45595c688b8"
+      "sha256": "83d1c9ee570b15e7cf191878e04dbb00966edce3e61f247e1d218ec2e74bb534"
     },
     "semantics": {
       "file": "default.yaml",
-      "sha256": "46960bb890decb33351300ce54f0a4efd22fb7424caa03c183e03252f2626869"
+      "sha256": "d5ca0e1dc0c479c059ae144a245192cfbb4d588db52372f3824affba726a1027"
     }
   },
   "vaults": [
@@ -90,7 +90,7 @@
         },
         {
           "name": "direction",
-          "type": "Int32"
+          "type": "String"
         },
         {
           "name": "assets_raw",
@@ -364,7 +364,7 @@
         }
       ]
     },
-    "columnSetHash": "d0530a3f9e7be109539e1097c5568ddec7ffd9a91293c075a19d380a58bd5aea"
+    "columnSetHash": "8c06996df5e357bc08d20bc3e6adabc6908453545f515cc7f4227dcf4fb440b3"
   },
   "views": {
     "vault_flows_24h": [
@@ -532,7 +532,7 @@
         },
         {
           "name": "direction",
-          "type": "Int32",
+          "type": "String",
           "stringify": false,
           "comment": ""
         },
@@ -618,11 +618,11 @@
             "withdraw"
           ],
           "valueMap": {
-            "deposit": 1,
-            "withdraw": 2
+            "deposit": "deposit",
+            "withdraw": "withdraw"
           },
-          "chType": "Int32",
-          "description": "Restrict to deposits (1) or withdrawals (2)."
+          "chType": "String",
+          "description": "Restrict to deposits or withdrawals."
         },
         {
           "name": "windowHours",
@@ -1230,5 +1230,5 @@
       "orderBy": []
     }
   ],
-  "toolsHash": "bb97cba06b9e8745be24a7f581cda4e660fc1ff278ad829f1c81a519263dd667"
+  "toolsHash": "7680c3584b110992f13557332150cdea9e6456a58a30f690894bd6bc17204baa"
 }

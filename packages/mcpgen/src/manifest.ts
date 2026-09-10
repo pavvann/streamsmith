@@ -1,6 +1,6 @@
 // Builds the tool specs and the manifest from (proto tables, views, receipt, semantics).
 import { sha256Canonical, sha256Hex } from "./hash.ts";
-import type { TableSpec } from "./proto.ts";
+import type { ColumnSpec, TableSpec } from "./proto.ts";
 import type { Receipt } from "./receipt.ts";
 import type { Semantics } from "./semantics.ts";
 import type { ViewSpec } from "./views.ts";
@@ -28,7 +28,42 @@ export interface BuildInputs {
   receipt: Receipt;
   receiptJsonText: string;
   semantics: Semantics;
+  /** enum name -> { VALUE_NAME: number }, from the proto; used to resolve enum-backed filter columns */
+  enums: Record<string, Record<string, number>>;
   files: { proto: { name: string; text: string; pkg: string }; views: { name: string; text: string }; semantics: { name: string; text: string } };
+}
+
+/**
+ * How a filter's tool-facing value names are stored in ClickHouse. Derived from the contract:
+ *  - `String` column  -> the name itself, bound as {name:String}   (`direction = 'deposit'`)
+ *  - enum-backed `Int32` column -> the proto enum's number, bound as {name:Int32}  (`direction = 1`)
+ * Anything else is a generation error rather than a guess, because guessing here produces SQL that silently
+ * matches no rows (substreams-facts.md (d): enums are stored as Int32, plain strings as String).
+ */
+export function resolveFilterValues(
+  table: string,
+  argName: string,
+  column: ColumnSpec,
+  names: string[],
+  enums: Record<string, Record<string, number>>,
+): { chType: string; valueMap: Record<string, string | number> } {
+  if (column.type === "String") {
+    return { chType: "String", valueMap: Object.fromEntries(names.map((n) => [n, n])) };
+  }
+  const enumValues = enums[column.protoType];
+  if ((column.type === "Int32" || column.type === "UInt32") && enumValues) {
+    const valueMap: Record<string, string | number> = {};
+    for (const name of names) {
+      const wanted = name.toUpperCase();
+      const matches = Object.keys(enumValues).filter((k) => k === wanted || k.endsWith(`_${wanted}`));
+      if (matches.length !== 1) {
+        throw new Error(`semantics: filter ${argName} on ${table}: ${JSON.stringify(name)} matches ${matches.length} values of enum ${column.protoType} (${Object.keys(enumValues).join(", ")})`);
+      }
+      valueMap[name] = enumValues[matches[0]!]!;
+    }
+    return { chType: column.type, valueMap };
+  }
+  throw new Error(`semantics: filter ${argName} on ${table}: column ${column.name} is ${column.type} (proto ${column.protoType || "?"}); a closed-set filter needs a String column or an enum-backed Int32 column`);
 }
 
 function stringify(type: string): boolean {
@@ -64,19 +99,20 @@ function limitParam(): ParamSpec {
   return { name: "limit", kind: "limit", min: 1, max: POLICY.maxLimit, default: POLICY.defaultLimit, description: `Maximum rows returned, 1..${POLICY.maxLimit} (default ${POLICY.defaultLimit}).` };
 }
 
-export function toolFromTable(t: TableSpec, receipt: Receipt, sem: Semantics, vaults: string[]): ToolSpec {
+export function toolFromTable(t: TableSpec, receipt: Receipt, sem: Semantics, vaults: string[], enums: Record<string, Record<string, number>> = {}): ToolSpec {
   const s = sem.tables[t.table] ?? {};
   const colNames = new Set(t.columns.map((c) => c.name));
+  const columnByName = new Map<string, ColumnSpec>(t.columns.map((c) => [c.name, c]));
   const columns: OutputColumn[] = t.columns
     .filter((c) => !c.injected)
     .map((c) => ({ name: c.name, type: c.type, stringify: stringify(c.type), comment: c.comment }));
   const params: ParamSpec[] = [];
   if (colNames.has("vault")) params.push(vaultParam(vaults));
   for (const [argName, f] of Object.entries(s.filters ?? {})) {
-    if (!colNames.has(f.column)) throw new Error(`semantics: table ${t.table} has no column ${f.column} for filter ${argName}`);
-    const values = Object.keys(f.values ?? {});
-    if (values.length === 0) throw new Error(`semantics: filter ${argName} on ${t.table} needs a values map`);
-    params.push({ name: argName, kind: "enumFilter", column: f.column, values, valueMap: f.values ?? {}, chType: "Int32", description: f.description ?? `Restrict ${f.column} to one of: ${values.join(", ")}.` });
+    const column = columnByName.get(f.column);
+    if (!column) throw new Error(`semantics: table ${t.table} has no column ${f.column} for filter ${argName}`);
+    const { chType, valueMap } = resolveFilterValues(t.table, argName, column, f.values, enums);
+    params.push({ name: argName, kind: "enumFilter", column: f.column, values: [...f.values], valueMap, chType, description: f.description ?? `Restrict ${f.column} to one of: ${f.values.join(", ")}.` });
   }
   let window: ToolSpec["window"];
   if (colNames.has("block_timestamp")) {
@@ -159,7 +195,7 @@ export function buildManifest(inp: BuildInputs): Manifest {
   for (const name of Object.keys(semantics.views)) if (!views.some((v) => v.name === name)) throw new Error(`semantics: unknown view ${name}`);
 
   const tools: ToolSpec[] = [
-    ...tables.map((t) => toolFromTable(t, receipt, semantics, vaults)),
+    ...tables.map((t) => toolFromTable(t, receipt, semantics, vaults, inp.enums)),
     ...views.map((v) => toolFromView(v, semantics, vaults)),
     statusTool(),
   ];

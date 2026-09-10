@@ -37,7 +37,7 @@ describe("generated tool handlers", () => {
   });
 
   it("vault_flows success carries rows, effective arguments and full provenance with the observed window", async () => {
-    const rows = [{ id: "8453-51092263-406", vault: manifest.vaults[0], direction: 1 }];
+    const rows = [{ id: "8453-51092263-406", vault: manifest.vaults[0], direction: "deposit" }];
     const { ctx, ch } = await setup({ rows });
     const r = await runDataTool(ctx, tool("vault_flows"), { vault: manifest.vaults[0], windowHours: 48, limit: 10 });
     expect(r.isError).toBe(false);
@@ -56,7 +56,7 @@ describe("generated tool handlers", () => {
     expect(ch.calls[1]!.params).toEqual({ vault: manifest.vaults[0], windowHours: "48", limit: "10" });
   });
 
-  it("the whole observed window (no windowHours) spans min..max of the data, and an empty table yields nulls", async () => {
+  it("the whole observed window (no windowHours) spans min..max of the data, and an empty table produces nulls", async () => {
     const { ctx } = await setup({ rows: [], counts: { share_value_observations: 5 } });
     const r = await runDataTool(ctx, tool("share_value_growth"), {});
     const w = (r.payload.provenance as { observedWindow: Record<string, unknown> }).observedWindow;

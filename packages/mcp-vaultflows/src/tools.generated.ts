@@ -11,7 +11,7 @@ export type Vault = (typeof VAULTS)[number];
 export const inputShapes = {
   vault_flows: {
     vault: z.enum(VAULTS).optional().describe("Restrict to one vault. Only the 2 vault(s) pinned by the Deployment Receipt are accepted (lowercase 0x hex)."),
-    direction: z.enum(["deposit","withdraw"]).optional().describe("Restrict to deposits (1) or withdrawals (2)."),
+    direction: z.enum(["deposit","withdraw"]).optional().describe("Restrict to deposits or withdrawals."),
     windowHours: z.number().int().min(1).max(2160).default(24).describe("Trailing window in hours, measured back from the newest observed row (not from now). 1..2160, default 24."),
     limit: z.number().int().min(1).max(500).default(100).describe("Maximum rows returned, 1..500 (default 100)."),
   },
@@ -120,7 +120,7 @@ export const TOOLS: readonly ToolSpec[] = [
       },
       {
         "name": "direction",
-        "type": "Int32",
+        "type": "String",
         "stringify": false,
         "comment": ""
       },
@@ -206,11 +206,11 @@ export const TOOLS: readonly ToolSpec[] = [
           "withdraw"
         ],
         "valueMap": {
-          "deposit": 1,
-          "withdraw": 2
+          "deposit": "deposit",
+          "withdraw": "withdraw"
         },
-        "chType": "Int32",
-        "description": "Restrict to deposits (1) or withdrawals (2)."
+        "chType": "String",
+        "description": "Restrict to deposits or withdrawals."
       },
       {
         "name": "windowHours",

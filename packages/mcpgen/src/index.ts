@@ -6,7 +6,7 @@ export { parseReceipt, receiptSchema, validateJsonSchema, receiptParametersCanon
 export type { Receipt, SchemaError } from "./receipt.ts";
 export { parseSemantics, semanticsSchema } from "./semantics.ts";
 export type { Semantics } from "./semantics.ts";
-export { buildManifest, toolFromTable, toolFromView, statusTool, POLICY, GENERATOR_NAME, GENERATOR_VERSION } from "./manifest.ts";
+export { buildManifest, resolveFilterValues, toolFromTable, toolFromView, statusTool, POLICY, GENERATOR_NAME, GENERATOR_VERSION } from "./manifest.ts";
 export { emitPackage, renderToolsModule, renderServer, renderReadme } from "./emit.ts";
 export { generate, main, DEFAULT_SEMANTICS } from "./cli.ts";
 export { canonicalJson, sha256Canonical, sha256Hex } from "./hash.ts";

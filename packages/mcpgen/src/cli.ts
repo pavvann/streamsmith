@@ -8,7 +8,7 @@ import { parseArgs } from "node:util";
 import { fileURLToPath } from "node:url";
 import { emitPackage } from "./emit.ts";
 import { buildManifest } from "./manifest.ts";
-import { parseProto, tablesFromProto } from "./proto.ts";
+import { enumMap, parseProto, tablesFromProto } from "./proto.ts";
 import { parseReceipt } from "./receipt.ts";
 import { parseSemantics } from "./semantics.ts";
 import { parseViews } from "./views.ts";
@@ -80,7 +80,7 @@ export async function generate(o: GenerateOptions): Promise<{ manifestPath: stri
   log(`semantics: ${semanticsPath}`);
 
   const manifest = buildManifest({
-    tables, views, receipt, receiptJsonText: receiptText, semantics,
+    tables, views, receipt, receiptJsonText: receiptText, semantics, enums: enumMap(protoFile),
     files: {
       proto: { name: basename(protoPath), text: protoText, pkg: protoFile.pkg },
       views: { name: basename(viewsPath), text: viewsText },

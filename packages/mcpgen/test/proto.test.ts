@@ -40,7 +40,7 @@ describe("proto parser on specs/vaultflows.proto", () => {
     expect(type("id")).toBe("String");
     expect(type("chain_id")).toBe("UInt32");
     expect(type("block_number")).toBe("UInt64");
-    expect(type("direction")).toBe("Int32"); // enum
+    expect(type("direction")).toBe("String"); // plain string 'deposit'/'withdraw': the contract has no enum fields
     expect(type("assets_raw")).toBe("UInt256");
     expect(type("assets_normalized")).toBe("Decimal(38, 18)");
     expect(type("meta_valid")).toBe("Bool");
@@ -55,8 +55,13 @@ describe("proto parser on specs/vaultflows.proto", () => {
     expect(vf.fields.find((f) => f.name === "call_ok")!.number).toBe(22);
   });
 
-  it("parses the enum and the Events container's repeated fields", () => {
-    expect(enumMap(file).FlowDirection).toEqual({ FLOW_DIRECTION_UNSPECIFIED: 0, FLOW_DIRECTION_DEPOSIT: 1, FLOW_DIRECTION_WITHDRAW: 2 });
+  it("the contract declares no enum (from-proto 4.13.1 panics on a populated proto3 enum)", () => {
+    expect(file.enums).toEqual([]);
+    expect(enumMap(file)).toEqual({});
+    for (const t of tables) for (const c of t.columns) expect(c.type, `${t.table}.${c.name}`).not.toBe("Int32");
+  });
+
+  it("parses the Events container's repeated fields", () => {
     const events = file.messages[0]!;
     expect(events.tableOption).toBeUndefined();
     expect(events.fields.every((f) => f.repeated)).toBe(true);
@@ -71,6 +76,17 @@ describe("proto parser on specs/vaultflows.proto", () => {
     expect(ch.partition_fields).toEqual([{ name: "_block_timestamp_", function: "toYYYYMM" }]);
     const f = svo.fields.find((x) => x.name === "assets_per_share_normalized")!;
     expect(f.fieldOption).toEqual({ convertTo: { decimal128: { scale: 18 } } });
+  });
+});
+
+describe("proto parser: enums are still supported for other contracts", () => {
+  it("reads enum values and maps an enum field to Int32", () => {
+    const f = parseProto(`syntax = "proto3"; package t; import "sf/substreams/sink/sql/schema/v1/schema.proto";
+      enum Side { SIDE_UNSPECIFIED = 0; SIDE_BUY = 1; SIDE_SELL = 2; }
+      message T { option (schema.table) = { name: "t" }; string id = 1 [(schema.field) = { primary_key: true }]; Side side = 2; }`);
+    expect(enumMap(f).Side).toEqual({ SIDE_UNSPECIFIED: 0, SIDE_BUY: 1, SIDE_SELL: 2 });
+    const [t] = tablesFromProto(f);
+    expect(t!.columns.find((c) => c.name === "side")).toMatchObject({ type: "Int32", protoType: "Side" });
   });
 });
 

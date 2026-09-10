@@ -7,7 +7,9 @@ Generates a **fail-closed MCP server** from three inputs that already exist in a
 2. the **Deployment Receipt** (`specs/receipt.schema.json`): package hash, output-module hash, parameters (the pinned
    vault list), sink schema hash, deployment mode and id;
 3. the **views** (`packages/erc4626-flows/sql/views.sql`), annotated so the generator knows each view's columns and
-   optional trailing window.
+   optional trailing window. `parseViews` returns one single-statement `ddl` per view, because ClickHouse over HTTP
+   rejects a multi-statement body with *Multi-statements are not allowed* (code 62): whoever applies the file must
+   send one request per view. mcpgen itself never writes to ClickHouse.
 
 Output: a runnable TypeScript package (stdio MCP, `@modelcontextprotocol/sdk` + `zod`) whose tools are typed from the
 contract, whose SQL is read-only and parameterized, and which **refuses to answer** when the live deployment no longer
@@ -29,7 +31,7 @@ generation error (bad receipt / proto / views / semantics), 2 usage.
 | generic "run SQL over ClickHouse" MCP | mcpgen output |
 |---|---|
 | one `query(sql)` tool; the model writes SQL | one **semantic tool per table and per view** (`vault_flows`, `share_value_growth`, `recent_share_migration`, ...), argument schemas generated from the contract |
-| free-form strings | **closed sets**: `vault` is a zod enum of the receipt's `parameters.vaults`; `direction` is the proto enum; `windowHours` and `limit` are bounded integers (limit <= 500) |
+| free-form strings | **closed sets**: `vault` is a zod enum of the receipt's `parameters.vaults`; `direction` is the closed value set declared in the semantics overlay; `windowHours` and `limit` are bounded integers (limit <= 500) |
 | string concatenation | **parameterized SQL only**: `{vault:String}` placeholders + `param_*`, identifiers from the manifest and regex-validated; `readonly=1`, `max_execution_time`, 10 s client timeout |
 | answers whatever the database holds | **fail-closed**: on startup and every 60 s the server re-reads the receipt, compares the live `system.columns` set against the contract, measures lag against an independent RPC, and refuses with a structured reason when anything drifted |
 | no context | **provenance in every response**: package hash, output-module hash, parameters hash, proto descriptor hash, sink schema hash, deployment mode/id, sink head, chain head, lag, observed window, time of the last verification |
@@ -37,6 +39,22 @@ generation error (bad receipt / proto / views / semantics), 2 usage.
 The generator does not run `protoc` or `buf`: `src/proto.ts` is a small proto3 parser for the contract subset (top-level
 messages, scalar/enum fields, `repeated`/`optional`, `reserved`, text-format options). Nested messages, `oneof`, `map`,
 `extend`, `service` are rejected with a clear error (see the file header for the full list).
+
+### Closed-set filters follow the contract's representation, not the semantics file
+
+`semantics/default.yaml` declares only the *names* a filter accepts (`direction: [deposit, withdraw]`). How each name
+is **stored** is resolved from the proto by `resolveFilterValues` (`src/manifest.ts`):
+
+| column in the contract | bound as | SQL |
+|---|---|---|
+| `string direction` | `{direction:String}`, value = the name | `direction = 'deposit'` |
+| enum-backed `Int32` | `{direction:Int32}`, value = the proto enum's number | `direction = 1` |
+
+Anything else is a generation error instead of a guess. This matters because the mismatch is silent: comparing a
+`String` column to `1` parses fine and matches no rows. `vaultflows.v1` deliberately has **no enum fields** —
+`substreams-sink-sql` 4.13.1 `from-proto` panics on a populated proto3 enum (`interface {} is
+protoreflect.EnumNumber, not int32`), so `VaultFlow.direction` is a `String` holding exactly `deposit` / `withdraw` —
+but the enum path is kept and tested so the generator works for contracts that do use enums.
 
 ## Fail-closed contract of the generated server
 
@@ -65,13 +83,29 @@ src/semantics.ts   optional overlay: tool names, descriptions, enum filters, emp
 src/manifest.ts    tool specs + manifest (expected column sets, hashes, policy)
 src/emit.ts        writes the package: manifest.json, receipt.json, src/tools.generated.ts, src/server.ts, src/runtime/*, README, package.json
 runtime/           copied verbatim into every generated server: sql builder, ClickHouse HTTP client, RPC head, guardian, tool handlers
-fixtures/          receipt.example.json (valid against specs/receipt.schema.json; hashes are fixture values except protoDescriptorHash and parametersHash, which are real)
+fixtures/          receipt.example.json (valid against specs/receipt.schema.json) + vaultflows_schema_hash.txt (evidence)
 ```
 
 Determinism: identical inputs produce byte-identical output (no timestamps, no absolute paths), so `mcpManifestHash`
-is reproducible. `pnpm test` covers the proto parser on the real contract, the views parser, the no-interpolation
-property of the SQL builder, every refusal path against a fake ClickHouse/RPC, manifest determinism, the CLI's last
-line, a stdio smoke test of the generated server, and the banned-word rule.
+is reproducible. `pnpm test` (73 tests) covers the proto parser on the real contract, the views parser, the
+no-interpolation property of the SQL builder, every refusal path against a fake ClickHouse/RPC, manifest determinism,
+the CLI's last line, a stdio smoke test of the generated server, the banned-word rule, and `test/livedata.test.ts`:
+the recorded **live** output of the package (`runs/live/*.jsonl`) cross-checked against the contract — every
+protojson key maps (lowerCamelCase -> snake_case) onto a column the generator derived, every column `views.sql`
+reads exists in the table it reads it from, every literal a view compares a column to matches that column's
+ClickHouse type, and no view or generated tool ever uses the configured start block as a window bound.
+
+### The fixture receipt
+
+`fixtures/receipt.example.json` is the input for the checked-in `packages/mcp-vaultflows`. Real, recorded values:
+`outputModuleHash` / `moduleHashes` (`substreams info` of the local build, `docs/build/toolchain.md`),
+`packageHash` (sha256 of that build's spkg — per-build by construction, which is why `outputModuleHash` is the
+identity the fail-closed check leans on), `protoDescriptorHash` (`specs/gate.yaml`), `parametersHash` (recomputed
+canonically by the test), `startBlock` 51001200, the gate ranges (`runs/live/`) and the endpoint. `sinkSchemaHash`,
+`deploymentId` and `sink.hostFingerprint` are fixture values: no DDL was dumped from a deployed sink yet.
+`fixtures/vaultflows_schema_hash.txt` is the sink's own 16-hex schema-hash file from the local run (`--sink-info-folder`,
+substreams-facts (d) 8) — a different thing from `receipt.sinkSchemaHash` (sha256 of the applied DDL); a test pins it
+against the value the sink logged in `runs/live/sink-run1b.err`.
 
 ## Requirements
 
