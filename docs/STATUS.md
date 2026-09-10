@@ -52,3 +52,4 @@ Next steps, in order:
 4. Point mcp-vaultflows at ClickHouse Cloud; run the fail-closed demo (force stale lag, schema mismatch).
 5. Sept 11: clean-tag `contract-v1`, forensic one-prompt rehearsal from a fresh dir, freeze at midnight. Sept 12: README/diagram/video. Sept 13 submit before 12:00 EDT.
 Standing rules: sub-agents on Opus (Sonnet for low-stakes), never Fable; stop at 65% usage; commit WIP after every agent report.
+- 22:40 IST: hosted Deploy accepted but crash-looped: `param for module "vaults[]": module not found` — `execution_config.parameters` expects `<module>=<value>` pairs, not the raw param string. FIX (one call): re-Deploy (or UpdateDeploymentConfig) with `parameters` OMITTED — the published spkg already carries the `params:` defaults from the manifest — then GetDeploymentState until STATE_LIVE, then verify rows in ClickHouse Cloud (`ro` user). Deployment id depdehi448c87998ebb763b, org in .env. Not executed: usage budget reached (64%).
