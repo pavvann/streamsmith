@@ -18,8 +18,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [x] T1.1 M A1 · (done Sept 9: rustc 1.98.1, substreams 1.22.0, buf 1.72.0, substreams-sink-sql 4.13.1; see docs/build/toolchain.md) Install Rust stable + `wasm32-unknown-unknown`, `substreams` CLI, `buf`, `substreams-sink-sql`; pin versions in `docs/build/toolchain.md`. Accept: `cargo build --target wasm32-unknown-unknown` on Pinax erc4626 succeeds.
 - [x] T1.2 M A7 · (local: cargo test 32 s, substreams build 35 s, exit 0; spkg nondeterministic → module hash is identity) Clone `pinax-network/substreams-evm`, build `erc4626` and `erc20` packages, record module names/outputs/proto paths. Accept: `.wasm` built; `substreams info` prints modules.
 - [x] T1.3 M A7 · (ClickHouse 26.8 in Docker, sink+ro users verified over HTTP and native) Local ClickHouse in Docker (`vaultflows` db, sink user, ro user). Accept: `SELECT 1` over HTTP.
-- [x] T1.4 M O · (13:40 IST: observation module live at block 51093000, both vaults, values match on-chain reference exactly; primary range run in progress) `substreams run` Pinax erc4626 on Base for a 200-block historical range containing pinned-vault activity. Accept: real Deposit/Withdraw rows. dep: T0.2, T2.2
-- [ ] T1.5 M A1 · Self-managed `substreams-sink-sql` (from-proto, ClickHouse) with Pinax erc4626 → local CH; cursor persistence; restart resumes. Accept: row count grows; restart no duplicates. dep: T1.4
+- [x] T1.4 M O · (observation at 51093000 and primary range both live and matching the on-chain reference exactly; evidence in runs/live/) `substreams run` Pinax erc4626 on Base for a 200-block historical range containing pinned-vault activity. Accept: real Deposit/Withdraw rows. dep: T0.2, T2.2
+- [~] T1.5 M A8 · Self-managed `substreams-sink-sql` (from-proto, ClickHouse) with Pinax erc4626 → local CH; cursor persistence; restart resumes. Accept: row count grows; restart no duplicates. dep: T1.4
 - [ ] T1.6 M A2 · Hosted sink spike on Graph Market with Pinax's published package → ClickHouse Cloud. Time-box 90 min. Accept: rows grow, head advances. Fail → T1.5 is the deploy path. dep: T0.3, T0.4
 - [ ] T1.7 M A1 · Block-context `eth_call` spike: in a module, at two historical processed blocks, batch `decimals()`, `convertToAssets(10^d)`, `totalAssets()`, `totalSupply()` for one pinned vault. Accept: deterministic block-specific values on rerun; documented in `docs/build/substreams-facts.md`. dep: T1.2, T0.2
 - [~] T1.8 M A3 · (code ready: `pnpm --filter @ethonline26/vaultpilot spike`; waits on T0.5 keys + fee-wrapper vault ids) Privy spike: server wallet, additional signer + policy (`earn` restricted to 2 vault ids + cap), read both pinned vault positions, allowed vs denied call. Accept: denial observed; Earn reachable. dep: T0.5
@@ -42,25 +42,25 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [~] T3.5 M A5 · (13 native unit tests green; reconciliation vs convertToAssets needs live run) Tests: zero shares, decimal bounds, RPC partial failure, known Morpho events, deterministic replay, `convertToAssets` reconciliation at cited blocks.
 - [ ] T3.6 S — · (not implemented; share_transfers table empty in v0.1.0) `map_share_transfers`: ERC-20 Transfer of vault shares excluding mint/burn paired with Deposit/Withdraw. Drop if it fights.
 - [~] T3.7 M A5+A6 · (tables from proto annotations; views.sql → A6) Sink `schema.sql` (from-proto): `vault_flows`, `share_value_observations`, `vaults`; deterministic ids; ORDER BY per SQL skill; views `vault_flows_24h`, `share_value_growth`.
-- [~] T3.8 M A4b · Gate script (`packages/streamsmith/scripts/gate`) executes `specs/gate.yaml`; deterministic exit codes.
+- [~] T3.8 M A4c · Gate script (`packages/streamsmith/scripts/gate`) executes `specs/gate.yaml`; deterministic exit codes.
 - [ ] T3.9 M A1 · Publish `erc4626-flows` v0.1.0 to registry (reference build, may be superseded by generated build). Accept: importable via `use`.
 - [ ] T3.10 M A1 · Deploy (hosted or self-managed per T1.9); backfill ~6 weeks; verify live head. **Kill checkpoint Sept 10 12:00 IST: one custom row in sink.**
 - [ ] T3.11 M A1 · Reconcile one vault end to end vs `convertToAssets` at cited blocks. Accept: within rounding.
 - [ ] T3.12 S A1 · Package README: semantics, params, caveats (fee spread, virtual offset, heuristic validation), composition example.
 
 ## 4. Streamsmith plugin (Sept 11)
-- [~] T4.1 M A4b · Plugin skeleton: `plugin.json`, `SKILL.md` (routes code-gen to official skills; owns promotion), install docs.
-- [~] T4.2 M A4b · `gate` generalization: parse `gate.yaml`, structured JSON results.
-- [~] T4.3 M A4b · `publish`: pack + registry publish; capture package hash + timestamp.
-- [~] T4.4 M A4b · `deploy`: hosted (Portal API) and self-managed modes; poll head/lag; `deploymentMode` recorded.
-- [~] T4.5 M A4b · (receipt.ts exists) Deployment Receipt generator (schema in PROJECT.md §4.1): hashes (package, proto descriptor, params, sink schema, MCP manifest), deployment, range, head, lag, gate evidence, timestamps.
-- [~] T4.6 M A6 · (packages/mcpgen) MCP generator from protobuf descriptors + receipt: typed read-only tools, parameterized SQL, limits/timeouts, provenance in every response, fail-closed on schema/lag mismatch (real check).
-- [~] T4.7 M A4b · Run manifest + case-study writer (`runs/<id>/manifest.json`, `case-studies/`).
+- [~] T4.1 M A4c · Plugin skeleton: `plugin.json`, `SKILL.md` (routes code-gen to official skills; owns promotion), install docs.
+- [~] T4.2 M A4c · `gate` generalization: parse `gate.yaml`, structured JSON results.
+- [~] T4.3 M A4c · `publish`: pack + registry publish; capture package hash + timestamp.
+- [~] T4.4 M A4c · `deploy`: hosted (Portal API) and self-managed modes; poll head/lag; `deploymentMode` recorded.
+- [~] T4.5 M A4c · (receipt.ts exists) Deployment Receipt generator (schema in PROJECT.md §4.1): hashes (package, proto descriptor, params, sink schema, MCP manifest), deployment, range, head, lag, gate evidence, timestamps.
+- [~] T4.6 M A6b · (packages/mcpgen) MCP generator from protobuf descriptors + receipt: typed read-only tools, parameterized SQL, limits/timeouts, provenance in every response, fail-closed on schema/lag mismatch (real check).
+- [~] T4.7 M A4c · Run manifest + case-study writer (`runs/<id>/manifest.json`, `case-studies/`).
 - [ ] T4.8 M A4 · Clean end-to-end rehearsal from a fresh directory, no human follow-up; fix tooling; restore clean baseline.
 
 ## 5. MCP for vault flows (Sept 11)
-- [~] T5.1 M A6 · Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
-- [~] T5.2 M A6 · Hand-tune descriptions/SQL for the demo question; windows; limits.
+- [~] T5.1 M A6b · Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
+- [~] T5.2 M A6b · Hand-tune descriptions/SQL for the demo question; windows; limits.
 - [ ] T5.3 M A4 · Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
 
 ## 6. Vaultpilot (Sept 11)
@@ -82,6 +82,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T7.8 M P · Submission form: partners = The Graph (both tracks) + Privy (both tracks); Start Fresh pool; repo; video; per-partner "how we used it" + feedback text. Submit before 12:00 EDT Sept 13. No force pushes after.
 
 ## 8. Hygiene (continuous)
+- [x] T8.0 M O · **Standing rule (Sept 10 18:30 IST): sub-agents never run on Fable; every Agent call passes `model: sonnet` (opus only with a stated reason).**
 - [ ] T8.1 M O · Commit every logical unit with meaningful messages; never a single dump.
 - [ ] T8.2 M O · Secrets only in `.env`; `.env.example` in every package; secret scan before each push.
 - [ ] T8.3 M O · Licenses: MIT for our code; respect Pinax/StreamingFast licenses on imports.

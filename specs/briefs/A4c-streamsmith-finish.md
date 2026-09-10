@@ -1,0 +1,16 @@
+# Brief A4c — Finish Streamsmith (third pass). Sonnet.
+
+Repo /Users/pawan/Code/hacks/ethonline26, branch main. Do NOT commit; do NOT git checkout/switch/stash; do NOT run cargo/docker/`substreams build`. pnpm only. Other agents own packages/mcpgen, packages/mcp-vaultflows, packages/erc4626-flows/sql — never touch them. Facts only; where a service is unreachable, code against an injectable interface with fixture tests and say so.
+
+Current state (verified by orchestrator): `cd packages/streamsmith && pnpm typecheck` is GREEN; `pnpm test` = 48 pass / 17 fail (10 files). Your job is to get to 0 failing while keeping behavior faithful to specs/gate.yaml, then finish the remaining deliverables. Read specs/briefs/A4b-streamsmith-finish.md for the full deliverable list; everything there still applies.
+
+Hard facts to honor:
+1. Start block is 51001200 everywhere (specs/streamsmith.yaml, packages/erc4626-flows/substreams.yaml, specs/gate.yaml params_match (c)). Fixtures must match.
+2. `substreams run` MUST get `--limit-processed-blocks 0` or it refuses (>10k processed blocks). The gate runner adds it unconditionally.
+3. specs/receipt.schema.json requires `outputModuleHash`; `moduleHashes` optional. Populate from `substreams info <spkg> --json` (verify the flag/keys against the real local spkg at packages/erc4626-flows/erc4626-flows-v0.1.0.spkg; read-only, do not rebuild). packageHash = sha256 of the exact spkg bytes; README must say it is artifact identity, not source identity (spkg builds are nondeterministic).
+4. REAL live jsonl to use as fixtures (copy, don't move): runs/live/primary-51092254-51092454.jsonl (34 lines, 42 VaultFlow rows) and runs/live/observation-51092998-51093002.jsonl (1 line, 2 observations at block 51093000). The gate's assertions on these real files must produce: rows_gt pass, known_vault_present pass, reference_flows_present pass (4 reference rows in vaults.md are present), execution_rate_sanity pass, observation_present pass, numeric_strings_valid pass, ids_unique pass, addresses_lowercase pass. Add a test that runs the assertion suite over these two real files and asserts the expected pass set; if an assertion fails on real data, the evaluator is wrong, not the data (check the definitions in specs/gate.yaml and docs/build/vaults.md).
+5. Protojson shape: camelCase keys, integers as strings, enums as `FLOW_DIRECTION_DEPOSIT`/`FLOW_DIRECTION_WITHDRAW`, `callOk` bool, `metaValid` OMITTED when false. Parser must normalize to snake_case and treat missing bools as false.
+6. `deploy` applies packages/erc4626-flows/sql/views.sql (exists, ~6 KB) after base tables exist, statements split on `;`.
+7. `mcp` subcommand shells out to `pnpm --filter @ethonline26/mcpgen generate --receipt <path> --proto specs/vaultflows.proto --views packages/erc4626-flows/sql/views.sql --out packages/mcp-vaultflows` and reads the last stdout line `{"manifest": "<abs path>"}`, then writes mcpManifestHash into the receipt.
+8. Plugin packaging (.claude-plugin + skills/streamsmith/SKILL.md <150 lines), README, .env.example — per A4b brief.
+Finish with `pnpm typecheck && pnpm test` green in packages/streamsmith and `pnpm -r typecheck` green at root. Append friction to feedback/graph.md. Report under 350 words: what changed, real vs stubbed, exact commands.

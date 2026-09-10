@@ -25,3 +25,10 @@
 - 13:40 IST: **first live custom-module output**: map_share_value_observations at block 51093000 returns both vaults with assets_per_share 1040743 / 1039913 = exact on-chain reference. Historical eth_call determinism confirmed. Primary map_events range running (store backfill from 49276800).
 - Privy App ID + secret in apps/vaultpilot/.env (gitignored). Waiting on authorization keys and fee-wrapper vault ids.
 - 13:55 IST: primary run refused by CLI guard (needs 3.6M processed blocks for store prep from 49276800; free tier is 7M). Decision: startBlock/initialBlock → 51001200 (multiple of 1800, ~2.7 days back). Rebuilt (10 s). Re-running primary with --limit-processed-blocks 0. Contract still unfrozen; A4b/A6 told to update fixtures.
+
+## Sept 10 (IST 18:40)
+- Session restarted (spend limit). Scratchpad wiped; live evidence regenerated into runs/live/ (committed).
+- Primary gate range live: 42 VaultFlow rows, exact match to on-chain reference; stores cached (182k blocks).
+- A4b/A6 died mid-work; WIP committed (streamsmith typecheck green, 48/65 tests; mcpgen 57/58, one tsc error).
+- New standing rule: sub-agents on Sonnet only. Relaunched A4c (streamsmith), A6b (mcpgen), A8 (sink spike into local ClickHouse = kill criterion) on Sonnet.
+- Still need from Pawan: Privy auth keys ×2 + fee-wrapper vault ids ×2 + gas sponsorship; ClickHouse Cloud; Base wallet funding; ETHGlobal registration; team size.
