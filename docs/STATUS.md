@@ -60,3 +60,9 @@ Standing rules: sub-agents on Opus (Sonnet for low-stakes), never Fable; stop at
 - A10b (Opus) relaunched to finish Vaultpilot.
 - 05:55 IST: all packages green (streamsmith 88, mcpgen 73, vaultpilot 113; root typecheck ok; CI green). Cloud backfill at lag ~57k, share_value_growth view answering (both vaults ≈ +0.02% over 42 observed hours, 12 samples). demo:denied verified live. Next: backfill live → gate vs cloud → tag contract-v1 → receipt → MCP against cloud → fail-closed demo.
 - 06:15 IST: gate PASSES 18/18 on live data incl. RPC cross-checks (tx receipts + convertToAssets at 51093000). MCP probed against cloud: refuses correctly (check_unavailable) but for a fixable reason (ro profile rejects settings) → A13. `deploy status` JSON bug → A12. Backfill lag 39k, ~4k blocks/min.
+
+## Sept 11 (IST 06:45) — PIPELINE LIVE END TO END
+- Cloud sink steady at lag 200–250 blocks (final-blocks mode). deploy status fixed (A12). MCP runtime fixed for readonly profile (A13).
+- Real Deployment Receipt: receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json (gate 18/18, module hash 8e4892cf…, deploymentMode self-managed-sink, sinkSchemaHash 6d57b7cd…, mcpManifestHash bound).
+- Live MCP against cloud: pipeline_status ok (receipt matches, schema ok, lag 228); share_value_growth: both vaults ≈ +0.037% over 79 observed hours / 43 samples; vault_flows_24h real numbers. Evidence: runs/live/cloud/mcp-live-probe.txt.
+- Remaining before freeze (tonight IST): fund wallet → demo:deposit → demo:rotate; contract-v1 tag; forensic one-prompt rehearsal in a fresh dir; hosted redeploy when Pawan re-logs in (script ready).

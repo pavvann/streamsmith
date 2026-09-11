@@ -56,12 +56,12 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [x] T4.5 M A4c · (receipt.ts exists) Deployment Receipt generator (schema in PROJECT.md §4.1): hashes (package, proto descriptor, params, sink schema, MCP manifest), deployment, range, head, lag, gate evidence, timestamps.
 - [x] T4.6 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) (packages/mcpgen) MCP generator from protobuf descriptors + receipt: typed read-only tools, parameterized SQL, limits/timeouts, provenance in every response, fail-closed on schema/lag mismatch (real check).
 - [x] T4.7 M A4c · Run manifest + case-study writer (`runs/<id>/manifest.json`, `case-studies/`).
-- [ ] T4.8 M A4 · Clean end-to-end rehearsal from a fresh directory, no human follow-up; fix tooling; restore clean baseline.
+- [~] T4.8 M O · (promotion chain gate→receipt→mcp→live query executed by hand on real deployment; fresh-dir one-prompt rehearsal still to do) Clean end-to-end rehearsal from a fresh directory, no human follow-up; fix tooling; restore clean baseline.
 
 ## 5. MCP for vault flows (Sept 11)
 - [x] T5.1 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
 - [x] T5.2 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Hand-tune descriptions/SQL for the demo question; windows; limits.
-- [~] T5.3 M O · (pending cloud receipt)  Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
+- [x] T5.3 M O · (live: pipeline_status ok, share_value_growth + vault_flows_24h answer with provenance; refusal paths verified earlier as stale_data/check_unavailable)  Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
 
 ## 6. Vaultpilot (Sept 11)
 - [x] T6.1 M A3 · (live: wallet + policy + agent signer created; daily cap app-side) Server (TS): Privy client, business wallet, agent authorization key as additional signer, policy JSON (earn → 2 vault ids, per-action cap, daily aggregation), revocation path documented.
@@ -82,6 +82,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [ ] T7.8 M P · Submission form: partners = The Graph (both tracks) + Privy (both tracks); Start Fresh pool; repo; video; per-partner "how we used it" + feedback text. Submit before 12:00 EDT Sept 13. No force pushes after.
 
 ## 8. Hygiene (continuous)
+- [ ] T8.5 S — · mcpgen: `provenance.observedWindow.hours` is null although from/to timestamps are present; compute hours = (to-from)/3600. Small fix for the next mcpgen pass.
 - [x] T8.0 M O · **Standing rule (Sept 10 18:30 IST): sub-agents never run on Fable; default `model: opus`, `sonnet` only for low-stakes tasks.**
 - [ ] T8.1 M O · Commit every logical unit with meaningful messages; never a single dump.
 - [ ] T8.2 M O · Secrets only in `.env`; `.env.example` in every package; secret scan before each push.
