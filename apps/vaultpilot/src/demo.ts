@@ -15,8 +15,8 @@
  */
 import {APIError} from '@privy-io/node';
 import {buildSnapshot, writeSnapshot} from './snapshot.js';
-import {createSource, type SourceSelection} from './data.js';
-import {parseArgs, renderSummary, runCycle} from './loop.js';
+import {createSource} from './data.js';
+import {parseArgs, renderSummary, runCycle, type CliOptions} from './loop.js';
 import {appendLedger} from './ledger.js';
 import {basescanTxUrl, extractTxHashes} from './executor.js';
 import {privyEarnClient} from './earnclient.js';
@@ -99,13 +99,14 @@ async function demoDenied(execute: boolean): Promise<void> {
   console.log('  Above-policy actions are denied and returned to the treasurer; nothing was signed.');
 }
 
-async function demoDeposit(execute: boolean, amount: string, selection: SourceSelection | undefined, fixture: string | undefined): Promise<void> {
+async function demoDeposit(opts: CliOptions, amount: string): Promise<void> {
+  const {execute, selection, fixture} = opts;
   requireCredentials();
   const source = createSource({
     ...(selection ? {selection} : {}),
     ...(fixture ? {fixturePath: fixture, selection: 'fixture' as const} : {}),
   });
-  const snapshot = await buildSnapshot({source, dryRun: !execute});
+  const snapshot = await buildSnapshot({source, dryRun: !execute, ...(opts.offline ? {offline: true} : {})});
   writeSnapshot(snapshot);
   const withGrowth = snapshot.vaults
     .map((v) => ({vaultId: v.vaultId, label: v.label, growth: v.growth?.growth ?? null}))
@@ -156,16 +157,10 @@ async function demoDeposit(execute: boolean, amount: string, selection: SourceSe
   console.log(`  position   ${formatUnits(p.assets_in_vault, p.asset.decimals)} ${p.asset.symbol} in ${target.label} (shares ${p.shares_in_vault})`);
 }
 
-async function demoRotate(execute: boolean, selection: SourceSelection | undefined, fixture: string | undefined): Promise<void> {
-  if (execute) requireCredentials();
-  console.log(`DEMO 3 — one agent cycle${execute ? ' WITH EXECUTION' : ' (DRY RUN)'}.`);
-  const {snapshot, execution} = await runCycle({
-    execute,
-    json: false,
-    selection,
-    fixture,
-    minutes: undefined,
-  });
+async function demoRotate(opts: CliOptions): Promise<void> {
+  if (opts.execute) requireCredentials();
+  console.log(`DEMO 3 — one agent cycle${opts.execute ? ' WITH EXECUTION' : ' (DRY RUN)'}${opts.offline ? ', offline (fixture positions, no Privy call)' : ''}.`);
+  const {snapshot, execution} = await runCycle(opts);
   console.log(renderSummary(snapshot, execution));
   if (execution?.executed) {
     console.log('Rotation transactions:');
@@ -186,14 +181,15 @@ async function main(): Promise<void> {
       await demoDenied(opts.execute);
       return;
     case 'deposit':
-      await demoDeposit(opts.execute, amount, opts.selection, opts.fixture);
+      await demoDeposit(opts, amount);
       return;
     case 'rotate':
-      await demoRotate(opts.execute, opts.selection, opts.fixture);
+      await demoRotate(opts);
       return;
     default:
-      console.log('usage: tsx src/demo.ts <denied|deposit|rotate> [--execute] [--amount 25] [--source local|cloud|fixture] [--fixture path]');
+      console.log('usage: tsx src/demo.ts <denied|deposit|rotate> [--execute] [--amount 25] [--source local|cloud|fixture] [--fixture path] [--offline]');
       console.log('  every demo is a dry run without --execute; deposit and rotate also check the wallet balance first.');
+      console.log('  --offline makes no Privy call at all (fixture positions): the rotate rehearsal without funds.');
   }
 }
 

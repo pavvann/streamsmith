@@ -5,11 +5,14 @@
  *   pnpm agent:once --execute   the same cycle, and if the decision is `rotate`, execute it.
  *   pnpm agent:watch            one cycle every VAULTPILOT_WATCH_MINUTES (default 10) minutes.
  *
- * Flags: --execute, --source local|cloud|fixture, --fixture <path>, --json, --minutes <n>.
+ * Flags: --execute, --source local|cloud|fixture, --fixture <path>, --json, --minutes <n>,
+ * --offline (make no Privy call at all: positions and liquidity come from the fixture, which is
+ * how the rotate path can be rehearsed end to end while the business wallet is still unfunded).
  * Every cycle writes .vaultpilot-snapshot.json so the UI has something to show even when the
  * agent is not running, and appends to .vaultpilot-ledger.json.
  */
 import {buildSnapshot, writeSnapshot, type Snapshot} from './snapshot.js';
+import type {EarnClient} from './executor.js';
 import {createSource, type SourceSelection} from './data.js';
 import {envNumber} from './env.js';
 import {executeRotation, basescanTxUrl, type ExecutionResult} from './executor.js';
@@ -21,6 +24,8 @@ export interface CliOptions {
   selection: SourceSelection | undefined;
   fixture: string | undefined;
   minutes: number | undefined;
+  /** never call Privy; take positions and liquidity from the fixture. Implies dry run. */
+  offline: boolean;
 }
 
 export function parseArgs(argv: string[]): CliOptions {
@@ -30,8 +35,9 @@ export function parseArgs(argv: string[]): CliOptions {
   };
   const minutes = at('--minutes');
   return {
-    execute: argv.includes('--execute'),
+    execute: argv.includes('--execute') && !argv.includes('--offline'),
     json: argv.includes('--json'),
+    offline: argv.includes('--offline'),
     selection: at('--source') as SourceSelection | undefined,
     fixture: at('--fixture'),
     minutes: minutes === undefined ? undefined : Number(minutes),
@@ -139,47 +145,38 @@ export async function runCycle(opts: CliOptions): Promise<CycleResult> {
     ...(opts.selection ? {selection: opts.selection} : {}),
     ...(opts.fixture ? {fixturePath: opts.fixture, selection: 'fixture' as const} : {}),
   });
-  const snapshot = await buildSnapshot({source, dryRun: !opts.execute});
+  const snapshot = await buildSnapshot({
+    source,
+    dryRun: !opts.execute,
+    ...(opts.offline ? {offline: true} : {}),
+  });
   let execution: ExecutionResult | null = null;
   if (snapshot.decision.action === 'rotate') {
-    if (!opts.execute) {
-      execution = await executeRotation({
-        decision: snapshot.decision,
-        walletId: snapshot.wallet.walletId ?? '',
-        client: notConfiguredClient(),
-        dryRun: true,
-        perActionCapUsd: snapshot.policy.perActionCapUsd,
-        dailyCapUsd: snapshot.policy.dailyCapUsd,
-      });
-    } else {
-      execution = await executeRotation({
-        decision: snapshot.decision,
-        walletId: snapshot.wallet.walletId ?? '',
-        client: privyEarnClient(),
-        dryRun: false,
-        perActionCapUsd: snapshot.policy.perActionCapUsd,
-        dailyCapUsd: snapshot.policy.dailyCapUsd,
-      });
-    }
+    execution = await executeRotation({
+      decision: snapshot.decision,
+      walletId: snapshot.wallet.walletId ?? '',
+      // The only place a signing client is ever constructed is behind `--execute`.
+      client: opts.execute ? privyEarnClient() : dryRunClient(snapshot),
+      dryRun: !opts.execute,
+      perActionCapUsd: snapshot.policy.perActionCapUsd,
+      dailyCapUsd: snapshot.policy.dailyCapUsd,
+    });
   }
   writeSnapshot(snapshot);
   return {snapshot, execution};
 }
 
 /**
- * Dry-run client: reads the position with the app secret (no signing key involved) so the dry run
- * reports the real amount, and refuses to sign anything.
+ * Dry-run client. It reports the position the snapshot already read (live from Privy, or from the
+ * fixture when offline) and refuses to sign anything: this object has no authorization key and no
+ * path to one, so a dry run cannot move money even if the guards above it were wrong.
  */
-function notConfiguredClient() {
+export function dryRunClient(snapshot: Snapshot): EarnClient {
   return {
-    async position(walletId: string, vaultId: string) {
-      try {
-        const {position} = await import('./earn.js');
-        const p = await position(walletId, vaultId);
-        return {assets_in_vault: p.assets_in_vault, asset: {decimals: p.asset.decimals, symbol: p.asset.symbol}};
-      } catch {
-        return {assets_in_vault: '0', asset: {decimals: 6, symbol: 'USDC'}};
-      }
+    async position(_walletId: string, vaultId: string) {
+      const p = snapshot.vaults.find((v) => v.vaultId === vaultId)?.position;
+      if (!p) return {assets_in_vault: '0', asset: {decimals: 6, symbol: 'USDC'}};
+      return {assets_in_vault: p.assetsInVaultRaw, asset: {decimals: p.assetDecimals, symbol: p.assetSymbol}};
     },
     async withdraw(): Promise<never> {
       throw new Error('dry run: no withdrawal is ever sent without --execute');

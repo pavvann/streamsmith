@@ -81,6 +81,19 @@ export class ClickHouseQueryError extends Error {
   }
 }
 
+/**
+ * `request-readonly`: we send `readonly=1` per query.
+ * `profile-readonly`: the credential itself is read-only server-side and refuses per-query
+ * settings, so none are sent. Both are read-only; the second is enforced by the server.
+ */
+export type SettingsMode = 'request-readonly' | 'profile-readonly';
+
+/** ClickHouse error 164 when the user's profile is already readonly. */
+export function isProfileReadonlyError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /Code:\s*164/.test(msg) && /readonly mode/i.test(msg);
+}
+
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function str(v: unknown): string {
@@ -118,17 +131,52 @@ export class ClickHouseHttpSource implements VaultflowsSource {
       origin: this.opts.originLabel ?? `${this.endpoint.protocol}//${this.endpoint.host}`,
       database: this.opts.database,
       readOnly: true,
-      note: this.opts.useViews ? 'reading the share_value_growth / vault_flows_24h views' : 'running the view bodies against the base tables',
+      note:
+        (this.opts.useViews ? 'reading the share_value_growth / vault_flows_24h views' : 'running the view bodies against the base tables') +
+        (this.settingsMode === 'profile-readonly'
+          ? '; the credential is read-only server-side (it may not set query settings)'
+          : '; queries are sent with readonly=1'),
     };
   }
 
-  /** POST one statement with `readonly=1` and bound parameters; returns JSON rows. */
+  /**
+   * POST one statement with bound parameters; returns JSON rows.
+   *
+   * `readonly=1` and a server-side `max_execution_time` are requested per query. A user whose
+   * PROFILE is already read-only (ClickHouse Cloud's `ro` user is) cannot set any setting at all
+   * and answers `Code: 164 ... Cannot modify 'max_execution_time'/'readonly' setting in readonly
+   * mode`; that is a stronger guarantee than the one we asked for, so the request is retried once
+   * without the settings and the mode is remembered for the rest of the process. The client-side
+   * AbortSignal timeout applies either way, and no code path in this app ever sends a write.
+   */
   async query(sql: string, params: Record<string, string> = {}): Promise<ClickHouseRow[]> {
+    try {
+      return await this.post(sql, params, this.settingsMode);
+    } catch (e) {
+      if (this.settingsMode === 'request-readonly' && isProfileReadonlyError(e)) {
+        this.settingsMode = 'profile-readonly';
+        return this.post(sql, params, this.settingsMode);
+      }
+      throw e;
+    }
+  }
+
+  /** How this endpoint accepts per-query settings; discovered on the first refusal. */
+  private settingsMode: SettingsMode = 'request-readonly';
+
+  /** Which read-only guarantee is actually in force, for the UI/provenance line. */
+  get readOnlyMode(): SettingsMode {
+    return this.settingsMode;
+  }
+
+  private async post(sql: string, params: Record<string, string>, mode: SettingsMode): Promise<ClickHouseRow[]> {
     const url = new URL(this.endpoint);
     url.searchParams.set('database', this.opts.database);
-    url.searchParams.set('readonly', '1');
-    url.searchParams.set('max_execution_time', String(Math.ceil(this.timeoutMs / 1000)));
-    url.searchParams.set('output_format_json_quote_64bit_integers', '0');
+    if (mode === 'request-readonly') {
+      url.searchParams.set('readonly', '1');
+      url.searchParams.set('max_execution_time', String(Math.ceil(this.timeoutMs / 1000)));
+      url.searchParams.set('output_format_json_quote_64bit_integers', '0');
+    }
     for (const [k, v] of Object.entries(params)) {
       if (!IDENT.test(k)) throw new ClickHouseQueryError(`parameter name ${JSON.stringify(k)} is not an identifier`);
       url.searchParams.set(`param_${k}`, v);
@@ -227,7 +275,7 @@ export class ClickHouseHttpSource implements VaultflowsSource {
       out.push({
         vaultAddress: vault,
         totalAssetsNormalized: fromBaseUnits(str(r.total_assets_raw), d),
-        blockNumber: num(r.block_number),
+        blockNumber: num(r.observed_block),
       });
     }
     return out;
@@ -364,10 +412,15 @@ ORDER BY vault ASC
 LIMIT 500`;
 }
 
+/**
+ * The alias must NOT be `block_number`: ClickHouse resolves `argMax(total_assets_raw, block_number)`
+ * against the SELECT alias and fails with "Aggregate function max(block_number) is found inside
+ * another aggregate function" (code 184). Verified against ClickHouse Cloud 26.2.1.
+ */
 const SIZES_SQL = `SELECT
   vault,
   toString(argMax(total_assets_raw, block_number)) AS total_assets_raw,
-  max(block_number) AS block_number
+  max(block_number) AS observed_block
 FROM share_value_observations
 WHERE _deleted_ = 0 AND call_ok = true
 GROUP BY vault
@@ -486,15 +539,22 @@ export function createSource(opts: CreateSourceOptions = {}): VaultflowsSource {
 
   if (wantLocal) {
     if (!localUrl) throw new Error('VAULTPILOT_SOURCE=local but CLICKHOUSE_URL is not set');
+    // Prefer the read-only user. CLICKHOUSE_USER in the repo root .env is the sink's WRITER, which
+    // this app must never use; `readonly=1` would stop a write anyway, but the credential the agent
+    // holds should not be able to write in the first place.
+    const localUser = envOptional('CLICKHOUSE_RO_USER') ?? envOptional('CLICKHOUSE_USER');
+    const localPassword = envOptional('CLICKHOUSE_RO_USER')
+      ? envOptional('CLICKHOUSE_RO_PASSWORD')
+      : envOptional('CLICKHOUSE_PASSWORD');
     return new ClickHouseHttpSource({
       url: localUrl,
-      ...(envOptional('CLICKHOUSE_USER') ? {user: envOptional('CLICKHOUSE_USER')!} : {}),
-      ...(envOptional('CLICKHOUSE_PASSWORD') ? {password: envOptional('CLICKHOUSE_PASSWORD')!} : {}),
+      ...(localUser ? {user: localUser} : {}),
+      ...(localPassword ? {password: localPassword} : {}),
       database: envOptional('CLICKHOUSE_DATABASE') ?? 'vaultflows',
       ...(rpcUrl ? {rpcUrl} : {}),
       ...(opts.useViews !== undefined ? {useViews: opts.useViews} : {}),
       ...(opts.fetchImpl ? {fetchImpl: opts.fetchImpl} : {}),
-      originLabel: 'local ClickHouse (docker)',
+      originLabel: `local ClickHouse (docker)${localUser ? ` as ${localUser}` : ''}`,
     });
   }
   if (wantCloud) {

@@ -67,6 +67,8 @@ export const OPTIONAL_ENV = [
   'CLICKHOUSE_URL',
   'CLICKHOUSE_USER',
   'CLICKHOUSE_PASSWORD',
+  'CLICKHOUSE_RO_USER',
+  'CLICKHOUSE_RO_PASSWORD',
   'CLICKHOUSE_DATABASE',
   'CH_CLOUD_URL',
   'CH_CLOUD_RO_USER',
@@ -78,6 +80,12 @@ export const OPTIONAL_ENV = [
 
 export type RequiredEnvKey = (typeof REQUIRED_ENV)[number];
 export type OptionalEnvKey = (typeof OPTIONAL_ENV)[number];
+/**
+ * Every name this app knows. `env()` demands a required one; the optional readers accept either,
+ * because a variable can be required by the Privy path (the two vault ids) and still be read
+ * opportunistically by code that must work without credentials (vaults.ts, the UI route).
+ */
+export type AnyEnvKey = RequiredEnvKey | OptionalEnvKey;
 
 /** Returns the names of required variables that are unset or empty. */
 export function missingEnv(): RequiredEnvKey[] {
@@ -92,13 +100,13 @@ export function env(key: RequiredEnvKey): string {
   return v.trim();
 }
 
-export function envOptional(key: OptionalEnvKey): string | undefined {
+export function envOptional(key: AnyEnvKey): string | undefined {
   loadEnv();
   const v = process.env[key];
   return v && v.trim() !== '' ? v.trim() : undefined;
 }
 
-export function envNumber(key: OptionalEnvKey, fallback: number): number {
+export function envNumber(key: AnyEnvKey, fallback: number): number {
   const raw = envOptional(key);
   if (raw === undefined) return fallback;
   const n = Number(raw);
@@ -106,7 +114,7 @@ export function envNumber(key: OptionalEnvKey, fallback: number): number {
   return n;
 }
 
-export function envFlag(key: OptionalEnvKey, fallback: boolean): boolean {
+export function envFlag(key: AnyEnvKey, fallback: boolean): boolean {
   const raw = envOptional(key);
   if (raw === undefined) return fallback;
   return /^(1|true|yes|on)$/i.test(raw);

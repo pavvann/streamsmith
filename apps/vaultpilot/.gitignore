@@ -4,3 +4,7 @@ dist/
 .env.*
 !.env.example
 .vaultpilot-state.json
+.vaultpilot-ledger.json
+.vaultpilot-snapshot.json
+web/.next/
+web/next-env.d.ts

@@ -1,5 +1,5 @@
 /**
- * Vaultpilot kill-risk spike.
+ * Vaultpilot kill-criterion spike.
  * Sequence: create business wallet -> create Earn policy -> register agent key + attach as
  * additional signer -> read both vault positions -> attempt a deposit to a NON-allowed vault id
  * with the agent key (expect denial) -> attempt an over-cap deposit to an allowed vault (expect
