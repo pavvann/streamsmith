@@ -1,0 +1,33 @@
+pipeline_status: {"ok": true, "refused": false, "reason": null, "detail": null} | live: {"headBlock": 51148236, "headTimestamp": 1789085819, "headAgeSeconds": 456, "chainHead": 51148464, "chainId": 8453, "lagBlocks": 228} | schema ok: True | receipt matches: True
+
+share_value_growth isError: None
+rows: [
+ {
+  "vault": "0x050ce30b927da55177a4914ec73480238bad56f0",
+  "first_block_number": 51004800,
+  "first_block_timestamp": 1788798947,
+  "first_assets_per_share_normalized": "1.040504",
+  "last_block_number": 51147000,
+  "last_block_timestamp": 1789083347,
+  "last_assets_per_share_normalized": "1.040889",
+  "growth": 0.0003700129937029839,
+  "observed_hours": 79,
+  "observation_count": 43
+ },
+ {
+  "vault": "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9",
+  "first_block_number": 51004800,
+  "first_block_timestamp": 1788798947,
+  "first_assets_per_share_normalized": "1.039674",
+  "last_block_number": 51147000,
+  "last_block_timestamp": 1789083347,
+  "last_assets_per_share_normalized": "1.040059",
+  "growth": 0.00037030838512852604,
+  "observed_hours": 79,
+  "observation_count": 43
+ }
+]
+
+provenance: {"packageHash": "662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0", "outputModuleHash": "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a", "deploymentMode": "self-managed-sink", "headBlock": 51148236, "lagBlocks": 228, "observedWindow": {"hours": null, "column": "block_timestamp", "source": "share_value_observations", "observedFromTimestamp": 1788798947, "observedToTimestamp": 1789083347, "startTimestamp": 1788798947, "endTimestamp": 1789083347}}
+
+vault_flows_24h isError: None rows: [{"vault": "0x050ce30b927da55177a4914ec73480238bad56f0", "window_end_timestamp": 1789085829, "window_start_timestamp": 1788999429, "deposit_count": 2844, "withdraw_count": 1529, "assets_in_normalized": "1162963.852997", "assets_out_normalized": "2160800.705892", "net_assets_normalized": "-997836.852895", "flows_without_metadata": 0}, {"vault": "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9", "window_end_timestamp": 1789085829, "window_start_timestamp": 1788999429, "deposit_count": 707, "withdraw_count": 539, "assets_in_normalized": "430041.848579", "assets_out_normalized": "296157.598331", "net_a

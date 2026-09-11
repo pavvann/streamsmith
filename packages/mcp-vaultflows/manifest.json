@@ -9,18 +9,18 @@
     "version": "v0.1.0",
     "packageHash": "662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0",
     "outputModule": "map_events",
-    "outputModuleHash": "a56f04211f28c507923e4d3949033e2c3d9c0fa1",
+    "outputModuleHash": "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a",
     "deploymentMode": "self-managed-sink",
-    "deploymentId": "fixture-local-clickhouse",
+    "deploymentId": null,
     "chainId": 8453,
     "network": "base",
     "startBlock": 51001200
   },
   "receipt": {
-    "sha256": "53e7e9bb5f2b61d6168b607d566c904ee23ae8927394f1a56beee6fc0a4dc672",
+    "sha256": "f8b5d76c021ee5119c5b0f489565191a167aa9c9baee1ee5aefbb281eee434bd",
     "parametersHash": "baa6ae91bb4047064c246d4541b33c8cf91c6e6a867be766a16c5be9524100cd",
     "protoDescriptorHash": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9",
-    "sinkSchemaHash": "48f86177bf2be6fc0bdd60357aac6a097c6d0226d3585601c50ad6399210a46d"
+    "sinkSchemaHash": "6d57b7cdba91fde52f33f6430f853fd9414b267b3330a65f7c7c0a3d725f650d"
   },
   "inputs": {
     "proto": {

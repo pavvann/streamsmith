@@ -143,5 +143,6 @@
   "endpoint": "base-mainnet.streamingfast.io:443",
   "headBlock": 51148236,
   "lagBlocks": 203,
-  "lagSeconds": 406
+  "lagSeconds": 406,
+  "mcpManifestHash": "100440cfe5230faa10b37ad7d40d478e6111dc1169d66ca00551d4d48abbd5d1"
 }
