@@ -161,7 +161,7 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
    diverged, and it predates this session.** `test/live-runs.test.ts` (3 of its assertions) fails out of the box:
    `runs/observation.lines` is 2, not the hardcoded 1; `ids_unique` reports 92 vs the test's 88; `rpc_success_ratio_gte`
    reports 48/48 vs 44/44. `git log -p -- runs/live/observation-51092998-51093002.jsonl` shows the file was
-   overwritten in commit `c4a25df` (the same commit whose message claims "75 tests… green") — its 1-line
+   overwritten in commit `59985da` (the same commit whose message claims "75 tests… green") — its 1-line
    `map_share_value_observations` content (still what `packages/streamsmith/fixtures/live/` mirrors, and what the
    test file's own header comment describes) was replaced with 2 lines of `map_events` output for a different
    block range, with neither the fixture mirror nor the test's hardcoded counts updated to match. Confirmed via
@@ -214,7 +214,7 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
    `ClickHouseClient` interface so every existing test fake stays valid. Cheap once seen; would have been an
    afternoon of fake-updating if the method had been made required.
 4. **The `runs/live/observation-*.jsonl` divergence A11 reported also breaks `packages/mcpgen`.** Two assertions in
-   `test/livedata.test.ts` were stale against the evidence checked in by `c4a25df` (module `map_share_value_observations`
+   `test/livedata.test.ts` were stale against the evidence checked in by `59985da` (module `map_share_value_observations`
    → `map_events`, 45 rows → 49: 42 VaultFlow + 1 VaultMeta + 4 VaultFlow + 2 ShareValueObservation). Updated on the
    mcpgen side to match the file that is actually on disk, and the module assertion now reads
    `manifest.package.outputModule` instead of a literal so the next regeneration cannot drift the same way.

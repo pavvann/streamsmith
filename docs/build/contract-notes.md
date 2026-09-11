@@ -219,7 +219,7 @@ All field numbers of retained fields are unchanged. Removed numbers are `reserve
 5. Header comment: added the ids table, the never-empty rule, the flattening rationale, the enum storage note, `from_owner`/`to_owner` in the address list; `ShareValueObservation` comment states that failed rows are still emitted with `call_ok = false`; `log_index` comment states block-wide.
 6. `buf lint` (STANDARD minus `PACKAGE_DIRECTORY_MATCH`) clean; `buf build` OK; hash `11b959fc25edfb3c135d6cc39119df8bb0b442b1b245e999c6912483a1fc2c8b`.
 
-Sync state at commit `4158d86` (2026-09-10): `packages/erc4626-flows/proto/vaultflows.proto` is byte-identical to `specs/vaultflows.proto`, `src/pb/vaultflows.v1.rs` was regenerated (`call_ok` present, no `CallStatus`), and `src/lib.rs` uses `call_ok`/`call_error` and the `"0"` convention. The spec rewrite itself was committed inside that commit. Still open in the package: `substreams.yaml` `descriptorSets` names the retired module (section 7).
+Sync state at commit `ff0fbf4` (2026-09-10): `packages/erc4626-flows/proto/vaultflows.proto` is byte-identical to `specs/vaultflows.proto`, `src/pb/vaultflows.v1.rs` was regenerated (`call_ok` present, no `CallStatus`), and `src/lib.rs` uses `call_ok`/`call_error` and the `"0"` convention. The spec rewrite itself was committed inside that commit. Still open in the package: `substreams.yaml` `descriptorSets` names the retired module (section 7).
 
 ## 12. Proto changes by A9 — `FlowDirection` enum → `string direction`
 

@@ -189,7 +189,7 @@ sink:
 
 ## Local build (Sept 10)
 
-Everything in this section was executed on this machine on 2026-09-10 (macOS arm64), repo at `c142d93` (main). `packages/erc4626-flows/` and `specs/vaultflows.proto` are byte-identical to CI commit `18ab2eb` (`git diff --quiet 18ab2eb HEAD -- packages/erc4626-flows specs/vaultflows.proto`).
+Everything in this section was executed on this machine on 2026-09-10 (macOS arm64), repo at `b421fcf` (main). `packages/erc4626-flows/` and `specs/vaultflows.proto` are byte-identical to CI commit `c679edf` (`git diff --quiet c679edf HEAD -- packages/erc4626-flows specs/vaultflows.proto`).
 
 ### Toolchain
 
@@ -232,7 +232,7 @@ All modules `Initial block: 49276800` (import: 0), `Network: base`. Apart from t
 
 ### sha256 comparison: local spkg vs CI artifact
 
-- CI artifact `erc4626-flows-v0.1.0-spkg` (run 34396041869, job 102615888265, branch `feat/erc4626-flows`, head `18ab2eb`), downloaded with `gh run download 34396041869 -n erc4626-flows-v0.1.0-spkg -D <scratchpad>/ci-spkg`: 936,635 bytes, sha256 `5fe24ea1e90bad9d4c32cc4a867fbf68412acc173935076c8461d11346835b87`.
+- CI artifact `erc4626-flows-v0.1.0-spkg` (run 34396041869, job 102615888265, branch `feat/erc4626-flows`, head `c679edf`), downloaded with `gh run download 34396041869 -n erc4626-flows-v0.1.0-spkg -D <scratchpad>/ci-spkg`: 936,635 bytes, sha256 `5fe24ea1e90bad9d4c32cc4a867fbf68412acc173935076c8461d11346835b87`.
 - Local (build#1 + pack#1): 938,767 bytes, sha256 `54fdb30d6dd3cc76906044e049bade1910126ece9e4104301e3b0393e14a48ff`. **Hashes do not match.**
 
 Why (measured by decoding both `sf.substreams.v1.Package` messages with a protobuf wire parser, `<scratchpad>/spkg_inspect.py`):
