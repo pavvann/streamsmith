@@ -255,3 +255,104 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
    throwing, and applied it at all three read sites so a corrupt `deploy.json` degrades exactly like a missing one
    (recompute from ClickHouse + RPC) rather than being special-cased once at the CLI boundary — `selfManagedStatus`
    also writes the healed record back on success, so the next run repairs itself.
+
+## 2026-09-11 — A14 forensic one-prompt rehearsal: building erc4626-flows from the skills alone (sub-agent A14)
+
+Setting: a fresh directory holding only `specs/` + Streamsmith + mcpgen, one human instruction
+(`specs/prompt.md`), and the official skills at `vendor/substreams-skills`. The reference package was
+never read. The gate passed on the **first** gate attempt, after **two** compile-level failures. These
+are the friction points, in the order they cost time.
+
+1. **`--limit-processed-blocks` is in none of the skills, and without it the first run of any
+   store-bearing package fails.** `substreams` v1.22.0 refuses a request whose store preparation would
+   exceed 10,000 processed blocks unless you pass `--limit-processed-blocks 0`. Our package's first run
+   reported `Blocks to process to prepare the stores in 2 stages: 182000`, i.e. any realistic
+   `initialBlock` + a store trips the guard immediately. `grep -rn "limit-processed-blocks"` over the
+   whole skills tree returns **zero hits** — not in `substreams-dev/SKILL.md`, not in
+   `references/manifest-spec.md`, not in `substreams-testing`. Here the Streamsmith gate runner supplies
+   the flag itself, so it cost us nothing; a builder following only the skills would hit an opaque
+   refusal on their very first `substreams run` and have no documented way out. **Highest-value fix in
+   this list:** one line in `substreams-dev` under "Debugging" or `initialBlock`.
+
+2. **Abigen's generated code needs `num-bigint` as *your* direct dependency, exactly like `ethabi` —
+   and only the `ethabi` half is documented.** `substreams-ethereum/SKILL.md` explains at length why
+   `ethabi = "17"` must be a direct dep ("Abigen writes bare `ethabi::ParamType` paths into the file it
+   generates in **your** crate"). The identical thing is true of `num_bigint` the moment any ABI
+   function takes a `uint256` **argument** — ours was `convertToAssets(uint256)`, and the generated
+   `src/abi/erc4626.rs` emitted `num_bigint::Sign::Plus` / `NoSign` / `Minus`. Three
+   `cannot find module or crate num_bigint` errors, pointing into generated code the skill tells you not
+   to hand-edit. `references/rpc-and-tokens.md` mentions `num-bigint = "0.4"` but only in the opposite
+   context ("if you drop to `num_bigint` directly … staying on `substreams::scalar::BigInt` needs no
+   extra dependency"), which reads as "you will not need this". Cost: ~4 min. Fix: add `num-bigint = "0.4"`
+   to the Cargo.toml block with the same "required on the Abigen path" note, conditioned on uint256 args.
+
+3. **No skill shows how to parse a decimal string back into a `BigInt`.** Every skill insists that
+   `uint256` be emitted as a decimal `string` — and upstream packages do exactly that (Pinax
+   `erc4626.v1.Deposit.assets` is a `string`). The obvious `BigInt::try_from("123")` does **not** compile:
+   `substreams::scalar::BigInt` implements `From<i32/i64/isize/u32/u64/usize/num_bigint::BigInt>` and
+   nothing for `&str`, so the route is `use std::str::FromStr; BigInt::from_str(s)`. Four compile errors.
+   Cost: ~3 min. Fix: one line in `rpc-and-tokens.md` "Amount math" next to `to_decimal`.
+
+4. **`sink:` with only `module:` does not parse, contradicting `substreams-sql/SKILL.md`.** The skill
+   says (from-proto section, "Run"): *"the sink still has to resolve a module, so either declare
+   `sink: module:` or pass the module as a trailing positional argument."* Doing the first gives
+   `Error: reading manifest "substreams.yaml": unable to get package: unable to convert manifest to
+   package: parsing sink configuration: sink: "type" unspecified` — from `substreams protogen`, before
+   any sink is involved. The only working from-proto shapes are *no `sink:` block at all* (then pass the
+   module positionally) or a complete `module` + `type` + `config` block. Cost: ~2 min, and it is the
+   first thing a builder hits because `protogen` is step 1.
+
+5. **`sf.substreams.v1.Clock` is effectively undocumented as a source input.** Any package that
+   consumes an **imported** map module needs block identity from somewhere: imported outputs generally
+   carry no block number/hash/timestamp (Pinax `erc4626.v1.Events` has `transactions[].logs[]` and
+   nothing else). The answer is `- source: sf.substreams.v1.Clock`, but `substreams-dev`'s "Input Types"
+   and `references/manifest-spec.md` "Source Inputs" only ever show `sf.ethereum.type.v2.Block`. The
+   string appears exactly twice in the whole skills tree: once in `substreams-bitcoin/SKILL.md` and once
+   inside a `map_clocks` CLI example. Falling back to `sf.ethereum.type.v2.Block` "just for the block
+   number" would stream the entire block into WASM for nothing. Fix: add Clock to the Source Inputs
+   table with the one-line reason (cheap block identity when your data comes from an imported module),
+   and note that `Clock.id` is the block hash **without** an `0x` prefix.
+
+6. **Parameter encoding is undocumented beyond JSON.** `references/patterns.md` "Parameterized Modules"
+   shows only `serde_json::from_str(&params)`. The convention actually used by the hosted runner and by
+   our contract is urlencoded / serde_qs (`vaults[]=0x…&vaults[]=0x…&interval=1800&chain_id=8453`), and
+   `grep -rn "serde_qs\|urlencoded"` over the skills returns **zero hits**. We hand-parsed it. Fix: one
+   sub-section noting the two conventions and that the hosted `ExecutionConfig.parameters` is a single
+   string per module.
+
+7. **The skill's canonical RPC cache still re-pays the call on every active block — a `set_if_not_exists`
+   *delta* turns it into once-ever.** `references/rpc-and-tokens.md` "The cache-store pattern" has
+   `map_pool_tokens` issue the `RpcBatch` in every block the contract appears (dedup is in-block only);
+   the store only saves the *consumer*. Over a 91k-block backfill against every ERC-4626 vault on Base
+   that is tens of thousands of redundant batches. Putting one RPC-free module in front
+   (`map_sightings` → `store_first_seen` as `set_if_not_exists`) and reading that store in `mode: deltas`
+   makes the probe fire in exactly the one block a contract is first seen, ever — the delta *is* the
+   first-sight trigger, and it doubles as "emit one metadata row per contract" for the sink. Worth a
+   named pattern in the skill; it is strictly better than the documented one whenever the metadata is
+   immutable. (Cost us nothing — we designed it this way — but only because the contract's
+   "first-sight … written when the probe first runs" wording forced the question.)
+
+8. **`protobuf.excludePaths` still does not exclude descriptor-set packages** (A5 item 1, reconfirmed on
+   substreams 1.22.0 / buf 1.72.0 with `descriptorSets: [buf.build/streamingfast/substreams]`):
+   `substreams protogen` wrote `src/pb/schema.rs`, `src/pb/sf.firehose.v2.rs` and
+   `src/pb/sf.codegen.conversation.v1.rs` and wired all three into `mod.rs` despite
+   `excludePaths: [sf/substreams, google]`. Harmless (30 dead-code warnings) but still wrong.
+
+9. **Unpinned `descriptorSets` warning, still with no documented ref to pin** (A5 item 2, reconfirmed):
+   `buf.build/streamingfast/substreams (no version specified, resolves to latest) … will always trigger
+   regeneration`. Note the retired-module problem from A2b item 10 is real and the gate's advice is
+   correct: `buf.build/streamingfast/substreams` resolves, `…/substreams-sink-sql` is the retired one the
+   SQL skill still names.
+
+10. **Streamsmith, not Graph: `gate --reuse-runs` silently implies `--skip-build`.** `run.ts` guards the
+    build with `if (!opts.reuseRuns && !opts.skipBuild)`, so `--reuse-runs` alone writes
+    `build: { skipped: true, durationMs: 0 }` into `gate.json` while the help text lists the two flags as
+    independent. Anyone reusing runs to re-check assertions gets a receipt-grade artifact with no build
+    evidence in it. Either document it or split the flags.
+
+11. **Nice surprise, worth keeping:** the normalized descriptor hash matched the frozen
+    `expectedSpecSha256` (`ce7f7823…d5f9`) on the **first** build, with nothing but a byte-identical
+    `proto/vaultflows.proto` and `descriptorSets: [buf.build/streamingfast/substreams]`. Internal
+    plumbing types were put in a second file with package `vaultflows.internal.v1`, which the gate's
+    "exactly one file whose package == vaultflows.v1" rule tolerates cleanly. The hash pipeline is doing
+    exactly what it claims.
