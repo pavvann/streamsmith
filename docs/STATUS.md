@@ -59,3 +59,4 @@ Standing rules: sub-agents on Opus (Sonnet for low-stakes), never Fable; stop at
 - Self-managed sink → ClickHouse Cloud running (pid in runs/live/cloud/sink.pid), tables created, backfilling from 51001200 with --final-blocks-only. Monitor active.
 - A10b (Opus) relaunched to finish Vaultpilot.
 - 05:55 IST: all packages green (streamsmith 88, mcpgen 73, vaultpilot 113; root typecheck ok; CI green). Cloud backfill at lag ~57k, share_value_growth view answering (both vaults ≈ +0.02% over 42 observed hours, 12 samples). demo:denied verified live. Next: backfill live → gate vs cloud → tag contract-v1 → receipt → MCP against cloud → fail-closed demo.
+- 06:15 IST: gate PASSES 18/18 on live data incl. RPC cross-checks (tx receipts + convertToAssets at 51093000). MCP probed against cloud: refuses correctly (check_unavailable) but for a fixable reason (ro profile rejects settings) → A13. `deploy status` JSON bug → A12. Backfill lag 39k, ~4k blocks/min.
