@@ -1,0 +1,27 @@
+flowchart TD
+    PROMPT["Human prompt<br/>docs/PROJECT.md §5"] --> SKILLS["Official Substreams skills<br/>generate the Rust/WASM code"]
+    SKILLS --> CONTRACT["specs/vaultflows.proto<br/>public contract, frozen"]
+    CHAINSRC["Base mainnet, chain 8453<br/>Pinax erc4626 Deposit/Withdraw"] --> PKG["erc4626-flows package<br/>map_events"]
+    CONTRACT --> PKG
+
+    subgraph PIPE["Streamsmith promotion pipeline"]
+        direction TB
+        GATE["gate<br/>specs/gate.yaml, 18 assertions"]
+        PUBLISH["publish<br/>substreams.dev registry"]
+        DEPLOY["deploy<br/>self-managed-sink live;<br/>graph-market-hosted pending"]
+        RECEIPT["receipt<br/>receipts/erc4626-flows-*.json"]
+        MCPGEN["mcp<br/>packages/mcpgen"]
+        GATE --> PUBLISH --> DEPLOY --> RECEIPT --> MCPGEN
+    end
+
+    PKG --> GATE
+    DEPLOY --> CH["ClickHouse Cloud<br/>vault_flows / share_value_observations / vaults"]
+    CH --> MCP["mcp-vaultflows<br/>fail-closed MCP server"]
+    MCPGEN --> MCP
+    RECEIPT -.->|"5 hashes + lag,<br/>re-checked every 60s"| MCP
+
+    MCP --> DECISION["Vaultpilot decision service<br/>src/decision.ts"]
+    DECISION --> PRIVY["Privy business wallet<br/>policy + agent signer"]
+    PRIVY --> BASETX["Base mainnet<br/>earn_deposit / earn_withdraw"]
+
+    MCP -.-> REFUSE["Refusal reasons<br/>receipt_mismatch, schema_mismatch,<br/>chain_mismatch, stale_data, check_unavailable"]
