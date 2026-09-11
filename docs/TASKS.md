@@ -67,7 +67,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [x] T6.1 M A3 · (live: wallet + policy + agent signer created; daily cap app-side) Server (TS): Privy client, business wallet, agent authorization key as additional signer, policy JSON (earn → 2 vault ids, per-action cap, daily aggregation), revocation path documented.
 - [ ] T6.2 M A3 · Earn deposit / withdraw / position for both vault ids; capture tx hashes. dep: T0.7
 - [x] T6.3 M A10b · (113 tests) Decision service: observed-window share-value growth (min 24h obs), min differential, outflow guardrail, cooldown, staleness refusal via `pipeline_status`, `maxWithdraw`, self-action exclusion, idempotency, intermediate-failure handling (withdraw ok → deposit fail ⇒ idle + alert).
-- [x] T6.4 M A10b · (Next 15, builds) One-screen UI (Next.js): position, two observations + exact window, decision + rule, policy result, provenance, tx links, control/revocation info.
+- [x] T6.4 M A10b+A17 · (Next 15; redesigned to Pawan's palette: Fraunces/Source Serif/Source Sans/JetBrains Mono, decision hero, sparklines, meters; docs/build/ui-redesign.png) One-screen UI (Next.js): position, two observations + exact window, decision + rule, policy result, provenance, tx links, control/revocation info.
 - [~] T6.5 M A10b+O · (demo:denied verified live; deposit/rotate need funding) Demo: denied unapproved vault, then approved below-cap action from live signal. Initial funding into the lower-growth vault.
 - [ ] T6.6 C A3 · Intents for above-cap actions only if Earn path supports it first try.
 
