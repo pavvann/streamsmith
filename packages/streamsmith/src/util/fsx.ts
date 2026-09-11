@@ -25,7 +25,29 @@ export async function writeJson(path: string, value: unknown): Promise<void> {
 }
 
 export async function readJson<T = unknown>(path: string): Promise<T> {
-  return JSON.parse(await readFile(path, "utf8")) as T;
+  const text = await readFile(path, "utf8");
+  try {
+    return JSON.parse(text) as T;
+  } catch (err) {
+    // bare JSON.parse errors ("Unexpected end of JSON input") don't name the offending file, which turns a
+    // truncated/corrupt cache file (e.g. deploy.json from a crashed writer) into a confusing crash — name it.
+    throw new Error(`invalid JSON in ${path}${text === "" ? " (empty file)" : ""}: ${(err as Error).message}`);
+  }
+}
+
+/**
+ * Best-effort JSON read for cache/record files a caller can recompute from a live source: returns the parsed
+ * value, or `{}` when the file is absent, or `{ error }` (the file's content dropped) when it exists but is not
+ * valid JSON — a corrupt `deploy.json` should degrade `deploy status` to "recompute from ClickHouse + RPC",
+ * not crash the whole command with a raw JSON.parse error.
+ */
+export async function readJsonLenient<T = unknown>(path: string): Promise<{ value?: T; error?: string }> {
+  if (!(await exists(path))) return {};
+  try {
+    return { value: await readJson<T>(path) };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
 }
 
 export async function readText(path: string): Promise<string> {

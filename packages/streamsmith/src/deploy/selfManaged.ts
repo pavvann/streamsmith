@@ -7,11 +7,11 @@ import { hostname } from "node:os";
 import { stat, mkdir } from "node:fs/promises";
 import type { Ctx } from "../util/ctx.ts";
 import { paths } from "../util/ctx.ts";
-import { exists, readJson, readText, writeJson, writeText } from "../util/fsx.ts";
+import { exists, readJson, readJsonLenient, readText, writeJson, writeText } from "../util/fsx.ts";
 import type { StreamsmithConfig } from "../config/streamsmith.ts";
 import { hostFingerprint } from "../receipt.ts";
 import { sha256File } from "../util/hash.ts";
-import { chMaxBlock, chBlocksHead, chRowCounts } from "./clickhouse.ts";
+import { chMaxBlock, chBlocksHead, chRowCounts, clickhouseDatabase } from "./clickhouse.ts";
 import { ethBlockNumber, BASE_BLOCK_TIME_SECONDS } from "./rpc.ts";
 import type { DeployRecord } from "./types.ts";
 
@@ -145,20 +145,31 @@ export interface StatusOptions {
   rpcUrl?: string;
   blockTimeSeconds?: number;
   streamsmith?: StreamsmithConfig;
+  /** logs each ClickHouse/RPC request URL/body and the response status + first 200 bytes of body */
+  verbose?: boolean;
 }
 
 export async function selfManagedStatus(ctx: Ctx, o: StatusOptions): Promise<DeployRecord> {
   const path = paths.runs(ctx, o.runId, "deploy.json");
-  const hasRecord = await exists(path);
   const chUrl = o.clickhouseUrl ?? ctx.env.CLICKHOUSE_RO_HTTP_URL;
-  if (!hasRecord && !chUrl) throw new Error(`no deploy.json for run ${o.runId} (pass --clickhouse-url to compute status without a prior \`deploy self-managed\` run)`);
-  const record: DeployRecord = hasRecord ? await readJson<DeployRecord>(path) : { deploymentMode: "self-managed-sink", runId: o.runId };
+  // A corrupt/truncated deploy.json (crashed writer, concurrent write, manual edit) used to blow up `readJson`
+  // with a bare "Unexpected end of JSON input" and no indication of which file or why. Read it leniently instead:
+  // when ClickHouse is reachable, `deploy status` already supports recomputing everything from scratch with no
+  // deploy.json at all (see below) — a corrupt file should degrade the same way, not crash the whole command.
+  const { value: existing, error: corrupt } = await readJsonLenient<DeployRecord>(path);
+  const hasRecord = existing !== undefined;
+  if (!hasRecord && !chUrl) {
+    if (corrupt) throw new Error(`${corrupt} (pass --clickhouse-url to recompute status without this file, or remove/repair it)`);
+    throw new Error(`no deploy.json for run ${o.runId} (pass --clickhouse-url to compute status without a prior \`deploy self-managed\` run)`);
+  }
+  const record: DeployRecord = existing ?? { deploymentMode: "self-managed-sink", runId: o.runId };
   const notes: string[] = [];
+  if (corrupt) notes.push(`ignoring unreadable deploy.json for run ${o.runId} (recomputing from ClickHouse + RPC): ${corrupt}`);
   if (record.pid !== undefined) {
     const alive = pidAlive(record.pid);
     record.state = alive ? "running" : "exited";
     notes.push(`pid ${record.pid} ${alive ? "alive" : "not running"}`);
-  } else if (!hasRecord) {
+  } else if (!hasRecord && !corrupt) {
     notes.push(`no deploy.json for run ${o.runId}; status computed from ClickHouse + RPC only`);
   }
   if (record.cursorFile) {
@@ -168,26 +179,30 @@ export async function selfManagedStatus(ctx: Ctx, o: StatusOptions): Promise<Dep
       record.cursor = { present: true, mtime: st.mtime.toISOString(), raw: raw.slice(0, 200) };
     } else record.cursor = { present: false };
   }
-  const database = o.database ?? record.sink?.database ?? o.streamsmith?.sink?.connection?.database ?? "default";
+  // `clickhouseDatabase` is the one place CLICKHOUSE_DATABASE/CLICKHOUSE_DB are read from the environment; go
+  // through it here too (an explicit --database / a recorded sink database still wins) — bypassing it silently
+  // defaulted every query to the `default` database whenever only the env var was set, e.g. exactly the
+  // documented `deploy status --clickhouse-url ...` repro (CLICKHOUSE_DATABASE=vaultflows, no --database).
+  const database = o.database ?? record.sink?.database ?? clickhouseDatabase(ctx, undefined, o.streamsmith?.sink?.connection?.database);
   const tables = o.tables ?? o.streamsmith?.sink?.tables ?? ["vault_flows", "share_value_observations", "vaults", "share_transfers"];
   if (chUrl) {
     // `_blocks_` (number, deleted — no leading-underscore injected columns) is created by every from-proto run
     // regardless of the vault schema, so it is the head source of record; fall back to the data tables if it is
     // absent or empty (e.g. an older sink run, or `_blocks_` not among `tables`).
-    const blocksHead = await chBlocksHead(ctx, chUrl, database);
+    const blocksHead = await chBlocksHead(ctx, chUrl, database, o.verbose);
     if (blocksHead !== undefined) {
       record.headBlock = blocksHead;
       notes.push(`clickhouse _blocks_ max(number): ${blocksHead}`);
     } else {
-      const m = await chMaxBlock(ctx, chUrl, database, tables);
+      const m = await chMaxBlock(ctx, chUrl, database, tables, o.verbose);
       if (m.maxBlock !== undefined) record.headBlock = m.maxBlock;
       notes.push(`clickhouse max(_block_number_): ${JSON.stringify(m.perTable)}`);
     }
-    record.rowCounts = await chRowCounts(ctx, chUrl, database, tables.includes("_blocks_") ? tables : [...tables, "_blocks_"]);
+    record.rowCounts = await chRowCounts(ctx, chUrl, database, tables.includes("_blocks_") ? tables : [...tables, "_blocks_"], o.verbose);
     notes.push(`row counts: ${JSON.stringify(record.rowCounts)}`);
   } else notes.push("no ClickHouse URL (set CLICKHOUSE_RO_HTTP_URL or --clickhouse-url); headBlock not refreshed");
   try {
-    record.chainHead = await ethBlockNumber(ctx, o.rpcUrl);
+    record.chainHead = await ethBlockNumber(ctx, o.rpcUrl, o.verbose);
   } catch (err) {
     notes.push(`eth_blockNumber failed: ${(err as Error).message}`);
   }

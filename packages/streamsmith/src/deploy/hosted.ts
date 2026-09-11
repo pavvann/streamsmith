@@ -4,7 +4,7 @@
 import { join } from "node:path";
 import type { Ctx } from "../util/ctx.ts";
 import { paths } from "../util/ctx.ts";
-import { writeJson, readJson, exists } from "../util/fsx.ts";
+import { writeJson, readJsonLenient } from "../util/fsx.ts";
 import type { StreamsmithConfig } from "../config/streamsmith.ts";
 import { hostFingerprint } from "../receipt.ts";
 import { PortalClient, PortalError, isUnauthenticated, type ClickhouseOutput, type DeploymentStateSummary } from "./portal.ts";
@@ -190,9 +190,14 @@ export async function deployHosted(ctx: Ctx, opts: HostedDeployOptions): Promise
 export async function hostedStatus(ctx: Ctx, opts: { runId: string; deploymentId?: string; portal?: PortalClient }): Promise<DeployRecord> {
   const portal = opts.portal ?? new PortalClient(ctx);
   const path = paths.runs(ctx, opts.runId, "deploy.json");
-  const record: DeployRecord = (await exists(path)) ? await readJson<DeployRecord>(path) : { deploymentMode: "graph-market-hosted", runId: opts.runId };
+  // Lenient read: a corrupt deploy.json must not crash `deploy status` with a raw JSON.parse error when
+  // --deployment-id is passed explicitly (or the deployment id can't be recovered, the existing "no deployment
+  // id" error below already tells the human what to do).
+  const { value: existing, error: corrupt } = await readJsonLenient<DeployRecord>(path);
+  const record: DeployRecord = existing ?? { deploymentMode: "graph-market-hosted", runId: opts.runId };
   const id = opts.deploymentId ?? record.deploymentId;
-  if (!id) throw new Error("no deployment id (pass --deployment-id or run deploy hosted first)");
+  if (!id) throw new Error(corrupt ? `${corrupt} (pass --deployment-id; deploy.json could not be read to recover it)` : "no deployment id (pass --deployment-id or run deploy hosted first)");
+  if (corrupt) record.notes = [...(record.notes ?? []), `ignoring unreadable deploy.json for run ${opts.runId}: ${corrupt}`];
   const s = await portal.getDeploymentState(id);
   Object.assign(record, summarizeState(s), { deploymentId: id, checkedAt: ctx.now().toISOString() });
   await writeJson(path, record);

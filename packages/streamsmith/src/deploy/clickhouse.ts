@@ -17,8 +17,11 @@ export function redactUrl(url: string): string {
  * POST a query; returns the raw response body (default format TSV).
  * `database` sets the session database (`?database=`), which is what unqualified table names in a
  * `CREATE VIEW` body resolve against — without it they resolve to `default` wherever the views land.
+ * `verbose` (plumbed from `deploy status --verbose`) logs the request URL/body and the response status plus
+ * the first 200 bytes of body — the fastest way to tell "wrong database", "table missing", and "bad creds"
+ * apart from a raw JSON/parse crash further up the call stack.
  */
-export async function chQuery(ctx: Ctx, url: string, sql: string, format?: string, database?: string): Promise<string> {
+export async function chQuery(ctx: Ctx, url: string, sql: string, format?: string, database?: string, verbose?: boolean): Promise<string> {
   const u = new URL(url);
   if (database) u.searchParams.set("database", database);
   const headers: Record<string, string> = { "Content-Type": "text/plain" };
@@ -28,9 +31,11 @@ export async function chQuery(ctx: Ctx, url: string, sql: string, format?: strin
     u.password = "";
   }
   const body = format ? `${sql} FORMAT ${format}` : sql;
+  if (verbose) ctx.log(`clickhouse: POST ${redactUrl(url)} body=${JSON.stringify(body)}`);
   const res = await ctx.fetch(u.toString(), { method: "POST", headers, body });
   const text = await res.text();
-  if (!res.ok) throw new Error(`ClickHouse HTTP ${res.status} at ${redactUrl(url)}: ${text.slice(0, 300)}`);
+  if (verbose) ctx.log(`clickhouse: -> HTTP ${res.status} first200=${JSON.stringify(text.slice(0, 200))}`);
+  if (!res.ok) throw new Error(`ClickHouse HTTP ${res.status} at ${redactUrl(url)} for query ${JSON.stringify(body)}: ${text.length ? text.slice(0, 300) : "(empty response body)"}`);
   return text;
 }
 
@@ -39,13 +44,13 @@ export function quoteIdent(name: string): string {
   return `\`${name}\``;
 }
 
-export async function chMaxBlock(ctx: Ctx, url: string, database: string, tables: string[]): Promise<{ maxBlock?: number; perTable: Record<string, number | null> }> {
+export async function chMaxBlock(ctx: Ctx, url: string, database: string, tables: string[], verbose?: boolean): Promise<{ maxBlock?: number; perTable: Record<string, number | null> }> {
   const perTable: Record<string, number | null> = {};
   let maxBlock: number | undefined;
   for (const t of tables) {
     const sql = `SELECT max(_block_number_) FROM ${quoteIdent(database)}.${quoteIdent(t)} WHERE _deleted_ = 0`;
     try {
-      const out = (await chQuery(ctx, url, sql)).trim();
+      const out = (await chQuery(ctx, url, sql, undefined, undefined, verbose)).trim();
       const n = out === "" || out === "\\N" ? null : Number(out);
       perTable[t] = n !== null && Number.isFinite(n) ? n : null;
       if (perTable[t] !== null && (maxBlock === undefined || perTable[t]! > maxBlock)) maxBlock = perTable[t]!;
@@ -63,10 +68,10 @@ export async function chMaxBlock(ctx: Ctx, url: string, database: string, tables
  * of which vault tables exist, so it is the most reliable head source when there is no deploy.json to say which
  * data tables to trust (`deploy status` with no prior `deploy self-managed` run). Missing table -> undefined.
  */
-export async function chBlocksHead(ctx: Ctx, url: string, database: string): Promise<number | undefined> {
+export async function chBlocksHead(ctx: Ctx, url: string, database: string, verbose?: boolean): Promise<number | undefined> {
   const sql = `SELECT max(number) FROM ${quoteIdent(database)}.${quoteIdent("_blocks_")} WHERE deleted = 0`;
   try {
-    const out = (await chQuery(ctx, url, sql)).trim();
+    const out = (await chQuery(ctx, url, sql, undefined, undefined, verbose)).trim();
     const n = out === "" || out === "\\N" ? undefined : Number(out);
     return n !== undefined && Number.isFinite(n) ? n : undefined;
   } catch (err) {
@@ -76,14 +81,15 @@ export async function chBlocksHead(ctx: Ctx, url: string, database: string): Pro
 }
 
 /** Row counts per table for status output. `_blocks_` filters on `deleted`; every from-proto data table on `_deleted_`. */
-export async function chRowCounts(ctx: Ctx, url: string, database: string, tables: string[]): Promise<Record<string, number | null>> {
+export async function chRowCounts(ctx: Ctx, url: string, database: string, tables: string[], verbose?: boolean): Promise<Record<string, number | null>> {
   const out: Record<string, number | null> = {};
   for (const t of tables) {
     const deletedCol = t === "_blocks_" ? "deleted" : "_deleted_";
     const sql = `SELECT count() FROM ${quoteIdent(database)}.${quoteIdent(t)} WHERE ${quoteIdent(deletedCol)} = 0`;
     try {
-      const raw = (await chQuery(ctx, url, sql)).trim();
-      const n = Number(raw);
+      const raw = (await chQuery(ctx, url, sql, undefined, undefined, verbose)).trim();
+      // an empty body (e.g. a truncated/interrupted response) must not read as count 0 — Number("") is 0, not NaN
+      const n = raw === "" ? NaN : Number(raw);
       out[t] = Number.isFinite(n) ? n : null;
     } catch (err) {
       ctx.log(`clickhouse: row count ${t}: ${(err as Error).message}`);

@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { PortalClient, PortalError, field, isUnauthenticated } from "../src/deploy/portal.ts";
 import { deployHosted, AwaitingSecretError, summarizeState, isSettled } from "../src/deploy/hosted.ts";
 import { buildSinkCommand, parseDsn, startSelfManaged, selfManagedStatus } from "../src/deploy/selfManaged.ts";
-import { chMaxBlock, chDumpSchema, redactUrl, clickhouseHttpUrl, clickhouseDatabase } from "../src/deploy/clickhouse.ts";
+import { chQuery, chMaxBlock, chRowCounts, chDumpSchema, redactUrl, clickhouseHttpUrl, clickhouseDatabase } from "../src/deploy/clickhouse.ts";
 import { splitSqlStatements, applyViews } from "../src/deploy/views.ts";
 import { mkdir, writeFile } from "node:fs/promises";
 import { ethBlockNumber } from "../src/deploy/rpc.ts";
@@ -205,6 +205,126 @@ describe("self-managed sink", () => {
     } finally {
       await repo.cleanup();
     }
+  });
+
+  // A12: `deploy status` against ClickHouse Cloud failed with "Unexpected end of JSON input" (--json) / "Unexpected
+  // token 's', \"streamsmit\"... is not valid JSON" (without --json). Root cause: a pre-existing 0-byte (or
+  // otherwise corrupted) runs/<id>/deploy.json was fed straight into JSON.parse with no guard and no context —
+  // `readJson` named neither the file nor the run, and `selfManagedStatus` had no fallback even though it already
+  // supports running with NO deploy.json at all when --clickhouse-url is given. Fix: read leniently, degrade a
+  // corrupt file the same way a missing one degrades (recompute from ClickHouse + RPC) when possible, otherwise
+  // throw an error that names the file and the JSON error instead of a bare native message.
+  it("selfManagedStatus: an empty deploy.json (the exact A12 repro artifact) degrades to recompute-from-ClickHouse instead of crashing", async () => {
+    const repo = await makeTempRepo();
+    try {
+      await mkdir(join(repo.root, "runs", "corrupt-1"), { recursive: true });
+      await writeFile(join(repo.root, "runs", "corrupt-1", "deploy.json"), "");
+      const fetch = async (url: string, init?: RequestInit) => {
+        const body = String(init?.body ?? "");
+        if (url.startsWith("https://rpc")) return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x1" }));
+        if (body.includes("_blocks_") && body.includes("max(number)")) return new Response("100\n");
+        if (body.startsWith("SELECT count()")) return new Response("5\n");
+        return new Response("");
+      };
+      const ctx = { ...repo.ctx, fetch };
+      const rec = await selfManagedStatus(ctx, { runId: "corrupt-1", streamsmith: ss, clickhouseUrl: "http://ro:ropass@localhost:8123/", rpcUrl: "https://rpc.example", database: "vaultflows" });
+      expect(rec.headBlock).toBe(100);
+      expect(rec.chainHead).toBe(1);
+      expect(rec.notes?.some((n) => n.includes("ignoring unreadable deploy.json"))).toBe(true);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("selfManagedStatus: an empty deploy.json with no --clickhouse-url throws a clear error naming the file, not a bare JSON.parse message", async () => {
+    const repo = await makeTempRepo();
+    try {
+      await mkdir(join(repo.root, "runs", "corrupt-2"), { recursive: true });
+      await writeFile(join(repo.root, "runs", "corrupt-2", "deploy.json"), "");
+      await expect(selfManagedStatus(repo.ctx, { runId: "corrupt-2", streamsmith: ss })).rejects.toThrow(/invalid JSON in .*corrupt-2.*deploy\.json \(empty file\)/);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("selfManagedStatus: garbage (non-empty) deploy.json content — e.g. our own stderr text redirected into the file — is also named, not a raw parse crash", async () => {
+    const repo = await makeTempRepo();
+    try {
+      await mkdir(join(repo.root, "runs", "corrupt-3"), { recursive: true });
+      await writeFile(join(repo.root, "runs", "corrupt-3", "deploy.json"), "streamsmith: Unexpected end of JSON input\n");
+      await expect(selfManagedStatus(repo.ctx, { runId: "corrupt-3", streamsmith: ss })).rejects.toThrow(/invalid JSON in .*corrupt-3.*deploy\.json/);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  // A12, second bug on the same repro path: `clickhouseDatabase()` is the one place CLICKHOUSE_DATABASE/
+  // CLICKHOUSE_DB are read from the environment, but selfManagedStatus's database resolution bypassed it — so
+  // the documented repro (CLICKHOUSE_DATABASE=vaultflows, no --database) silently queried `default` instead and
+  // returned all-null rows/head against ClickHouse Cloud (verified live).
+  it("selfManagedStatus: CLICKHOUSE_DATABASE from the environment is honored with no --database flag", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const bodies: string[] = [];
+      const fetch = async (url: string, init?: RequestInit) => {
+        const body = String(init?.body ?? "");
+        bodies.push(body);
+        if (url.startsWith("https://rpc")) return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x1" }));
+        if (body.includes("_blocks_")) return new Response("1\n");
+        return new Response("0\n");
+      };
+      const ctx = { ...repo.ctx, fetch, env: { ...repo.ctx.env, CLICKHOUSE_DATABASE: "vaultflows" } };
+      await selfManagedStatus(ctx, { runId: "env-db-1", streamsmith: ss, clickhouseUrl: "http://ro:ropass@localhost:8123/", rpcUrl: "https://rpc.example" });
+      expect(bodies.some((b) => b.includes("`vaultflows`.`_blocks_`"))).toBe(true);
+      expect(bodies.some((b) => b.includes("`default`."))).toBe(false);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+});
+
+describe("chQuery: clear errors instead of JSON parse failures (A12)", () => {
+  it("a non-JSON text error body produces an error naming the query and the HTTP status, not a JSON parse error", async () => {
+    const fetch = async () => new Response("Code: 60. DB::Exception: Unknown table expression identifier 'default._blocks_'", { status: 404 });
+    const ctx = await createCtx({ root: REPO_ROOT, log: () => {}, fetch });
+    await expect(chQuery(ctx, "http://ro:ropass@localhost:8123/", "SELECT max(number) FROM default._blocks_ WHERE deleted = 0")).rejects.toThrow(/ClickHouse HTTP 404/);
+    await expect(chQuery(ctx, "http://ro:ropass@localhost:8123/", "SELECT max(number) FROM default._blocks_ WHERE deleted = 0")).rejects.toThrow(/SELECT max\(number\)/);
+    await expect(chQuery(ctx, "http://ro:ropass@localhost:8123/", "SELECT max(number) FROM default._blocks_ WHERE deleted = 0")).rejects.toThrow(/Unknown table expression identifier/);
+  });
+
+  it("a non-OK empty response body is named as empty, never handed to a JSON parser", async () => {
+    const fetch = async () => new Response("", { status: 500 });
+    const ctx = await createCtx({ root: REPO_ROOT, log: () => {}, fetch });
+    await expect(chQuery(ctx, "http://ro:ropass@localhost:8123/", "SELECT 1")).rejects.toThrow(/ClickHouse HTTP 500/);
+    await expect(chQuery(ctx, "http://ro:ropass@localhost:8123/", "SELECT 1")).rejects.toThrow(/\(empty response body\)/);
+  });
+
+  it("a valid FORMAT JSON response round-trips through chQuery unchanged (the format curl verified against ClickHouse Cloud)", async () => {
+    const bodies: string[] = [];
+    const fetch = async (_url: string, init?: RequestInit) => {
+      bodies.push(String(init?.body));
+      return new Response(JSON.stringify({ data: [{ "max(number)": "51100000" }] }), { status: 200 });
+    };
+    const ctx = await createCtx({ root: REPO_ROOT, log: () => {}, fetch });
+    const text = await chQuery(ctx, "http://ro:ropass@localhost:8123/", "SELECT max(number) FROM t", "JSON");
+    expect(bodies[0]).toBe("SELECT max(number) FROM t FORMAT JSON");
+    expect(JSON.parse(text)).toMatchObject({ data: [{ "max(number)": "51100000" }] });
+  });
+
+  it("chRowCounts: an empty response body is a null count, not 0 (Number('') === 0 is not a row count)", async () => {
+    const fetch = async () => new Response("", { status: 200 });
+    const ctx = await createCtx({ root: REPO_ROOT, log: () => {}, fetch });
+    expect(await chRowCounts(ctx, "http://ro:ropass@localhost:8123/", "default", ["vault_flows"])).toEqual({ vault_flows: null });
+  });
+
+  it("--verbose logs the request URL/body and the response status + first 200 bytes, with credentials always redacted", async () => {
+    const logs: string[] = [];
+    const fetch = async () => new Response("51100000\n", { status: 200 });
+    const ctx = await createCtx({ root: REPO_ROOT, log: (l) => logs.push(l), fetch });
+    await chQuery(ctx, "http://ro:ropass@localhost:8123/", "SELECT max(number) FROM t", undefined, undefined, true);
+    expect(logs.some((l) => l.includes("POST") && l.includes("SELECT max(number) FROM t"))).toBe(true);
+    expect(logs.some((l) => l.includes("HTTP 200") && l.includes("51100000"))).toBe(true);
+    expect(logs.every((l) => !l.includes("ropass"))).toBe(true);
   });
 });
 

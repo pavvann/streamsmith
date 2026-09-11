@@ -6,7 +6,7 @@ import { readdir } from "node:fs/promises";
 import { join, isAbsolute, relative } from "node:path";
 import { createInterface } from "node:readline";
 import { createCtx, paths, type Ctx } from "./util/ctx.ts";
-import { exists, newRunId, readJson, readText, writeText, writeJson } from "./util/fsx.ts";
+import { exists, newRunId, readJson, readJsonLenient, readText, writeText, writeJson } from "./util/fsx.ts";
 import { sha256File, sha256Hex } from "./util/hash.ts";
 import { runGate, moduleHashesOf } from "./gate/run.ts";
 import { loadStreamsmithConfig, parametersHash, receiptParameters, type StreamsmithConfig } from "./config/streamsmith.ts";
@@ -37,8 +37,9 @@ Commands
                        from-proto defaults: --final-blocks-only on, --clickhouse-sink-info-folder + cursor file under runs/<id>/ (never share a folder across databases)
   deploy views         [--views packages/erc4626-flows/sql/views.sql] [--clickhouse-url URL] [--database D] [--wait SEC]
                        --views resolves against --root, not cwd; a missing file is an error only when --views is given explicitly
-  deploy status        [--clickhouse-url URL] [--rpc-url URL] [--deployment-id ID]
+  deploy status        [--clickhouse-url URL] [--rpc-url URL] [--deployment-id ID] [--database D] [--verbose]
                        self-managed with no deploy.json works when --clickhouse-url is given: head from _blocks_, chain head from --rpc-url, lag, row counts
+                       --verbose logs each ClickHouse/RPC request URL+body and the response status + first 200 bytes of body
   deploy stop
   deploy login                         device-code login; prints export lines (never stores tokens)
   schema-dump [--clickhouse-url URL] [--database D] [--tables a,b] [--out FILE]
@@ -238,7 +239,11 @@ export async function main(argv: string[]): Promise<number> {
       }
       if (sub === "status") {
         const p = paths.runs(ctx, runId, "deploy.json");
-        const existing = (await exists(p)) ? await readJson<DeployRecord>(p) : undefined;
+        // A12: this used to be an unguarded `readJson`, so a corrupt/truncated deploy.json (crashed writer,
+        // concurrent write) turned "peek at the mode" into a bare JSON.parse crash before either status path
+        // below ever ran — read leniently and fall back to mode detection as if the file were absent, same as
+        // `selfManagedStatus`/`hostedStatus` now do for the record itself.
+        const { value: existing } = await readJsonLenient<DeployRecord>(p);
         const mode = existing?.deploymentMode ?? (s(v, "deployment-id") ? "graph-market-hosted" : "self-managed-sink");
         let rec: DeployRecord;
         if (mode === "graph-market-hosted") {
@@ -252,6 +257,7 @@ export async function main(argv: string[]): Promise<number> {
           if (s(v, "rpc-url")) st.rpcUrl = s(v, "rpc-url")!;
           if (s(v, "database")) st.database = s(v, "database")!;
           if (s(v, "tables")) st.tables = s(v, "tables")!.split(",");
+          if (b(v, "verbose")) st.verbose = true;
           rec = await selfManagedStatus(ctx, st);
         }
         out(v, `${rec.deploymentMode} ${rec.state ?? ""} head=${rec.headBlock ?? "?"} chain=${rec.chainHead ?? "?"} lag=${rec.lagBlocks ?? "?"} blocks${rec.lagSeconds !== undefined ? ` / ${rec.lagSeconds}s` : ""}${rec.rowCounts ? `; rows ${JSON.stringify(rec.rowCounts)}` : ""}`, rec);

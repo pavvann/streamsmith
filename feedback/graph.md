@@ -226,3 +226,32 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
    (51148171), so the verdict is `stale_data` and `share_value_growth` refuses. The fixture receipt's
    `deploymentId: "fixture-local-clickhouse"` is not checked against anything live, so no `receipt_mismatch` fires; a
    demo of a *successful* data tool needs the backfill to be inside 300 blocks (~10 min of Base), not a code change.
+
+## 2026-09-11 — A12 `deploy status` JSON-parse crash root cause (sub-agent A12)
+
+1. **The reported "Unexpected end of JSON input" / "Unexpected token 's'" had nothing to do with ClickHouse
+   response parsing.** The brief's "likely candidates" (a query issued without FORMAT, an error body parsed as
+   JSON) were reasonable guesses but wrong — `chQuery` only ever calls `res.text()`, never `res.json()`, so no
+   ClickHouse response was ever fed to `JSON.parse`. The real crash site was an **unguarded `readJson` on
+   `runs/<runId>/deploy.json`** at three separate call sites (`cli.ts`'s `deploy status` mode-detection peek,
+   `selfManagedStatus`, `hostedStatus`) — a 0-byte `deploy.json` (left over from an earlier crashed/interrupted
+   run — the exact file was still on disk in this repo) turned a routine status check into a bare native
+   `JSON.parse("")` throw with no file path, no run id, and no recovery path, even though the command is
+   explicitly designed to work with **no** `deploy.json` at all when `--clickhouse-url` is given. Lesson: when a
+   brief's guessed root cause doesn't match the actual call graph (grep for the exact failing API — here
+   `.json()`/`JSON.parse` — across the whole path, not just the module named in the guess), say so and keep
+   tracing; don't force a fix onto the wrong function just because a test shape was pre-specified for it.
+2. **A second, independent bug was hiding behind the first and only showed up once the crash was fixed.**
+   `selfManagedStatus`'s database resolution (`o.database ?? record.sink?.database ?? ...config.database ?? "default"`)
+   never consulted `CLICKHOUSE_DATABASE`/`CLICKHOUSE_DB`, even though `clickhouseDatabase()` exists specifically to
+   read those and every other command uses it. The brief's exact repro (env var set, no `--database` flag) silently
+   queried the `default` database on ClickHouse Cloud and returned all-null rows/head with exit 0 — a *quiet*
+   failure that would have shipped invisibly next to the loud one. Only surfaced by actually running the real
+   repro end-to-end after the first fix instead of trusting a green test suite; the mocked-fetch regression tests
+   alone would not have caught it since none of the existing fixtures set `CLICKHOUSE_DATABASE` without also
+   passing an explicit database.
+3. **Fixing a corrupt cache file is worth doing at the "record" layer, not just the top-level command.** Made
+   `readJson` name the file in its error, added `readJsonLenient` (fsx.ts) that returns `{ error }` instead of
+   throwing, and applied it at all three read sites so a corrupt `deploy.json` degrades exactly like a missing one
+   (recompute from ClickHouse + RPC) rather than being special-cased once at the CLI boundary — `selfManagedStatus`
+   also writes the healed record back on success, so the next run repairs itself.
