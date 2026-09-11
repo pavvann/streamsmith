@@ -278,7 +278,7 @@ buf build --as-file-descriptor-set --exclude-source-info -o -#format=json \
   the pre-change recording once `FLOW_DIRECTION_DEPOSIT`/`_WITHDRAW` are rewritten to `deposit`/`withdraw`
   (34 lines, 42 rows, same ids/amounts/log indexes/rates), so the change is provably confined to that field.
 
-### Consumers that still reference the enum (owned by other agents, not touched here)
+### Consumers that still reference the enum (owned elsewhere, not touched here)
 
 `packages/erc4626-flows/sql/views.sql` (`direction = 1` / `= 2`), `packages/mcpgen` (`enumMap`, its
 `proto.test.ts` / `livedata.test.ts` expectations) and `packages/streamsmith` (`test/jsonl.test.ts`,

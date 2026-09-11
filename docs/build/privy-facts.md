@@ -271,7 +271,7 @@ vault ids are read from the Dashboard.
   execution". [docs] https://docs.privy.io/wallets/gas-and-asset-management/gas/setup
   If sponsorship is off, the wallet needs ETH on Base for approve+deposit. [unverified]
 - Self-serve vs sales: "A select set of yield sources are available in the Privy Dashboard for
-  self-serve setup. Contact sales@privy.io to enable additional Veda, Aave, Morpho, and Kamino
+  self-serve setup. Contact Privy sales to enable additional Veda, Aave, Morpho, and Kamino
   vaults" ; "Morpho vaults are self-serve: deploy a fee wrapper and configure a vault under
   **Wallet infrastructure > Earn**". [docs] https://docs.privy.io/wallets/actions/earn/providers/morpho
   Fee share: "capture up to 50% of accrued yield as vault shares in your admin wallet" — set it to
@@ -301,7 +301,7 @@ vault ids are read from the Dashboard.
   "You can assign up to 150 wallets to an organization"; "A wallet's entity cannot be changed
   after it is set." [docs] https://docs.privy.io/recipes/wallets/organization-wallets
   **No "contact sales" or plan-gating language was found on any Organizations page.**
-- What *is* gated: "Manual approvals is an Enterprise feature. Reach out to sales@privy.io to
+- What *is* gated: "Manual approvals is an Enterprise feature. Reach out to Privy sales to
   request access for your app." (Dashboard human-review of intents/transactions) [docs]
   https://docs.privy.io/controls/dashboard/overview . Webhooks in production: "Webhooks can be
   tested at no cost in development environments. To enable webhooks in production, upgrade to the

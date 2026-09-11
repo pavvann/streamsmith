@@ -14,7 +14,7 @@
   "lagSeconds": 406,
   "checkedAt": "2026-09-11T00:23:46.214Z",
   "notes": [
-    "ignoring unreadable deploy.json for run 20260910T234439Z-1fr9 (recomputing from ClickHouse + RPC): invalid JSON in /Users/pawan/Code/hacks/ethonline26/runs/20260910T234439Z-1fr9/deploy.json (empty file): Unexpected end of JSON input",
+    "ignoring unreadable deploy.json for run 20260910T234439Z-1fr9 (recomputing from ClickHouse + RPC): invalid JSON in <repo>/runs/20260910T234439Z-1fr9/deploy.json (empty file): Unexpected end of JSON input",
     "clickhouse _blocks_ max(number): 51148236",
     "row counts: {\"vault_flows\":19434,\"share_value_observations\":86,\"vaults\":613,\"share_transfers\":0,\"_blocks_\":17317}"
   ]

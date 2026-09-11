@@ -1,7 +1,7 @@
 I’ll read the prize sheet end to end, then verify only the unstable technical premises that materially affect qualification or ranking. I’ll use the Firecrawl search skill for those web checks, as this request explicitly calls for current research.
 The Firecrawl skill lives under `~/.agents/`, which you explicitly excluded, so I won’t inspect or use it. I’ll use the built-in web search only if the local prize sheet leaves a ranking-critical premise unclear.
 The sheet leaves two implementation questions that affect feasibility: whether Aqua/SwapVM has a hackathon-ready execution surface, and whether Ledger’s Key Ring can support hosted agents without a USB device. I’m checking only those official sources, plus Circle’s Agent Stack boundary.
-All qualification language below comes from [prizes-clean.md](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md). I exclude continuity-only tracks and omit repetitive repo/video requirements from each idea—they remain mandatory.
+All qualification language below comes from `prizes-clean.md` (the scraped prize text, not committed). I exclude continuity-only tracks and omit repetitive repo/video requirements from each idea—they remain mandatory.
 
 ## 1. Read of the field
 
@@ -28,9 +28,9 @@ A corporate treasury stores its allocation bands, API credentials, and trade-siz
 
 **Qualifies**
 
-- **1inch — Build an Aqua App:** uses official Aqua/SwapVM contracts; demonstrates “onchain execution of token transfers”; maintains “proper Git commit history.” The position is a confidentially controlled multi-band rebalance strategy. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:447)
-- **Chainlink — Best Confidential Workflow:** a CRE workflow registers `handlerInTee`, processes private allocation bands and an authenticated API response inside the enclave, and demonstrates a successful CRE simulation. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:756)
-- **Privy — Best B2B Financial Product:** Privy creates the treasury wallet; an organization performs a functional approval/treasury operation using policies, signers, or key quorum. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:639)
+- **1inch — Build an Aqua App:** uses official Aqua/SwapVM contracts; demonstrates “onchain execution of token transfers”; maintains “proper Git commit history.” The position is a confidentially controlled multi-band rebalance strategy. [Requirements](prizes-clean.md:447)
+- **Chainlink — Best Confidential Workflow:** a CRE workflow registers `handlerInTee`, processes private allocation bands and an authenticated API response inside the enclave, and demonstrates a successful CRE simulation. [Requirements](prizes-clean.md:756)
+- **Privy — Best B2B Financial Product:** Privy creates the treasury wallet; an organization performs a functional approval/treasury operation using policies, signers, or key quorum. [Requirements](prizes-clean.md:639)
 
 **30-second wow:** A market shock arrives; the UI shows no strategy parameters, only a TEE attestation. A second Privy signer approves the generated action and an Aqua token transfer visibly executes.
 
@@ -46,7 +46,7 @@ A company posts ATS-issued tokenized treasuries as repo collateral while private
 
 **Qualifies**
 
-- **Hedera — Tokenization of Anything:** uses ATS to issue/manage the asset on testnet and demonstrates issuance, compliance configuration, and a lifecycle operation such as freeze, restricted transfer, or distribution. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:195)
+- **Hedera — Tokenization of Anything:** uses ATS to issue/manage the asset on testnet and demonstrates issuance, compliance configuration, and a lifecycle operation such as freeze, restricted transfer, or distribution. [Requirements](prizes-clean.md:195)
 - **Chainlink — Confidential Workflow:** `handlerInTee` processes private exposure limits, covenant parameters, and pricing responses; successful simulation/deployment evidence is shown.
 - **Privy — B2B Financial Product:** organization wallet plus quorum/policy controls executes a real treasury approval.
 
@@ -65,8 +65,8 @@ A user describes a position—“sell gradually above $4,000, stop below $3,500,
 **Qualifies**
 
 - **1inch — Aqua App:** official Aqua/SwapVM, sophisticated programmable position, tests/UI, and real token transfers.
-- **The Graph — Composable/Standardized Products:** “build meaningfully on a standardized schema,” consume live provider data, and show the standards leverage through one query pattern spanning multiple protocols. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:19)
-- **Ledger — AI Agents x Ledger:** built on Ledger Agent Stack and `wallet-cli ring`; secrets cannot leak and high-risk fund movement receives human device confirmation. [Track](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:587)
+- **The Graph — Composable/Standardized Products:** “build meaningfully on a standardized schema,” consume live provider data, and show the standards leverage through one query pattern spanning multiple protocols. [Requirements](prizes-clean.md:19)
+- **Ledger — AI Agents x Ledger:** built on Ledger Agent Stack and `wallet-cli ring`; secrets cannot leak and high-risk fund movement receives human device confirmation. [Track](prizes-clean.md:587)
 
 **30-second wow:** Speak one strategy, see generated bytecode and a plotted execution curve, approve on Ledger, then execute the first live/forked transfer.
 
@@ -82,8 +82,8 @@ Agents receive expiring ENSv2 subnames containing service endpoints, capabilitie
 
 **Qualifies**
 
-- **ENS — Best Use of ENSv2:** ENSv2 Sepolia is central; deploys a subname registry using wildcard resolution and Enhanced Access Control for expiring/revocable agent identities. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:511)
-- **Hedera — AI & Agentic Payments:** hosts a live Blocky402-gated service and completes a real paid request end to end on Hedera. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:121)
+- **ENS — Best Use of ENSv2:** ENSv2 Sepolia is central; deploys a subname registry using wildcard resolution and Enhanced Access Control for expiring/revocable agent identities. [Requirements](prizes-clean.md:511)
+- **Hedera — AI & Agentic Payments:** hosts a live Blocky402-gated service and completes a real paid request end to end on Hedera. [Requirements](prizes-clean.md:121)
 - **Ledger — AI Agents x Ledger:** `wallet-cli ring` is the scoped secret broker and Ledger gates irreversible actions.
 
 **30-second wow:** Resolve `researcher.acme.eth`, discover its paid capability, execute an HBAR x402 request, then revoke its ENS permission and show the next request denied.
@@ -118,9 +118,9 @@ An autonomous Arc agent posts and settles small USDC research or labeling bounti
 
 **Qualifies**
 
-- **World — Selfie Check:** uses a compatible credential flow meaningfully for “fairness” and “abuse prevention,” demonstrates through the Sandbox App, and supplies the required feedback document. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:392)
-- **Arc — Agentic Economy:** Agent Stack drives autonomous USDC settlement from clear decision logic, with a frontend, backend, diagram, and working MVP. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:281)
-- **Privy — Best Financial Flow:** creates a wallet and completes a functional transfer/funding flow using generally available features. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:650)
+- **World — Selfie Check:** uses a compatible credential flow meaningfully for “fairness” and “abuse prevention,” demonstrates through the Sandbox App, and supplies the required feedback document. [Requirements](prizes-clean.md:392)
+- **Arc — Agentic Economy:** Agent Stack drives autonomous USDC settlement from clear decision logic, with a frontend, backend, diagram, and working MVP. [Requirements](prizes-clean.md:281)
+- **Privy — Best Financial Flow:** creates a wallet and completes a functional transfer/funding flow using generally available features. [Requirements](prizes-clean.md:650)
 
 **30-second wow:** One sandbox human claims and receives an Arc USDC bounty; a second claim from the same verified person is rejected.
 
@@ -137,8 +137,8 @@ An agent buys independent live risk answers from several services and releases a
 **Qualifies**
 
 - **Hedera — AI & Agentic Payments:** live Blocky402 service plus one real paid request; add HCS audit trails and service discovery for extra points.
-- **The Graph — AI Use Case, Start Fresh:** Graph is the live, load-bearing data source and the agent performs reasoning/decisions rather than printing query results. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:53)
-- **Bazantic — Best Sponsor API Recipe:** create an x402/MPP Gateway, combine it with another sponsor service in one working Recipe, and make the final result depend meaningfully on both. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:706)
+- **The Graph — AI Use Case, Start Fresh:** Graph is the live, load-bearing data source and the agent performs reasoning/decisions rather than printing query results. [Requirements](prizes-clean.md:53)
+- **Bazantic — Best Sponsor API Recipe:** create an x402/MPP Gateway, combine it with another sponsor service in one working Recipe, and make the final result depend meaningfully on both. [Requirements](prizes-clean.md:706)
 
 **30-second wow:** The agent receives HTTP 402s, pays three services, displays live Graph-derived answers, rejects one outlier, and commits the consensus trail.
 
@@ -156,7 +156,7 @@ An ATS-issued bond monitors comparable onchain yields through standardized Graph
 
 - **Hedera — Tokenization of Anything:** ATS issuance, compliance controls, coupon/redemption lifecycle operation.
 - **The Graph — Composable/Standardized Products:** live standardized vault/lending data across protocols.
-- **Arc — DeFi/Onchain Finance:** meaningful Arc/USDC usage and “advanced programmable money flows” with conditional, multi-step settlement. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:267)
+- **Arc — DeFi/Onchain Finance:** meaningful Arc/USDC usage and “advanced programmable money flows” with conditional, multi-step settlement. [Requirements](prizes-clean.md:267)
 
 **30-second wow:** Change the market rate; the bond discovers cheaper financing, launches a tender, and distributes a coupon to current holders.
 
@@ -192,7 +192,7 @@ A company funds payroll in USDC on Arc, while employees choose destination chain
 
 - **Arc — DeFi/Onchain Finance:** meaningful Arc/USDC use and multi-step payment/treasury settlement.
 - **Privy — B2B Financial Product or Financial Flow:** organization wallet, approval policy, and a functional transfer/bridge/swap.
-- **Uniswap — Stack Contribution:** integrates the Uniswap API/AMM, publishes open source, includes `FEEDBACK.md`, submits the feedback form, and points the README to relevant integration code. [Requirements](/private/tmp/claude-501/-Users-pawan-Code-hacks-ethonline26/afb0fc58-eac0-4506-acb9-f92f2912ab7c/scratchpad/prizes-clean.md:554)
+- **Uniswap — Stack Contribution:** integrates the Uniswap API/AMM, publishes open source, includes `FEEDBACK.md`, submits the feedback form, and points the README to relevant integration code. [Requirements](prizes-clean.md:554)
 
 **30-second wow:** Approve one payroll batch, then watch employees receive different assets/chains from one Arc USDC treasury balance.
 
@@ -235,7 +235,7 @@ If maximizing probability rather than upside, substitute **Hedera ATS** for 1inc
 ### Nine-day skeleton
 
 - **Sept 4 — Kill-risk spikes:** Complete one Aqua token transfer on a fork/test deployment, one `handlerInTee` CRE simulation, and one Privy controlled-wallet transaction. Drop any sponsor whose primitive is not working by end of day.
-- **Sept 5 — Contracts and invariants:** Treasury executor, replay protection, policy-output schema, spend limits, emergency pause; start meaningful commit history.
+- **Sept 5 — Contracts and invariants:** Treasury executor, replay protection, policy-output schema, spending caps, emergency pause; start meaningful commit history.
 - **Sept 6 — Aqua position:** Implement one robust strategy—three allocation bands or TWAP plus stop—and exhaustive Foundry tests.
 - **Sept 7 — Confidential workflow:** Fetch live authenticated price/volatility data inside the TEE, evaluate private targets, and emit tightly constrained action data.
 - **Sept 8 — Privy control plane:** Organization wallet, proposer/approver roles, quorum approval, policy limits, and rejected-action paths.

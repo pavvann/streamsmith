@@ -1,6 +1,6 @@
 # Brief A6 — mcpgen (descriptor+receipt-driven MCP generator) and the vault-flows views
 
-Repo: /Users/pawan/Code/hacks/ethonline26, branch main. Do NOT commit, do NOT git checkout/switch/stash, do NOT run cargo/docker/substreams build (disk ~1.5 GB free). pnpm only; dependencies allowed: @modelcontextprotocol/sdk, zod, yaml (small). Another agent (A4b) is editing packages/streamsmith concurrently: do not touch that directory. You own packages/mcpgen, packages/mcp-vaultflows (generated output) and packages/erc4626-flows/sql/views.sql only.
+This repository, branch main. Do NOT commit, do NOT git checkout/switch/stash, do NOT run cargo/docker/substreams build (disk ~1.5 GB free). pnpm only; dependencies allowed: @modelcontextprotocol/sdk, zod, yaml (small). packages/streamsmith is being changed in parallel (A4b): do not touch that directory. You own packages/mcpgen, packages/mcp-vaultflows (generated output) and packages/erc4626-flows/sql/views.sql only.
 
 Read first (20 min): docs/PROJECT.md §4.1 step 5 and §4.3 rule; specs/vaultflows.proto (tables come from `schema.table` options; injected columns per docs/build/substreams-facts.md (d), incl. `_deleted_`); docs/build/contract-notes.md; specs/receipt.schema.json; specs/streamsmith.yaml (views list, vaults, interval); docs/research/codex-discussion.md round 2 Q2 answer (what makes the MCP "not glue": typed semantic tools from the package's public types + receipt, read-only parameterized SQL, row limits/timeouts, freshness refusal, provenance in every response, schema-version fail-closed).
 

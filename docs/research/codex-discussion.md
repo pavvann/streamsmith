@@ -175,7 +175,7 @@ Do not promise automatic escalation. Say:
 
 > “Above-policy actions are denied and returned to the treasurer.”
 
-Add intents only if the exact Earn/RPC path works naturally. Your research confirms that the control surface is sponsor-aligned, but the native Earn-intent path remains unproven. [Privy research](/Users/pawan/Code/hacks/ethonline26/docs/research/arc-privy-ledger.md:82)
+Add intents only if the exact Earn/RPC path works naturally. Your research confirms that the control surface is sponsor-aligned, but the native Earn-intent path remains unproven. [Privy research](docs/research/arc-privy-ledger.md:82)
 
 ## 6. Concrete no-Rust fallback
 
@@ -207,7 +207,7 @@ Time box:
 - Half a day for MCP and README.
 - Remaining time for video and polish.
 
-This is less original than Streamsmith—the research notes that similar registry work appeared around Lisbon—but it is the cleanest TS-only recovery path. [Graph research](/Users/pawan/Code/hacks/ethonline26/docs/research/graph-chainlink.md:148)
+This is less original than Streamsmith—the research notes that similar registry work appeared around Lisbon—but it is the cleanest TS-only recovery path. [Graph research](docs/research/graph-chainlink.md:148)
 
 ## 7. Reduced 3:30 video
 

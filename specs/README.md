@@ -6,4 +6,4 @@ Planning artifacts and the public contract, committed as required by ETHOnline r
 - `streamsmith.yaml` — vault list, sampling interval, chain, sink target
 - `gate.yaml` — quality-gate assertions the generated package must pass
 - `prompt.md` — the verbatim single human instruction used in the recorded run
-- `briefs/` — the exact briefs given to sub-agents
+- `briefs/` — the exact brief each workstream was built from

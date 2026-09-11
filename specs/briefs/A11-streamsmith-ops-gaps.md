@@ -1,6 +1,6 @@
-# Brief A11 — Streamsmith ops gaps found in production use (Sonnet-appropriate; small, bounded fixes)
+# Brief A11 — Streamsmith ops gaps found in production use (small, bounded fixes)
 
-Repo /Users/pawan/Code/hacks/ethonline26, branch main. Do NOT commit; do NOT git checkout/switch/stash; pnpm only; you own packages/streamsmith/** only (another agent owns apps/vaultpilot). Keep `pnpm typecheck && pnpm test` green in packages/streamsmith. Facts and evidence for each item are in docs/build/sink-spike.md §6–§7 and runs/live/cloud/sink.err.
+This repository, branch main. Do NOT commit; do NOT git checkout/switch/stash; pnpm only; you own packages/streamsmith/** only (apps/vaultpilot is being changed in parallel). Keep `pnpm typecheck && pnpm test` green in packages/streamsmith. Facts and evidence for each item are in docs/build/sink-spike.md §6–§7 and runs/live/cloud/sink.err.
 
 1. `deploy self-managed` must pass `--clickhouse-sink-info-folder <runs/<runId>/sinkinfo>` (and `--clickhouse-cursor-file-path` under the same run dir) to substreams-sink-sql. Reason: the sink stores a per-schema `vaultflows_schema_hash.txt` in that folder (default cwd); a file left by a previous run against a DIFFERENT database makes the sink skip CREATE TABLE and crash on insert. Also add `--final-blocks-only` by default with a `--no-final-blocks-only` opt-out. Add a test asserting the spawned argv.
 2. `deploy views` resolves `--views` relative to `--root`, not to cwd, and must treat a missing file as an error when the flag is given explicitly (it is only "optional" when omitted). Apply statements one per HTTP request (ClickHouse HTTP rejects multi-statements). Test with a fixture views file.

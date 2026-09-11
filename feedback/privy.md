@@ -16,7 +16,7 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
    daily cap moves app-side and must be disclosed as such.
 4. **Vault ids are per-app and dashboard-only.** No list endpoint; `vault_id` appears only after
    the human deploys a fee wrapper in the Dashboard. Expected a public catalog / list endpoint
-   so code could pin vaults ahead of time. Blocks the spike until Pawan does dashboard work.
+   so code could pin vaults ahead of time. Blocks the spike until an operator completes the dashboard step.
 5. **Docs example inconsistency.** get-vault-details example shows "Gauntlet USDC Prime" on
    `eip155:1` at `0x0442...` while the setup page says USDC on Base at `0x050c...`. Confusing when
    trying to pin identifiers. Cost: 5 min.
@@ -39,7 +39,7 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
     derivation byte-for-byte, so we can derive the public key from an env private key.
 11. **Gating found:** Manual approvals (Dashboard review UI) and production webhooks are
     Enterprise; key quorums say "advanced feature, reach out" but the API is public; no gating
-    language on Organizations. Earn beyond the three self-serve vaults needs sales@privy.io.
+    language on Organizations. Earn beyond the three self-serve vaults needs Privy sales.
 12. **No Earn testnet** — denial tests are free (no funds moved) but the execution proof needs
     real USDC on Base. Gas sponsorship (App pays) should be on or the wallet needs ETH.
 

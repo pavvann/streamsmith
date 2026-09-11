@@ -1,6 +1,6 @@
 # Brief A1 — Toolchain, Pinax build, local ClickHouse, sink readiness
 
-Repo: /Users/pawan/Code/hacks/ethonline26 (git, branch main). Do not commit; the orchestrator commits. Node package manager is pnpm only. Log every friction point (what tried, what happened, expected, minutes lost) to feedback/graph.md.
+This repository, branch main. Do not commit. Node package manager is pnpm only. Log every friction point (what tried, what happened, expected, minutes lost) to feedback/graph.md.
 
 1. Install and pin: rustup stable + target wasm32-unknown-unknown; `substreams` CLI (brew tap streamingfast/tap or GitHub release); `buf`; `substreams-sink-sql` (GitHub release binary, put in ~/.local/bin or /opt/homebrew/bin). Write versions + install commands to docs/build/toolchain.md.
 2. `mkdir -p vendor && git clone --depth 1 https://github.com/pinax-network/substreams-evm vendor/substreams-evm`. Build `erc4626` and `erc20` packages (follow their Makefile/README; `substreams build` inside each dir). Record: module names, kinds, inputs/outputs, proto file paths, produced .spkg path, chain default, START_BLOCK conventions. Check substreams.dev (curl https://substreams.dev or the registry API) for the published Pinax `erc4626` package name/version/URL and note it. Append findings to docs/build/toolchain.md under "Pinax packages".

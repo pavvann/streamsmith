@@ -11,7 +11,7 @@ The enum-free half of the same package (`map_share_value_observations`) works en
 restart-safety and both views. `vault_flows` and `vaults` were never populated by any run in this
 session — that is the finding, not something fixed here (no package rebuild, per brief).
 
-Repo `/Users/pawan/Code/hacks/ethonline26`, branch `main`. Spkg used (built by A7, not rebuilt here):
+Repository on branch `main`. Spkg used (built in A7, not rebuilt here):
 `packages/erc4626-flows/erc4626-flows-v0.1.0.spkg`. Sink: `substreams-sink-sql` 4.13.1 at `~/.local/bin`.
 ClickHouse: container `vaultflows-ch`, server `26.8.2.7`, native TCP 9000, HTTP 8123.
 Endpoint: `base-mainnet.streamingfast.io:443`, `--network base`.
@@ -157,7 +157,7 @@ rebuilt and the exact command of §1 was rerun against the same container. **No 
 | ClickHouse column | `direction String` (position 16, was `direction Int32`) — `system.columns` |
 
 Tables and stale views were dropped first (the sink recreates its own tables; `sql/views.sql` was **not**
-applied — it still reads `direction = 1/2` and another agent owns it), and the cursor file was deleted:
+applied — it still reads `direction = 1/2` and it is owned elsewhere), and the cursor file was deleted:
 
 ```bash
 rm -f runs/live/clickhouse-cursor.txt

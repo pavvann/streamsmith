@@ -19,3 +19,6 @@ runs/live/cloud/sink.err
 runs/live/cloud/sink.pid
 runs/live/cloud/cursor.txt
 runs/live/cloud/sinkinfo/
+
+# local working notes (not published)
+.notes/

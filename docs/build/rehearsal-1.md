@@ -6,8 +6,8 @@ This run is the rehearsal; the recorded run happens later. Facts only.
 
 ## Ground rules honoured
 - Reference implementation `packages/erc4626-flows` in the repo was **never read** (see Audit below).
-- Repo `/Users/pawan/Code/hacks/ethonline26` untouched except this file and `feedback/graph.md`.
-- Work directory: `/Users/pawan/Code/hacks/streamsmith-rehearsal-1` (outside the repo).
+- The repository was untouched except this file and `feedback/graph.md`.
+- Work directory: a fresh `streamsmith-rehearsal-1` directory outside the repo.
 - No registry publish (dry-run only). No ClickHouse Cloud writes.
 - Every `substreams run` passed `--limit-processed-blocks 0` and only the gate's block ranges.
 

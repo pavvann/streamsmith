@@ -120,7 +120,7 @@ Without that, do not pitch MCP generation as the invention. Pitch it as the fina
 
 ### Privy B2B framing
 
-It is credible in principle. Your own research says organizations, key quorums, additional signers, policies, intents, and webhooks are exactly the B2B surface Privy wants. [Privy notes](/Users/pawan/Code/hacks/ethonline26/docs/research/arc-privy-ledger.md:82)
+It is credible in principle. Your own research says organizations, key quorums, additional signers, policies, intents, and webhooks are exactly the B2B surface Privy wants. [Privy notes](docs/research/arc-privy-ledger.md:82)
 
 It becomes contrived when you use all of them simultaneously for a $50 demo.
 
@@ -131,7 +131,7 @@ Use one understandable governance model:
 - Policy allowing Earn only for the two approved vault IDs and below a cap.
 - One allowed action and one rejected action.
 
-Only add quorum/intents if they work immediately. There is a specific gap: your research lists intents for transfer, RPC, wallet updates, policies, and quorums, but not a native Earn-intent endpoint. Do not promise “above-cap Earn rotation automatically becomes an intent” until that exact path works. [Intent/API notes](/Users/pawan/Code/hacks/ethonline26/docs/research/arc-privy-ledger.md:89)
+Only add quorum/intents if they work immediately. There is a specific gap: your research lists intents for transfer, RPC, wallet updates, policies, and quorums, but not a native Earn-intent endpoint. Do not promise “above-cap Earn rotation automatically becomes an intent” until that exact path works. [Intent/API notes](docs/research/arc-privy-ledger.md:89)
 
 A real Earn deposit and withdrawal firmly qualify for the financial-flow track. B2B becomes credible only if the policy or approval mechanics visibly control the action.
 

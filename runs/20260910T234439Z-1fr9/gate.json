@@ -230,7 +230,7 @@
       "erc4626:map_events": "9d3e4a81797e43b37f46443144913096d3a3080c"
     }
   },
-  "gateConfigPath": "/Users/pawan/Code/hacks/ethonline26/specs/gate.yaml",
+  "gateConfigPath": "<repo>/specs/gate.yaml",
   "gateConfigHash": "07cf5ca81966431a4ab1af3619633158ea11ee3c5065c80689b9615aaee21f64",
   "startedAt": "2026-09-11T00:08:08.831Z",
   "finishedAt": "2026-09-11T00:08:14.089Z",

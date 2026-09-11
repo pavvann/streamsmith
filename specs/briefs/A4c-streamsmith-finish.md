@@ -1,8 +1,8 @@
-# Brief A4c — Finish Streamsmith (third pass). Opus.
+# Brief A4c — Finish Streamsmith (third pass).
 
-Repo /Users/pawan/Code/hacks/ethonline26, branch main. Do NOT commit; do NOT git checkout/switch/stash; do NOT run cargo/docker/`substreams build`. pnpm only. Other agents own packages/mcpgen, packages/mcp-vaultflows, packages/erc4626-flows/sql — never touch them. Facts only; where a service is unreachable, code against an injectable interface with fixture tests and say so.
+This repository, branch main. Do NOT commit; do NOT git checkout/switch/stash; do NOT run cargo/docker/`substreams build`. pnpm only. packages/mcpgen, packages/mcp-vaultflows and packages/erc4626-flows/sql belong to parallel workstreams — never touch them. Facts only; where a service is unreachable, code against an injectable interface with fixture tests and say so.
 
-Current state (verified by orchestrator): `cd packages/streamsmith && pnpm typecheck` is GREEN; `pnpm test` = 48 pass / 17 fail (10 files). Your job is to get to 0 failing while keeping behavior faithful to specs/gate.yaml, then finish the remaining deliverables. Read specs/briefs/A4b-streamsmith-finish.md for the full deliverable list; everything there still applies.
+Current state (verified): `cd packages/streamsmith && pnpm typecheck` is GREEN; `pnpm test` = 48 pass / 17 fail (10 files). Your job is to get to 0 failing while keeping behavior faithful to specs/gate.yaml, then finish the remaining deliverables. Read specs/briefs/A4b-streamsmith-finish.md for the full deliverable list; everything there still applies.
 
 Hard facts to honor:
 1. Start block is 51001200 everywhere (specs/streamsmith.yaml, packages/erc4626-flows/substreams.yaml, specs/gate.yaml params_match (c)). Fixtures must match.

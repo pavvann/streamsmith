@@ -1,6 +1,6 @@
-# Brief A6b — Finish mcpgen and the generated MCP (continuation of A6). Opus.
+# Brief A6b — Finish mcpgen and the generated MCP (continuation of A6).
 
-Repo /Users/pawan/Code/hacks/ethonline26, branch main. Do NOT commit; do NOT git checkout/switch/stash; do NOT run cargo/docker/`substreams build`. pnpm only. You own packages/mcpgen, packages/mcp-vaultflows, packages/erc4626-flows/sql/views.sql only; another agent is editing packages/streamsmith — never touch it. Read specs/briefs/A6-mcpgen.md first; all deliverables there still apply.
+This repository, branch main. Do NOT commit; do NOT git checkout/switch/stash; do NOT run cargo/docker/`substreams build`. pnpm only. You own packages/mcpgen, packages/mcp-vaultflows, packages/erc4626-flows/sql/views.sql only; packages/streamsmith is being changed in parallel — never touch it. Read specs/briefs/A6-mcpgen.md first; all deliverables there still apply.
 
 Current state (verified): packages/mcpgen `pnpm test` = 57 pass / 1 fail; `pnpm typecheck` FAILS with TS1294 in test/helpers.ts line 70 (syntax not allowed under `erasableSyntaxOnly`: likely an enum, namespace, or constructor parameter property — replace with erasable syntax). packages/mcp-vaultflows exists (generated). packages/erc4626-flows/sql/views.sql exists.
 

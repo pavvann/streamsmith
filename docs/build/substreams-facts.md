@@ -161,7 +161,7 @@ substreams publish ./substreams.yaml --yes     # or path to .spkg
 
 Path: `vendor/substreams-skills/examples/` — **16** directories (`T1.1-block-stats`, `T1.2-usdc-transfers`, `T2.1-nft-mints`, `T2.2-univ2-swaps`, `T2.3-sql-sink`, `T3.1-univ3-usd-price`, `T3.2-cross-dex-volume`, `T4.1-whale-activity`, `T4.2-uniswap-db`, `T5.1`–`T5.4` Solana, `T6.1-eth-univ2-no-abi`, `T6.2-sol-marinade-no-idl`, `T7.1-sink-sql-deploy`) plus `examples/README.md` index and `/EVAL.md` summary.
 
-Index (`examples/README.md`): tables per chain family with columns **Example | Skill(s) | Result** ("Build · Run · 100% match"), a "Cautionary tales (vague prompts)" table, and a model note ("All runs use `claude-sonnet-4-6`").
+Index (`examples/README.md`): tables per chain family with columns **Example | Skill(s) | Result** ("Build · Run · 100% match"), a "Cautionary tales (vague prompts)" table, and a note pinning every example run to a single model version.
 
 Per-case `README.md` structure (observed in T2.3, T3.1, T7.1):
 1. `# T<n>.<m> — <Title> (<Chain>)`

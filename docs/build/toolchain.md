@@ -103,7 +103,7 @@ The protobuf step (buf) succeeded; the cargo step failed. Root cause (from runni
 info: syncing channel updates for 1.88-aarch64-apple-darwin
 info: latest update on 2025-06-26 for version 1.88.0 (6b00bc388 2025-06-23)
 info: rolling back changes
-error: could not read component file: '/Users/pawan/.rustup/toolchains/1.88-aarch64-apple-darwin/lib/rustlib/manifest-clippy-preview-aarch64-apple-darwin': No such file or directory (os error 2)
+error: could not read component file: '~/.rustup/toolchains/1.88-aarch64-apple-darwin/lib/rustlib/manifest-clippy-preview-aarch64-apple-darwin': No such file or directory (os error 2)
 ```
 rustup auto-installs the pinned 1.88 toolchain and the install broke mid-unpack. The machine's Data volume had **~238 MB free** at that moment (see Blockers), which is the most likely cause (unverified beyond the correlation). The half-installed `1.88-aarch64-apple-darwin` toolchain (83 MB) was removed with `rustup toolchain uninstall 1.88-aarch64-apple-darwin`.
 
@@ -182,12 +182,12 @@ sink:
 
 ## Blockers (facts)
 
-1. **Host disk full.** `df -h /System/Volumes/Data` → `228Gi size, 186Gi used, 228Mi avail, 100%` at 22:45; `diskutil` → Container Free Space 238.5 MB. After removing the broken 1.88 toolchain and Docker's abandoned layer: **1.2 GiB free**. Still insufficient for a Rust workspace release build or the ClickHouse image. Home dir usage (read-only `du`): `~/Library` 41G (Application Support 17G, Developer 10G, Caches 5.0G, Containers 3.9G), `~/Code` 18G, `~/.cache` 3.8G, `~/.vscode` 2.3G, `~/Music` 2.2G, `~/.claude` 2.1G, `~/.cursor` 1.8G, `~/.rustup` 1.6G, `~/.gradle` 1.2G, `~/.npm-global` 1.0G. `Docker.raw` is sparse (64 GB apparent, 2.0 GB actual). Nothing outside the repo was deleted (per brief), except my own half-installed rust 1.88 toolchain.
+1. **The host is out of space.** `df -h /System/Volumes/Data` → `228Gi size, 186Gi used, 228Mi avail, 100%` at 22:45; `diskutil` → Container Free Space 238.5 MB. After removing the broken 1.88 toolchain and Docker's abandoned layer: **1.2 GiB free**. Still insufficient for a Rust workspace release build or the ClickHouse image. `Docker.raw` is sparse (64 GB apparent, 2.0 GB actual). Nothing outside the repo was deleted, except the half-installed rust 1.88 toolchain this session had created.
 2. **ClickHouse container not running.** `docker run … clickhouse/clickhouse-server:latest` → `docker: failed to register layer: write /usr/bin/clickhouse: input/output error`; retry `docker pull` → `Error response from daemon: error creating temporary lease: write /var/lib/desktop-containerd/daemon/io.containerd.metadata.v1.bolt/meta.db: input/output error`. Both are the Docker Desktop VM hitting the full host disk. Commands and DSNs are written in `docs/build/clickhouse-local.md`, **unverified**.
 3. **No `SUBSTREAMS_API_TOKEN`** anywhere → no `substreams run` performed (per brief).
 4. **erc4626 not on substreams.dev** → cannot `imports: erc4626: erc4626@v0.1.0`; import by local path/spkg (`vendor/substreams-evm/spkg/erc4626-v0.1.0.spkg`) or by an `https://…spkg` URL we host ourselves.
 
-## Local build (Sept 10) — sub-agent A7
+## Local build (Sept 10)
 
 Everything in this section was executed on this machine on 2026-09-10 (macOS arm64), repo at `c142d93` (main). `packages/erc4626-flows/` and `specs/vaultflows.proto` are byte-identical to CI commit `18ab2eb` (`git diff --quiet 18ab2eb HEAD -- packages/erc4626-flows specs/vaultflows.proto`).
 
@@ -211,7 +211,7 @@ Everything in this section was executed on this machine on 2026-09-10 (macOS arm
 
 ### Exact output paths (for the Streamsmith gate)
 
-- spkg: `packages/erc4626-flows/erc4626-flows-v0.1.0.spkg` (absolute: `/Users/pawan/Code/hacks/ethonline26/packages/erc4626-flows/erc4626-flows-v0.1.0.spkg`), 938,767 bytes. `substreams build` and `substreams pack -o erc4626-flows-v0.1.0.spkg` write the same path (default name `<package.name>-<version>.spkg`, in the cwd).
+- spkg: `packages/erc4626-flows/erc4626-flows-v0.1.0.spkg`, 938,767 bytes. `substreams build` and `substreams pack -o erc4626-flows-v0.1.0.spkg` write the same path (default name `<package.name>-<version>.spkg`, in the cwd).
 - wasm: `packages/erc4626-flows/target/wasm32-unknown-unknown/release/erc4626_flows.wasm`, 423,852 bytes, sha256 `5553c06b1d6b5b8b2b8901ad70e5d6727d5e1b80647d7661b43132c2470f7819`.
 - Both match `specs/gate.yaml` → `build.expectedOutputs`. Exit code of `substreams build` is 0 on success (three runs).
 - Side effects of a build that are **not** gitignored: `packages/erc4626-flows/Cargo.lock` (untracked, created by cargo). Ignored: `*.spkg`, `target/`, regenerated `src/pb/{mod.rs,schema.rs,sf.codegen.conversation.v1.rs,sf.firehose.v2.rs,.last_generated_hash}`. The tracked `src/pb/vaultflows.v1.rs` / `erc4626.v1.rs` were regenerated identically (`git status` clean for them).
@@ -237,15 +237,15 @@ All modules `Initial block: 49276800` (import: 0), `Network: base`. Apart from t
 
 Why (measured by decoding both `sf.substreams.v1.Package` messages with a protobuf wire parser, `<scratchpad>/spkg_inspect.py`):
 
-1. **Our wasm differs.** CI `erc4626_flows.wasm` 421,720 bytes (sha256 `e9c0576a…`), local 423,852 bytes (`5553c06b…`), +2,132 bytes — exactly the spkg size difference. Same rustc/cargo (1.88.0 6b00bc388 / 873a06493), same dependency versions (the 15 crates whose panic-location paths are embedded are identical, e.g. `anyhow-1.0.104`, `bytes-1.12.1`; CI ran with a rust-cache hit so its log has no crate list). The embedded absolute paths differ (`/home/runner/.cargo/registry/…` ×62 vs `/Users/pawan/.cargo/registry/…` ×62, same prefix length, so paths alone do not explain the 2,132 bytes). The rest is host-dependent codegen (Linux x86_64 vs macOS arm64 host compiling for wasm32, lto=true); the exact cause was not isolated. No `--remap-path-prefix` is configured. Because the module hash covers the wasm bytes, **all six of our module hashes differ between CI and local**; the imported Pinax binary (365,414 bytes, `d1e0efe4…`) and its hash are identical in both.
+1. **Our wasm differs.** CI `erc4626_flows.wasm` 421,720 bytes (sha256 `e9c0576a…`), local 423,852 bytes (`5553c06b…`), +2,132 bytes — exactly the spkg size difference. Same rustc/cargo (1.88.0 6b00bc388 / 873a06493), same dependency versions (the 15 crates whose panic-location paths are embedded are identical, e.g. `anyhow-1.0.104`, `bytes-1.12.1`; CI ran with a rust-cache hit so its log has no crate list). The embedded absolute paths differ (`/home/runner/.cargo/registry/…` ×62 vs `~/.cargo/registry/…` ×62, same prefix length, so paths alone do not explain the 2,132 bytes). The rest is host-dependent codegen (Linux x86_64 vs macOS arm64 host compiling for wasm32, lto=true); the exact cause was not isolated. No `--remap-path-prefix` is configured. Because the module hash covers the wasm bytes, **all six of our module hashes differ between CI and local**; the imported Pinax binary (365,414 bytes, `d1e0efe4…`) and its hash are identical in both.
 2. **The 24 embedded proto files are the same bytes in a different order** (e.g. CI: `… v1/erc4626.proto, sf/substreams/v1/deltas.proto, sf/firehose/v2/firehose.proto …`; local: `… v1/erc4626.proto, sf/substreams/sink/sql/services/v1/services.proto, sf/firehose/v2/firehose.proto …`). This ordering is not stable even locally: three consecutive local builds of unchanged source (wasm sha256 identical each time) produced three different spkg sha256s — build#2 `7862156175654a13df682d5a7d27a89c72ad40465ef77e0abb822149f7e1b27c`, pack#2 `c887f8b12318649ef4f8307ad7583ac9790fa2d684cbbc8e1b90046bada4978e`, build#3 `cf530fb80151a8b01e340e77f13d77a982ce457286fd6faa1a53b02d9a7c128a` — while `substreams info` module hashes stayed identical across all of them. Package/module meta (fields 7, 8) and `network` are byte-identical.
 
 Consequence for `specs/gate.yaml` `build.record.spkgSha256 → receipt.packageHash`: the spkg sha256 changes on every `substreams build`/`pack` of identical source, so it identifies one build artifact, not the source. The stable identity of the build is the `map_events` module hash (`1f9e1dff…` for this machine's builds), and a rerun on another OS will not reproduce even that.
 
 ### Live run
 
-`/Users/pawan/Code/hacks/ethonline26/.env` does not exist, `SUBSTREAMS_API_TOKEN` is not in the environment, and there is no `.substreams.env` in the repo or `$HOME` → **no token; `substreams run` of the primary range (51092254–51092454) was not attempted.**
+The repo `.env` does not exist, `SUBSTREAMS_API_TOKEN` is not in the environment, and there is no `.substreams.env` in the repo or `$HOME` → **no token; `substreams run` of the primary range (51092254–51092454) was not attempted.**
 
-### Disk after this session
+### Space used by this session
 
 `df -h /System/Volumes/Data` → 9.6 GiB free (was 12 GiB). New: `packages/erc4626-flows/target/` 896 MB, ClickHouse image 839 MB, rust 1.88 toolchain (+ ~1.5 GB of cargo registry/deps in `~/.cargo`). CI spkg copy and analysis files live in the session scratchpad (`ci-spkg/erc4626-flows-v0.1.0.spkg`, `local-1.spkg`, `build-2.spkg`, `pack-2.spkg`, `build-3.spkg`, `ci-info.txt`, `local-info.txt`, `ci-job.log`, `spkg_inspect.py`).
