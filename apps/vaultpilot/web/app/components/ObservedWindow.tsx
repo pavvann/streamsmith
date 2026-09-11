@@ -134,6 +134,8 @@ function VaultSpark({
               peakBps={peakBps}
               first={growth.firstAssetsPerShareNormalized}
               last={growth.lastAssetsPerShareNormalized}
+              firstBlock={growth.blocks[0]}
+              lastBlock={growth.blocks[1]}
               delayMs={delayMs}
               label={label}
             />
@@ -149,11 +151,8 @@ function VaultSpark({
           </p>
         )}
         {w ? (
-          <p className="spark-meta">
-            {w.hours} h · {w.observationCount} observations ·{' '}
-            <Mono title={`${iso(w.firstBlockTimestamp)} → ${iso(w.lastBlockTimestamp)}`}>
-              blocks {w.firstBlockNumber} → {w.lastBlockNumber}
-            </Mono>
+          <p className="spark-meta" title={`blocks ${w.firstBlockNumber} → ${w.lastBlockNumber} · ${iso(w.firstBlockTimestamp)} → ${iso(w.lastBlockTimestamp)}`}>
+            {w.hours} h · {w.observationCount} observations
             {ownWindow ? (
               <>
                 <br />
@@ -237,12 +236,13 @@ function GuardrailRow({
           over={guard.exceedsLimit}
           label={`${label}: ${guard.outflowBps} bps of the ${limit} bps limit`}
         />
-        <p className="meter-cap">
+        <div className="meter-cap">
           <Mono>
             {guard.netOutflowExcludingSelfNormalized} out of {guard.observedTotalAssetsNormalized} observed
             {guard.selfExcludedOutNormalized !== '0' ? ` · ours excluded: ${guard.selfExcludedOutNormalized}` : ''}
           </Mono>
-        </p>
+          <span className="meter-limit">{limit} bps</span>
+        </div>
       </div>
       <div className="bps">
         <Reading size={22} tone={guard.exceedsLimit ? 'deny' : 'quiet'} unit="bps">

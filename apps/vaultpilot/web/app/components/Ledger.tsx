@@ -40,10 +40,7 @@ export function Ledger({snap, readAt, origin, originDetail}: {snap: Snap; readAt
               <li key={a.id}>
                 <span className="dot" aria-hidden="true" />
                 <span>
-                  <code>alert</code>{' '}
-                  <span className="prose sm" style={{display: 'inline'}}>
-                    {a.note ?? 'an open alert with no note'}
-                  </span>
+                  <code>alert</code> <Mono>{a.note ?? 'an open alert with no note'}</Mono>
                 </span>
               </li>
             ))}
@@ -97,10 +94,7 @@ export function Ledger({snap, readAt, origin, originDetail}: {snap: Snap; readAt
                 <li key={err}>
                   <span className="dot" aria-hidden="true" />
                   <span>
-                    <code>note</code>{' '}
-                    <span className="prose sm" style={{display: 'inline'}}>
-                      {err}
-                    </span>
+                    <code>note</code> <Mono>{err}</Mono>
                   </span>
                 </li>
               ))}
@@ -134,13 +128,13 @@ function Outcome({entry}: {entry: LedgerRow}) {
           ) : null}
         </p>
         {entry.note ? (
-          <p className="prose sm muted" style={{marginTop: 6}}>
-            {entry.note}
+          <p style={{margin: '6px 0 0'}}>
+            <Mono>{entry.note}</Mono>
           </p>
         ) : null}
         {entry.error ? (
-          <p className="prose sm" style={{marginTop: 4, color: 'var(--deny-ink)'}}>
-            {entry.error}
+          <p style={{margin: '4px 0 0'}}>
+            <Mono>{entry.error}</Mono>
           </p>
         ) : null}
       </div>

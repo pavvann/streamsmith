@@ -301,9 +301,10 @@ ul.refusals code { font: 400 12.5px/1.5 var(--mono); color: var(--muted); }
   border-top: 1px solid var(--hair-accent);
   border-bottom: 1px solid var(--hair-accent);
   margin-inline: -32px;
-  padding: 32px;
+  /* a little more air on the right so the bps readings never sit flush with the band edge */
+  padding: 32px 40px 32px 32px;
 }
-@media (max-width: 900px) { .window-band { margin-inline: -20px; padding: 24px 20px; } }
+@media (max-width: 900px) { .window-band { margin-inline: -20px; padding: 24px 28px 24px 20px; } }
 
 .spark-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 200px); gap: 8px 28px; align-items: center; padding: 18px 0; }
 .spark-row:first-child { padding-top: 0; }
@@ -314,9 +315,12 @@ ul.refusals code { font: 400 12.5px/1.5 var(--mono); color: var(--muted); }
 .spark-meta { margin-top: 8px; font: 400 12.5px/1.5 var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) { .spark-row { grid-template-columns: 1fr; } .spark-row .growth { text-align: left; } }
 
-svg.spark { display: block; width: 100%; height: auto; }
-.spark-base { stroke: var(--hair); stroke-width: 1; stroke-dasharray: 3 4; }
+/* the drawing is 48 px of chart plus a tick row; max-height keeps it that height on wide screens */
+svg.spark { display: block; width: 100%; height: auto; max-height: 76px; }
+.spark-base { stroke: color-mix(in srgb, var(--ink) 11%, transparent); stroke-width: 1; stroke-dasharray: 2 5; }
 .spark-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 1; animation: draw 620ms ease-out both; }
+.spark-tick { stroke: color-mix(in srgb, var(--ink) 28%, transparent); stroke-width: 1; }
+.spark-tag { font: 400 11px var(--mono); fill: var(--muted); font-variant-numeric: tabular-nums; }
 .spark-end { animation: appear 300ms ease-out both; }
 
 /* ---- 5. guardrail --------------------------------------------------------------------------- */
@@ -327,10 +331,13 @@ svg.spark { display: block; width: 100%; height: auto; }
 @media (max-width: 640px) { .guard-row { grid-template-columns: 1fr; } .guard-row .bps { text-align: left; } }
 
 .meter { position: relative; height: 6px; border-radius: 3px; background: var(--hair); overflow: visible; }
-.meter-fill { height: 6px; border-radius: 3px; background: var(--accent); min-width: 2px; }
+.meter-fill { height: 6px; border-radius: 3px; background: var(--accent); min-width: 3px; }
 .meter-fill.over { background: var(--deny-ink); }
 .meter-tick { position: absolute; top: -4px; right: 0; width: 1px; height: 14px; background: var(--ink); opacity: 0.55; }
-.meter-cap { margin-top: 6px; }
+.meter-cap { margin: 6px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.meter-limit { font: 400 11px/1.4 var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.guard-row .bps .reading { color: var(--ink); }
+.guard-row .bps .reading.deny { color: var(--deny-ink); }
 
 /* ---- 6. three quiet columns ----------------------------------------------------------------- */
 
