@@ -31,7 +31,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [x] T2.3 M A2+A2b+A9 · (A9: FlowDirection enum → string `deposit`/`withdraw`; sink 4.13.1 panics on enums) (proto reviewed vs from-proto rules: CallStatus flattened to call_ok/call_error, non-empty numeric strings, ids `{chain}-{block}-{logIndex}`, from_owner/to_owner; buf lint clean) `specs/vaultflows.proto`: `VaultFlow`, `ShareValueObservation`, `ShareTransfer` (optional), `CallStatus`; documented field semantics; versioned package name.
 - [x] T2.4 M A2+A2b · (gate.yaml: 19 assertions incl. descriptor_hash_match, deterministic_rerun, observation at block 51093000; exit codes 0/10/20/30) `specs/streamsmith.yaml` (chain 8453, vaults, `sampleIntervalBlocks: 1800`, sink target, package name) + `specs/gate.yaml` (build, run range, assertions: rows>0, known-vault-present, rpc-success≥threshold, deterministic rerun, descriptor-hash-match).
 - [x] T2.5 M A2 · `specs/prompt.md`: the verbatim one-human-instruction (from PROJECT.md §5).
-- [ ] T2.6 M O · Freeze: tag `contract-v1` after review. Start block is 51001200 (quota decision 2026-09-10). NOTE: `buf.build/streamingfast/substreams-sink-sql` is retired; use `buf.build/streamingfast/substreams` (A5 manifest must change).
+- [x] T2.6 M O · (tagged contract-v1 @ b7cdf87, Sept 11 07:40 IST, after blind rehearsal passed gate 18/18) Freeze: tag `contract-v1` after review. Start block is 51001200 (quota decision 2026-09-10). NOTE: `buf.build/streamingfast/substreams-sink-sql` is retired; use `buf.build/streamingfast/substreams` (A5 manifest must change).
 
 ## 3. erc4626-flows package (Sept 10; hand-built reference first, then generated)
 - [x] T3.0 M A5 · (CI green, run 34396041869; spkg artifact 301 KB) Rust package compiled in **GitHub Actions** (disk workaround): workflow builds wasm, packs spkg, uploads artifact; iterate until green.
@@ -56,7 +56,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [x] T4.5 M A4c · (receipt.ts exists) Deployment Receipt generator (schema in PROJECT.md §4.1): hashes (package, proto descriptor, params, sink schema, MCP manifest), deployment, range, head, lag, gate evidence, timestamps.
 - [x] T4.6 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) (packages/mcpgen) MCP generator from protobuf descriptors + receipt: typed read-only tools, parameterized SQL, limits/timeouts, provenance in every response, fail-closed on schema/lag mismatch (real check).
 - [x] T4.7 M A4c · Run manifest + case-study writer (`runs/<id>/manifest.json`, `case-studies/`).
-- [~] T4.8 M O · (promotion chain gate→receipt→mcp→live query executed by hand on real deployment; fresh-dir one-prompt rehearsal still to do) Clean end-to-end rehearsal from a fresh directory, no human follow-up; fix tooling; restore clean baseline.
+- [x] T4.8 M A14 · (blind rehearsal in fresh dir: 8 build attempts, gate 18/18 first attempt, ~24 min; docs/build/rehearsal-1.md) Clean end-to-end rehearsal from a fresh directory, no human follow-up; fix tooling; restore clean baseline.
 
 ## 5. MCP for vault flows (Sept 11)
 - [x] T5.1 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
@@ -73,10 +73,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 
 ## 7. Evidence, docs, video, submission (Sept 12–13)
 - [ ] T7.1 M A5 · Package + plugin + MCP READMEs.
-- [ ] T7.2 M O · Root README: thesis (PROJECT.md §1), diagram (Mermaid + PNG), sponsor mapping with file refs, live endpoints.
+- [x] T7.2 M A15 · Root README: thesis (PROJECT.md §1), diagram (Mermaid + PNG), sponsor mapping with file refs, live endpoints.
 - [ ] T7.3 M P+O · Forensic one-prompt run: clean tag, `git status/HEAD/tag/date -u` on screen, asciinema + screen capture, transcript, manifest, diff, uncut hash. dep: T4.8, T2.6
 - [ ] T7.4 M P · Video 3:30 per PROJECT.md §7; 1080p; human voice; test-upload by Sept 12 night.
-- [ ] T7.5 M O · `AI-USAGE.md` final; `specs/` complete; feedback docs final.
+- [~] T7.5 M O · (AI-USAGE + specs/briefs current; feedback docs growing) `AI-USAGE.md` final; `specs/` complete; feedback docs final.
 - [ ] T7.6 M O · `docs/STATUS.md` daily.
 - [ ] T7.7 M P+O · Clean-room verification (fresh container): links, package import, MCP install, deployment status, video playback.
 - [ ] T7.8 M P · Submission form: partners = The Graph (both tracks) + Privy (both tracks); Start Fresh pool; repo; video; per-partner "how we used it" + feedback text. Submit before 12:00 EDT Sept 13. No force pushes after.
