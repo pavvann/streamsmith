@@ -1,0 +1,12 @@
+{
+  "command": "pnpm --filter @ethonline26/mcpgen generate --receipt /Users/pawan/Code/hacks/ethonline26/receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json --proto /Users/pawan/Code/hacks/ethonline26/specs/vaultflows.proto --views /Users/pawan/Code/hacks/ethonline26/packages/erc4626-flows/sql/views.sql --out /Users/pawan/Code/hacks/ethonline26/packages/mcp-vaultflows",
+  "code": 0,
+  "durationMs": 515,
+  "receiptPath": "receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json",
+  "out": "packages/mcp-vaultflows",
+  "manifest": "packages/mcp-vaultflows/manifest.json",
+  "mcpManifestHash": "100440cfe5230faa10b37ad7d40d478e6111dc1169d66ca00551d4d48abbd5d1",
+  "receiptHash": "fa960bcd0556bf37c30d99a869f5432afc3aba5a8c8dfc07311006d741ac4189",
+  "stdoutTail": "{\"manifest\":\"/Users/pawan/Code/hacks/ethonline26/packages/mcp-vaultflows/manifest.json\"}",
+  "createdAt": "2026-09-11T00:24:08.608Z"
+}

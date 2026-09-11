@@ -1,0 +1,6 @@
+{
+  "command": "pnpm --filter @ethonline26/mcpgen generate --receipt /Users/pawan/Code/hacks/ethonline26/receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json --proto /Users/pawan/Code/hacks/ethonline26/specs/vaultflows.proto --views /Users/pawan/Code/hacks/ethonline26/packages/erc4626-flows/sql/views.sql --out /Users/pawan/Code/hacks/ethonline26/packages/mcp-vaultflows",
+  "code": 0,
+  "stdout": "{\"manifest\":\"/Users/pawan/Code/hacks/ethonline26/packages/mcp-vaultflows/manifest.json\"}\n",
+  "stderr": "mcpgen: receipt schema: /Users/pawan/Code/hacks/ethonline26/specs/receipt.schema.json\nmcpgen: receipt: erc4626-flows v0.1.0 (self-managed-sink); 2 vault(s)\nmcpgen: proto: package vaultflows.v1; tables vault_flows, share_value_observations, vaults, share_transfers\nmcpgen: views: vault_flows_24h, share_value_growth\nmcpgen: semantics: /Users/pawan/Code/hacks/ethonline26/packages/mcpgen/semantics/default.yaml\nmcpgen: tools: vault_flows, share_value_observations, vaults, recent_share_migration, vault_flows_24h, share_value_growth, pipeline_status\nmcpgen: wrote 15 files to /Users/pawan/Code/hacks/ethonline26/packages/mcp-vaultflows\n"
+}
