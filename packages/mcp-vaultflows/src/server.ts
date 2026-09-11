@@ -7,7 +7,9 @@
 //   MAX_LAG_BLOCKS        refuse when chain head - sink head exceeds this (default 300)
 //   CHECK_INTERVAL_SECONDS  fail-closed re-check period (default 60)
 //   RECEIPT_PATH          Deployment Receipt to re-read every cycle (default ./receipt.json next to manifest.json)
-//   CLICKHOUSE_READONLY   1 (default) or 2; see runtime/clickhouse.ts
+//   CLICKHOUSE_READONLY   1 (default) or 2; see runtime/clickhouse.ts. A credential whose ClickHouse PROFILE is already
+//                         read-only cannot accept any per-query setting: the client detects that refusal (Code: 164) once
+//                         and then sends no settings at all, reporting settingsMode "readonly-profile" in provenance.
 import { readFile, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,6 +45,7 @@ const clickhouse = new HttpClickHouseClient({
   database,
   timeoutMs: manifest.policy.queryTimeoutMs,
   readonly: readonlyEnv === "2" ? 2 : 1,
+  log,
 });
 
 const rpcUrl = process.env.BASE_RPC_URL;

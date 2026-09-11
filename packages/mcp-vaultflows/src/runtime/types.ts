@@ -162,6 +162,24 @@ export interface ObservedWindow {
   endTimestamp: number | null;
 }
 
+/**
+ * How the ClickHouse credential accepts per-query settings, discovered at runtime.
+ *
+ * `request-readonly`: every request carries `readonly=1` and a server-side `max_execution_time`.
+ * `readonly-profile`: the credential's own profile is already read-only (ClickHouse Cloud's `ro` user is), and
+ * such a user may not set ANY setting — not even `readonly` itself — so no settings are sent. That is a stronger
+ * guarantee than the one the client asks for, never a weaker one: the server refuses writes for this credential
+ * regardless of the request. The client-side abort timeout is enforced in both modes.
+ */
+export interface ClickHouseAccess {
+  settingsMode: "request-readonly" | "readonly-profile";
+  /** false in `readonly-profile`: the request carries no settings at all. */
+  settingsSent: boolean;
+  /** client-side abort timeout, enforced in both modes (so dropping `max_execution_time` loses no bound). */
+  timeoutMs: number;
+  note: string;
+}
+
 export interface Provenance {
   packageHash: string;
   outputModuleHash: string;
@@ -178,6 +196,8 @@ export interface Provenance {
   lagBlocks: number | null;
   observedWindow: ObservedWindow | null;
   checkedAt: string | null;
+  /** which read-only guarantee is actually in force on the ClickHouse connection (null when the client cannot say) */
+  clickhouse: ClickHouseAccess | null;
 }
 
 export type RefusalReason = "schema_mismatch" | "stale_data" | "chain_mismatch" | "receipt_mismatch" | "check_unavailable";

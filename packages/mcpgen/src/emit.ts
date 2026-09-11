@@ -75,7 +75,9 @@ export function renderServer(manifest: Manifest, packageName: string): string {
 //   MAX_LAG_BLOCKS        refuse when chain head - sink head exceeds this (default ${manifest.policy.maxLagBlocksDefault})
 //   CHECK_INTERVAL_SECONDS  fail-closed re-check period (default ${manifest.policy.checkIntervalSeconds})
 //   RECEIPT_PATH          Deployment Receipt to re-read every cycle (default ./receipt.json next to manifest.json)
-//   CLICKHOUSE_READONLY   1 (default) or 2; see runtime/clickhouse.ts
+//   CLICKHOUSE_READONLY   1 (default) or 2; see runtime/clickhouse.ts. A credential whose ClickHouse PROFILE is already
+//                         read-only cannot accept any per-query setting: the client detects that refusal (Code: 164) once
+//                         and then sends no settings at all, reporting settingsMode "readonly-profile" in provenance.
 import { readFile, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -111,6 +113,7 @@ const clickhouse = new HttpClickHouseClient({
   database,
   timeoutMs: manifest.policy.queryTimeoutMs,
   readonly: readonlyEnv === "2" ? 2 : 1,
+  log,
 });
 
 const rpcUrl = process.env.BASE_RPC_URL;
@@ -250,6 +253,10 @@ Every successful response carries \`provenance\`: \`packageHash\`, \`outputModul
 
 SQL is read-only and parameterized: identifiers come from the manifest, values are bound as ClickHouse query parameters
 (\`{name:Type}\` + \`param_name\`), \`readonly=1\`, \`max_execution_time\` and a ${m.policy.queryTimeoutMs / 1000} s client timeout on every request, \`LIMIT\` <= ${m.policy.maxLimit}.
+A credential whose ClickHouse **profile** is already read-only (ClickHouse Cloud's \`ro\` user) may not set any setting at all and
+answers \`Code: 164 ... in readonly mode\`; the client then retries that request once with no settings and keeps that mode for the
+process, which is a stronger read-only guarantee, not a weaker one. \`provenance.clickhouse\` and \`pipeline_status.clickhouse\`
+report which of the two modes is in force (\`request-readonly\` / \`readonly-profile\`); the ${m.policy.queryTimeoutMs / 1000} s client-side abort applies in both.
 Wide numerics (UInt256, Decimal) are returned as strings; 64-bit integers are quoted by ClickHouse's JSON output as well.
 
 ## Tools

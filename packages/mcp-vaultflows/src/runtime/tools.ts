@@ -129,6 +129,7 @@ export async function runPipelineStatus(ctx: HandlerContext): Promise<ToolOutcom
         lagBlocks: s.lagBlocks,
       },
       schema: s.schema ? { ok: s.schema.ok, expectedColumnSetHash: s.schema.expectedHash, actualColumnSetHash: s.schema.actualHash, diff: s.schema.diff } : null,
+      clickhouse: ctx.clickhouse.access?.() ?? null,
       policy: { maxLagBlocks: ctx.guardian.maxLagBlocks, checkIntervalSeconds: m.policy.checkIntervalSeconds, queryTimeoutMs: m.policy.queryTimeoutMs, maxLimit: m.policy.maxLimit },
       vaults: m.vaults,
       tools: m.tools.map((t) => t.name),

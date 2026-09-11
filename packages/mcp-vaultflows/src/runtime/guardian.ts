@@ -191,6 +191,7 @@ export class Guardian {
       lagBlocks: s?.lagBlocks ?? null,
       observedWindow,
       checkedAt: s?.checkedAt.toISOString() ?? null,
+      clickhouse: this.opts.clickhouse.access?.() ?? null,
     };
   }
 }

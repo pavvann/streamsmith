@@ -186,3 +186,43 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
    (a different sub-agent, same DB) independently landed on the identical `max(number) FROM _blocks_ WHERE deleted
    = 0` query, which is a good cross-check that this is right. Cost: ~10 min re-deriving it from
    `docs/build/sink-spike.md` §3 before finding the vaultpilot confirmation.
+
+## 2026-09-11 — A13 ClickHouse Cloud read-only PROFILE vs per-query settings (sub-agent A13)
+
+1. **A ClickHouse user whose *profile* is read-only may not set ANY query setting, including `readonly` itself.**
+   ClickHouse Cloud's `ro` user answers every request the generated MCP sent with
+   `HTTP 500 Code: 164 ... Cannot modify 'max_execution_time' setting in readonly mode`, so all three guardian
+   checks failed at once and the server reported `check_unavailable` — a fail-closed refusal caused entirely by the
+   client asking for a guarantee the server had already granted more strongly. The documented escape hatch in the
+   runtime (`CLICKHOUSE_READONLY=2`) cannot help: sending `readonly=2` is itself a settings change and gets the same
+   164. The only workable shape is the one `apps/vaultpilot/src/data.ts` had already found: catch 164-in-readonly-mode
+   once, retry the identical request with *no* settings, cache that mode for the process, and keep the bound that
+   actually matters client-side (`AbortSignal.timeout`) so dropping `max_execution_time` loses nothing. Two
+   independent code paths in this repo hit the identical wall a day apart; worth treating "readonly profile ⇒ send no
+   settings" as a standing rule for anything that talks to a managed ClickHouse, and worth surfacing the negotiated
+   mode in provenance (`provenance.clickhouse.settingsMode`, `pipeline_status.clickhouse`) so a reader can tell which
+   of the two read-only guarantees is in force rather than assuming.
+2. **The retry has to be matched on the response body, not the status.** ClickHouse returns HTTP 500 for ordinary
+   failures too (memory limits, bad SQL), and a transport error carries no status at all. Matching `Code: 164` *and*
+   `readonly mode` *and* "this was an HTTP response" keeps the retry to the one case that is safe; a status-only rule
+   would have silently re-sent queries after unrelated server errors. Covered by mocked-fetch tests
+   (`packages/mcpgen/test/clickhouse.test.ts`) rather than by the live endpoint, since the failure is a one-line
+   difference in the URL's query string and re-running it against the cloud proves nothing a fake cannot.
+3. **Carrying a new field into the generated server means touching `runtime/types.ts`, which is copied verbatim and
+   must not import from the generator.** Adding `clickhouse` to `Provenance` required the shape (`ClickHouseAccess`)
+   to live in `types.ts` and `clickhouse.ts` to import it from there, plus an *optional* `access?()` on the
+   `ClickHouseClient` interface so every existing test fake stays valid. Cheap once seen; would have been an
+   afternoon of fake-updating if the method had been made required.
+4. **The `runs/live/observation-*.jsonl` divergence A11 reported also breaks `packages/mcpgen`.** Two assertions in
+   `test/livedata.test.ts` were stale against the evidence checked in by `c4a25df` (module `map_share_value_observations`
+   → `map_events`, 45 rows → 49: 42 VaultFlow + 1 VaultMeta + 4 VaultFlow + 2 ShareValueObservation). Updated on the
+   mcpgen side to match the file that is actually on disk, and the module assertion now reads
+   `manifest.package.outputModule` instead of a literal so the next regeneration cannot drift the same way.
+   `packages/streamsmith/fixtures/live/` still mirrors the old 1-line file — that reconciliation is still owed by
+   whoever owns `runs/live/`.
+5. **Live verification is green on every check except lag, which is the honest answer.** Against the cloud DB as `ro`:
+   receipt matches the manifest, the real `system.columns` column-set hash equals the contract's
+   (`8c06996d…`), chain id 8453 matches — and the sink head (51127129) is 21042 blocks behind Base's head
+   (51148171), so the verdict is `stale_data` and `share_value_growth` refuses. The fixture receipt's
+   `deploymentId: "fixture-local-clickhouse"` is not checked against anything live, so no `receipt_mismatch` fires; a
+   demo of a *successful* data tool needs the backfill to be inside 300 blocks (~10 min of Base), not a code change.

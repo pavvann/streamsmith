@@ -32,7 +32,7 @@ generation error (bad receipt / proto / views / semantics), 2 usage.
 |---|---|
 | one `query(sql)` tool; the model writes SQL | one **semantic tool per table and per view** (`vault_flows`, `share_value_growth`, `recent_share_migration`, ...), argument schemas generated from the contract |
 | free-form strings | **closed sets**: `vault` is a zod enum of the receipt's `parameters.vaults`; `direction` is the closed value set declared in the semantics overlay; `windowHours` and `limit` are bounded integers (limit <= 500) |
-| string concatenation | **parameterized SQL only**: `{vault:String}` placeholders + `param_*`, identifiers from the manifest and regex-validated; `readonly=1`, `max_execution_time`, 10 s client timeout |
+| string concatenation | **parameterized SQL only**: `{vault:String}` placeholders + `param_*`, identifiers from the manifest and regex-validated; `readonly=1`, `max_execution_time`, 10 s client timeout (a credential whose ClickHouse *profile* is already read-only refuses per-query settings with `Code: 164`: detected once, after which none are sent and `provenance.clickhouse.settingsMode` says so) |
 | answers whatever the database holds | **fail-closed**: on startup and every 60 s the server re-reads the receipt, compares the live `system.columns` set against the contract, measures lag against an independent RPC, and refuses with a structured reason when anything drifted |
 | no context | **provenance in every response**: package hash, output-module hash, parameters hash, proto descriptor hash, sink schema hash, deployment mode/id, sink head, chain head, lag, observed window, time of the last verification |
 

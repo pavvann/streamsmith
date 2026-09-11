@@ -56,8 +56,10 @@ describe("live run output (runs/live/*.jsonl) against the proto contract", () =>
   it("is the package and the modules the receipt describes, at or after the receipt's start block", () => {
     expect(live.length).toBeGreaterThan(0);
     for (const l of live) expect(l["@type"]).toBe(`${protoFile.pkg}.Events`);
-    expect([...new Set(primary.map((l) => l["@module"]))]).toEqual(["map_events"]);
-    expect([...new Set(observation.map((l) => l["@module"]))]).toEqual(["map_share_value_observations"]);
+    // Both recordings come from the package's single output module (manifest.package.outputModule); the second
+    // window was re-recorded from map_events when the observation evidence was regenerated.
+    for (const set of [primary, observation]) expect([...new Set(set.map((l) => l["@module"]))]).toEqual([manifest.package.outputModule]);
+    expect(manifest.package.outputModule).toBe("map_events");
     // The receipt pins startBlock 51001200; the recorded windows sit above it. Nothing downstream may use this
     // number as a window bound: bounds come from min/max of the data (see the observedWindow assertions below).
     expect(manifest.package.startBlock).toBe(51_001_200);
@@ -95,7 +97,8 @@ describe("live run output (runs/live/*.jsonl) against the proto contract", () =>
         seen.set(table!, acc);
       }
     }
-    expect(rows).toBe(45); // 42 VaultFlow + 1 VaultMeta (primary) + 2 ShareValueObservation
+    // 42 VaultFlow + 1 VaultMeta (primary window) + 4 VaultFlow + 2 ShareValueObservation (observation window)
+    expect(rows).toBe(49);
     // What the live data exercised, and what protojson left out because it was a proto3 default value.
     const omitted = (table: string): string[] =>
       [...columnsOf(table)].filter((c) => !seen.get(table)!.has(c) && !INJECTED_COLUMNS.some((i) => i.name === c)).sort();

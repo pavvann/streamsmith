@@ -34,6 +34,10 @@ Every successful response carries `provenance`: `packageHash`, `outputModuleHash
 
 SQL is read-only and parameterized: identifiers come from the manifest, values are bound as ClickHouse query parameters
 (`{name:Type}` + `param_name`), `readonly=1`, `max_execution_time` and a 10 s client timeout on every request, `LIMIT` <= 500.
+A credential whose ClickHouse **profile** is already read-only (ClickHouse Cloud's `ro` user) may not set any setting at all and
+answers `Code: 164 ... in readonly mode`; the client then retries that request once with no settings and keeps that mode for the
+process, which is a stronger read-only guarantee, not a weaker one. `provenance.clickhouse` and `pipeline_status.clickhouse`
+report which of the two modes is in force (`request-readonly` / `readonly-profile`); the 10 s client-side abort applies in both.
 Wide numerics (UInt256, Decimal) are returned as strings; 64-bit integers are quoted by ClickHouse's JSON output as well.
 
 ## Tools
