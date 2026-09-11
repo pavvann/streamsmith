@@ -266,3 +266,7 @@ DSN: `clickhouse://sink:<pw>@<host>:9440/vaultflows?secure=true`. No stop block 
 **Finding (cost one failed run):** the sink stores a per-schema "sink info" file (`vaultflows_schema_hash.txt`) in `--clickhouse-sink-info-folder` (default: cwd). A file left by the LOCAL run made the CLOUD run read `sink_info: {schema_hash: 07a6ec95…}`, skip `CREATE TABLE`, and die on `Table vaultflows._blocks_ does not exist` at block 51001204. Always give each target database its own sink-info folder. Streamsmith's `deploy` self-managed mode must pass this flag (open item for the CLI).
 
 Hosted deployment `depdehi448c87998ebb763b`: first Deploy crash-looped on `param for module "vaults[]"` (raw params string passed to `execution_config.parameters`; the spkg already carries the manifest defaults, so omit the field). Retry blocked on an expired Portal token (refresh window ~8 h); needs a new device login.
+
+### §7.1 Backfill telemetry (05:32 IST)
+Rate ≈ 4,050 blocks/min against ClickHouse Cloud (ap-south-1) with `--final-blocks-only`; 77k blocks in 19 min; ETA to live ≈ 17 min from a 146k-block start gap. Row counts at block 51,078,275: vault_flows 8,971 · share_value_observations 22 · vaults 493 (chain-wide first-sight meta).
+**Column names in the sink's block table are `number, hash, timestamp, version, deleted`** (table `_blocks_`), not `_block_number_`; data tables carry injected `_block_number_`, `_block_timestamp_`, `_version_`, `_deleted_`. Anything computing head/lag from `_blocks_` must use `max(number)`.
