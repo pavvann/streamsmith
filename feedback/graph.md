@@ -154,3 +154,35 @@ Friction log kept from the first minute. Format: what we tried, what happened, w
    introspection) is what made a real end-to-end verification possible on a machine with 1.5 GB of disk and no
    ability to rebuild. Worth copying: keep every paid run's raw jsonl in the repo, and make the gate able to
    evaluate it without re-running.
+
+## 2026-09-11 — A11 six ops-gap fixes to the CLI (sub-agent A11)
+
+1. **`fixtures/live/observation-51092998-51093002.jsonl` and the root `runs/live/` copy of the same name have
+   diverged, and it predates this session.** `test/live-runs.test.ts` (3 of its assertions) fails out of the box:
+   `runs/observation.lines` is 2, not the hardcoded 1; `ids_unique` reports 92 vs the test's 88; `rpc_success_ratio_gte`
+   reports 48/48 vs 44/44. `git log -p -- runs/live/observation-51092998-51093002.jsonl` shows the file was
+   overwritten in commit `c4a25df` (the same commit whose message claims "75 tests… green") — its 1-line
+   `map_share_value_observations` content (still what `packages/streamsmith/fixtures/live/` mirrors, and what the
+   test file's own header comment describes) was replaced with 2 lines of `map_events` output for a different
+   block range, with neither the fixture mirror nor the test's hardcoded counts updated to match. Confirmed via
+   `git diff --stat` that nothing in this session touched those paths — this is baked into history, not something
+   the live sink did during this run. Left untouched: `runs/live/` is outside `packages/streamsmith/**` (this
+   brief's scope), and I don't know which side (1-line vs 2-line) is the intended evidence. `pnpm test` here is
+   85/88 green; the 3 failures are exactly these, pre-existing, and independent of the six fixes below. Cost: ~15
+   min to confirm via `git log -p` that it wasn't something in this session. Expected: whoever runs `pnpm fixtures`
+   after hand-editing `runs/live/*` reconciles the mirror and the test counts in the same commit.
+2. **Two of the six brief items were already implemented before this session.** `receipt --deploy-json <file>`
+   (reads a `deploy status --json`-shaped `DeployRecord` and forwards `deploymentMode`/`headBlock`/`lagBlocks` into
+   the receipt) and `outputModuleHash`/`moduleHashes` population from `substreams info <spkg> --json` were both
+   already wired up in `cli.ts`'s `receipt` case, resolved against `--root` via the same `abs()` helper item 2
+   wanted for `--views`. Only added a regression test (`test/receipt.test.ts`, self-managed-sink shape) since none
+   existed; no code change was needed. Worth a beat before treating a brief item as unimplemented: grep first.
+3. **`_blocks_`'s own columns are unprefixed** (`number`, `hash`, `timestamp`, `version`, `deleted` — confirmed
+   against live `system.columns`), unlike the injected `_block_number_`/`_block_timestamp_`/`_version_`/`_deleted_`
+   on every data table. `chMaxBlock`'s existing per-table query assumes the injected names uniformly, so a
+   deploy-status computed with no `deploy.json` (item 3) had to be a second code path
+   (`chBlocksHead`/`chRowCounts` in `src/deploy/clickhouse.ts`) rather than reusing `chMaxBlock` with `_blocks_`
+   appended to its table list — that would have silently queried the wrong column name and errored. `apps/vaultpilot`
+   (a different sub-agent, same DB) independently landed on the identical `max(number) FROM _blocks_ WHERE deleted
+   = 0` query, which is a good cross-check that this is right. Cost: ~10 min re-deriving it from
+   `docs/build/sink-spike.md` §3 before finding the vaultpilot confirmation.

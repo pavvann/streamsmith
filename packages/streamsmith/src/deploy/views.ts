@@ -73,6 +73,12 @@ export interface ApplyViewsOptions {
   url: string;
   database: string;
   viewsPath?: string;
+  /**
+   * True when the caller passed `--views` explicitly. The default views.sql is genuinely optional (it may not
+   * exist yet — owned by the mcpgen agent — so a missing file is silently skipped); a file the caller *named* is
+   * not optional, so a missing explicit path is a hard error instead of a silent no-op.
+   */
+  viewsPathExplicit?: boolean;
   /** base tables that must exist before views are applied (sink creates them) */
   requiredTables?: string[];
   /** how long to wait for the base tables (self-managed sink startup); 0 = check once */
@@ -82,9 +88,11 @@ export interface ApplyViewsOptions {
 
 export async function applyViews(ctx: Ctx, o: ApplyViewsOptions): Promise<ViewsRecord> {
   const rel = o.viewsPath ?? DEFAULT_VIEWS_PATH;
+  // relative to the repo root (ctx.root, which --root overrides), never process.cwd()
   const abs = isAbsolute(rel) ? rel : join(ctx.root, rel);
   const rec: ViewsRecord = { file: rel, present: false, statements: 0, applied: [], views: [], appliedAt: ctx.now().toISOString() };
   if (!(await exists(abs))) {
+    if (o.viewsPathExplicit) throw new Error(`--views ${rel} not found (resolved to ${abs}); pass an existing file, or drop --views to use the default ${DEFAULT_VIEWS_PATH}`);
     rec.skipped = `${rel} does not exist (optional; owned by the mcpgen agent)`;
     ctx.log(`views: ${rec.skipped}`);
     return rec;

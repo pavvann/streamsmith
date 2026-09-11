@@ -7,7 +7,7 @@ import { paths } from "../util/ctx.ts";
 import { writeJson, readJson, exists } from "../util/fsx.ts";
 import type { StreamsmithConfig } from "../config/streamsmith.ts";
 import { hostFingerprint } from "../receipt.ts";
-import { PortalClient, PortalError, type ClickhouseOutput, type DeploymentStateSummary } from "./portal.ts";
+import { PortalClient, PortalError, isUnauthenticated, type ClickhouseOutput, type DeploymentStateSummary } from "./portal.ts";
 import type { DeployRecord } from "./types.ts";
 
 export const EXIT_AWAITING_SECRET = 40;
@@ -28,6 +28,12 @@ export interface HostedDeployOptions {
   clickhouse: ClickhouseOutput;
   replica?: number;
   stopBlock?: number;
+  /** raw module params string (e.g. `vaults[]=0x..&interval=1800`); omitted unless explicitly given — the
+   * published spkg already carries the manifest defaults, and the raw string is rejected by hosted execution
+   * (`param for module "vaults[]": module not found`, docs/build/sink-spike.md §7). */
+  params?: string;
+  /** call UpdateDeploymentConfig on `deploymentId` instead of Deploy — requires `deploymentId`. */
+  update?: boolean;
   pollTimeoutSeconds?: number;
   pollIntervalSeconds?: number;
   deployRetries?: number;
@@ -55,8 +61,7 @@ export function isSettled(s: DeploymentStateSummary): "live" | "error" | "pendin
   return "pending";
 }
 
-export async function deployHosted(ctx: Ctx, opts: HostedDeployOptions): Promise<{ record: DeployRecord; path: string }> {
-  const portal = opts.portal ?? new PortalClient(ctx);
+async function attemptDeployHosted(ctx: Ctx, opts: HostedDeployOptions, portal: PortalClient): Promise<{ record: DeployRecord; path: string }> {
   const ss = opts.streamsmith;
   const runDir = paths.runs(ctx, opts.runId);
   const path = join(runDir, "deploy.json");
@@ -98,23 +103,26 @@ export async function deployHosted(ctx: Ctx, opts: HostedDeployOptions): Promise
     replica: opts.replica ?? 1,
     clickhouse: opts.clickhouse,
     ...(opts.stopBlock !== undefined ? { stopBlock: opts.stopBlock } : {}),
-    ...(ss.params?.value ? { parameters: ss.params.value } : {}),
+    // omit unless --params was passed explicitly: the published spkg already carries the manifest defaults, and
+    // the raw params string is rejected by hosted execution (docs/build/sink-spike.md §7).
+    ...(opts.params ? { parameters: opts.params } : {}),
   };
+  const rpcName = opts.update ? "UpdateDeploymentConfig" : "Deploy";
   const retries = opts.deployRetries ?? 3;
   const wait = (opts.deployRetryWaitSeconds ?? 45) * 1000;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const res = await portal.deploy(req);
-      notes.push(`Deploy attempt ${attempt}: ${JSON.stringify(res).slice(0, 200) || "{} (empty body = accepted)"}`);
+      const res = opts.update ? await portal.updateDeploymentConfig(req) : await portal.deploy(req);
+      notes.push(`${rpcName} attempt ${attempt}: ${JSON.stringify(res).slice(0, 200) || "{} (empty body = accepted)"}`);
       break;
     } catch (err) {
       const msg = (err as Error).message;
       const transient = /timeout|timed out|refused|unreachable|i\/o|EOF|503|502|deadline/i.test(msg);
-      notes.push(`Deploy attempt ${attempt} failed: ${msg.slice(0, 200)}`);
+      notes.push(`${rpcName} attempt ${attempt} failed: ${msg.slice(0, 200)}`);
       if (!transient || attempt === retries) {
         record.state = "deploy_failed";
         await writeJson(path, record);
-        throw err instanceof PortalError ? err : new Error(`Deploy failed: ${msg}`);
+        throw err instanceof PortalError ? err : new Error(`${rpcName} failed: ${msg}`);
       }
       ctx.log(`deploy(hosted): transient error (output DB waking up?), retrying in ${wait / 1000}s`);
       await ctx.sleep(wait);
@@ -147,6 +155,36 @@ export async function deployHosted(ctx: Ctx, opts: HostedDeployOptions): Promise
   await writeJson(path, record);
   ctx.log(`deploy(hosted): live -> ${path}`);
   return { record, path };
+}
+
+/**
+ * CreateDeployment/Deploy (or, with `--update`, UpdateDeploymentConfig on an existing `--deployment-id`) → poll to
+ * LIVE. On an `unauthenticated` Portal response, tries `RefreshToken` once with `PORTAL_REFRESH_TOKEN` and retries
+ * the whole sequence exactly once with the refreshed token before giving up with the device-login instruction
+ * (`streamsmith deploy login`) — a stale `PORTAL_TOKEN` (~8h refresh window, docs/build/sink-spike.md §7) should
+ * not require a human every time.
+ */
+export async function deployHosted(ctx: Ctx, opts: HostedDeployOptions): Promise<{ record: DeployRecord; path: string }> {
+  if (opts.update && !opts.deploymentId) throw new Error("--update requires --deployment-id (it reconfigures an existing deployment; drop --update to create a new one)");
+  const portal = opts.portal ?? new PortalClient(ctx);
+  try {
+    return await attemptDeployHosted(ctx, opts, portal);
+  } catch (err) {
+    if (!isUnauthenticated(err)) throw err;
+    const refreshToken = ctx.env.PORTAL_REFRESH_TOKEN;
+    if (!refreshToken) {
+      throw new Error("unauthenticated (PORTAL_TOKEN expired or invalid); run `streamsmith deploy login` for a fresh device-code login, export the printed PORTAL_TOKEN / PORTAL_ORG_ID, and retry — or set PORTAL_REFRESH_TOKEN to retry automatically");
+    }
+    ctx.log("deploy(hosted): unauthenticated; retrying once via RefreshToken (PORTAL_REFRESH_TOKEN)");
+    let refreshed: { accessToken: string; organizationId?: string };
+    try {
+      refreshed = await portal.refreshToken(refreshToken);
+    } catch (refreshErr) {
+      throw new Error(`unauthenticated, and RefreshToken failed (${(refreshErr as Error).message}); run \`streamsmith deploy login\` for a fresh device-code login, export the printed PORTAL_TOKEN / PORTAL_ORG_ID, and retry`);
+    }
+    const freshPortal = new PortalClient(ctx, { token: refreshed.accessToken, organizationId: refreshed.organizationId ?? portal.organizationId });
+    return attemptDeployHosted(ctx, opts, freshPortal);
+  }
 }
 
 export async function hostedStatus(ctx: Ctx, opts: { runId: string; deploymentId?: string; portal?: PortalClient }): Promise<DeployRecord> {

@@ -12,6 +12,15 @@ export class PortalError extends Error {
   }
 }
 
+/** True for a Portal call that failed because the access token expired or is invalid (HTTP 401, or the
+ * Connect-style `unauthenticated` error code in the body/message) — the case `deploy hosted` retries once via
+ * `RefreshToken` before telling the human to run `deploy login`. */
+export function isUnauthenticated(err: unknown): boolean {
+  if (!(err instanceof PortalError)) return false;
+  if (err.status === 401) return true;
+  return `${err.message} ${err.body}`.toLowerCase().includes("unauthenticated");
+}
+
 export function field<T = unknown>(obj: unknown, snake: string): T | undefined {
   if (!obj || typeof obj !== "object") return undefined;
   const o = obj as Record<string, unknown>;
@@ -132,6 +141,20 @@ export class PortalClient {
     };
   }
 
+  /** Exchanges a refresh token for a fresh access token, no device-login round trip. Used once by `deploy hosted`
+   * when a call comes back `unauthenticated` and `PORTAL_REFRESH_TOKEN` is set. */
+  async refreshToken(refreshToken: string): Promise<{ accessToken: string; organizationId?: string; refreshToken?: string }> {
+    const r = await this.call(PORTAL_API, "RefreshToken", { refresh_token: refreshToken }, false);
+    const accessToken = field<string>(r, "access_token");
+    if (!accessToken) throw new Error(`RefreshToken returned no access_token: ${JSON.stringify(r).slice(0, 300)}`);
+    const out: { accessToken: string; organizationId?: string; refreshToken?: string } = { accessToken };
+    const org = field<string>(r, "organization_id");
+    if (org) out.organizationId = org;
+    const rt = field<string>(r, "refresh_token");
+    if (rt) out.refreshToken = rt;
+    return out;
+  }
+
   // ---- hosted service ----
   async createDeployment(): Promise<string> {
     const { organizationId } = this.requireAuth();
@@ -188,6 +211,11 @@ export class PortalClient {
 
   async deploy(req: SinkSqlDeployRequest): Promise<unknown> {
     return this.call(HOSTED, "Deploy", this.buildSinkSqlDeployBody(req));
+  }
+
+  /** Reconfigures an existing deployment in place (`--update --deployment-id ID`) instead of creating a new one. */
+  async updateDeploymentConfig(req: SinkSqlDeployRequest): Promise<unknown> {
+    return this.call(HOSTED, "UpdateDeploymentConfig", this.buildSinkSqlDeployBody(req));
   }
 
   async getDeploymentState(deploymentId: string): Promise<DeploymentStateSummary> {

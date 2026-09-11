@@ -37,6 +37,18 @@ describe("receipt", () => {
     expect(receiptHash(r)).toBe(receiptHash(JSON.parse(JSON.stringify(r))));
   });
 
+  it("fills deploymentMode/headBlock/lagBlocks from a self-managed `deploy status --json` record (cli.ts --deploy-json)", () => {
+    // shaped exactly like selfManagedStatus()'s DeployRecord output (src/deploy/selfManaged.ts), the file
+    // `streamsmith deploy status --json > status.json` writes and `receipt --deploy-json status.json` reads
+    const deploy = { deploymentMode: "self-managed-sink" as const, runId: "r", headBlock: 51100000, chainHead: 51100171, lagBlocks: 171, lagSeconds: 342, checkedAt: "2026-09-11T10:00:00.000Z", rowCounts: { vault_flows: 171, _blocks_: 128 }, sink: { kind: "clickhouse" as const, mode: "from-proto" as const, database: "vaultflows", hostFingerprint: hostFingerprint("localhost", 9000) } };
+    const r = assembleReceipt({ streamsmith: ss, gate, packageHash: H, moduleHashes: HASHES, protoDescriptorHash: "b".repeat(64), sinkSchemaHash: "c".repeat(64), runId: "r", createdAt: "2026-09-11T10:00:00.000Z", deploy });
+    expect(r.deploymentMode).toBe("self-managed-sink");
+    expect(r.headBlock).toBe(51100000);
+    expect(r.lagBlocks).toBe(171);
+    expect(r.sink).toEqual(deploy.sink);
+    expect(validateReceipt(r, schema).errors).toEqual([]);
+  });
+
   it("requires outputModuleHash (spkg bytes are not reproducible; the module hash is the identity) and falls back to publish/gate module hashes", () => {
     const base = { streamsmith: ss, gate, packageHash: H, protoDescriptorHash: "b".repeat(64), sinkSchemaHash: "c".repeat(64), createdAt: "2026-09-11T10:00:00.000Z" };
     expect(() => assembleReceipt(base)).toThrow(/outputModuleHash is required/);

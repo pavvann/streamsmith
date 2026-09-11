@@ -46,10 +46,11 @@ Run from the repo root. `--run-id` defaults to `runs/CURRENT`.
 pnpm --filter @ethonline26/streamsmith streamsmith new-run          # mint runs/<id>/, write runs/CURRENT
 pnpm --filter @ethonline26/streamsmith streamsmith gate             # specs/gate.yaml, exit 0/10/20/30
 pnpm --filter @ethonline26/streamsmith streamsmith publish --dry-run
-pnpm --filter @ethonline26/streamsmith streamsmith deploy hosted --spkg-url <url> --ch-server <host>
-pnpm --filter @ethonline26/streamsmith streamsmith deploy self-managed --spkg <file>
-pnpm --filter @ethonline26/streamsmith streamsmith deploy views      # applies packages/erc4626-flows/sql/views.sql
-pnpm --filter @ethonline26/streamsmith streamsmith receipt --spkg <file> --schema-sql <file>
+pnpm --filter @ethonline26/streamsmith streamsmith deploy hosted --spkg-url <url> --ch-server <host>   # --params only if explicit; --update + --deployment-id to reconfigure
+pnpm --filter @ethonline26/streamsmith streamsmith deploy self-managed --spkg <file>   # --final-blocks-only on by default; sink-info folder + cursor file default under runs/<id>/
+pnpm --filter @ethonline26/streamsmith streamsmith deploy views      # applies packages/erc4626-flows/sql/views.sql; --views resolves against --root, missing explicit file is an error
+pnpm --filter @ethonline26/streamsmith streamsmith deploy status --clickhouse-url <url>   # works with no deploy.json: head from _blocks_, RPC chain head, lag, row counts
+pnpm --filter @ethonline26/streamsmith streamsmith receipt --spkg <file> --schema-sql <file> [--deploy-json <deploy-status.json>]
 pnpm --filter @ethonline26/streamsmith streamsmith mcp               # delegates to @ethonline26/mcpgen
 pnpm --filter @ethonline26/streamsmith streamsmith manifest start|finish
 pnpm --filter @ethonline26/streamsmith streamsmith casestudy
@@ -89,6 +90,8 @@ provenance (`runId`, ranges, head block, lag) — no answer without provenance.
 `.env.example` lists every variable. `SUBSTREAMS_API_TOKEN` (data-plane, from `substreams auth`) is not the same as
 `PORTAL_TOKEN` (Portal API bearer). Without a token the gate's runs fail with `Unauthenticated` and exit 20.
 `BASE_RPC_URL` only feeds the two warn-level cross-checks; when it is unreachable they are skipped with a note.
+`PORTAL_REFRESH_TOKEN` (optional): when a hosted-deploy Portal call comes back `unauthenticated`, `deploy hosted`
+tries `RefreshToken` with it once before giving up with the `deploy login` instruction.
 
 ## When something fails
 
@@ -98,3 +101,11 @@ provenance (`runId`, ranges, head block, lag) — no answer without provenance.
 - exit 30 — read `runs/<id>/gate.json`, find the assertion with `"passed": false` and `"severity": "fail"`, and quote
   its `detail`. `spec_unmodified` failing means `specs/vaultflows.proto` changed: revert it.
 - exit 40 — hosted deploy is waiting for a human to stage the DB secret.
+- `deploy hosted` fails with `param for module "vaults[]": module not found` — do not pass `--params`; the published
+  spkg already carries the manifest defaults, and `execution_config.parameters` is now omitted unless `--params` is
+  given explicitly.
+- self-managed `from-proto` crashes on insert after creating tables fine — a `--clickhouse-sink-info-folder` left
+  over from a run against a *different* database made it skip `CREATE TABLE` for this one
+  (docs/build/sink-spike.md §7). `deploy self-managed` now defaults that folder (and the cursor file) to
+  `runs/<runId>/sinkinfo` / `runs/<runId>/clickhouse-cursor.txt`, so never reuse a folder across databases if you
+  override it with `--sink-info-folder`.

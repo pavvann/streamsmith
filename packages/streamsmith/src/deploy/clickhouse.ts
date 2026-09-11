@@ -57,6 +57,42 @@ export async function chMaxBlock(ctx: Ctx, url: string, database: string, tables
   return maxBlock === undefined ? { perTable } : { maxBlock, perTable };
 }
 
+/**
+ * Head from the sink's own per-block audit table. `_blocks_` (`number, hash, timestamp, version, deleted` — no
+ * leading-underscore injected columns, unlike the data tables) is created by every from-proto sink run regardless
+ * of which vault tables exist, so it is the most reliable head source when there is no deploy.json to say which
+ * data tables to trust (`deploy status` with no prior `deploy self-managed` run). Missing table -> undefined.
+ */
+export async function chBlocksHead(ctx: Ctx, url: string, database: string): Promise<number | undefined> {
+  const sql = `SELECT max(number) FROM ${quoteIdent(database)}.${quoteIdent("_blocks_")} WHERE deleted = 0`;
+  try {
+    const out = (await chQuery(ctx, url, sql)).trim();
+    const n = out === "" || out === "\\N" ? undefined : Number(out);
+    return n !== undefined && Number.isFinite(n) ? n : undefined;
+  } catch (err) {
+    ctx.log(`clickhouse: _blocks_: ${(err as Error).message}`);
+    return undefined;
+  }
+}
+
+/** Row counts per table for status output. `_blocks_` filters on `deleted`; every from-proto data table on `_deleted_`. */
+export async function chRowCounts(ctx: Ctx, url: string, database: string, tables: string[]): Promise<Record<string, number | null>> {
+  const out: Record<string, number | null> = {};
+  for (const t of tables) {
+    const deletedCol = t === "_blocks_" ? "deleted" : "_deleted_";
+    const sql = `SELECT count() FROM ${quoteIdent(database)}.${quoteIdent(t)} WHERE ${quoteIdent(deletedCol)} = 0`;
+    try {
+      const raw = (await chQuery(ctx, url, sql)).trim();
+      const n = Number(raw);
+      out[t] = Number.isFinite(n) ? n : null;
+    } catch (err) {
+      ctx.log(`clickhouse: row count ${t}: ${(err as Error).message}`);
+      out[t] = null;
+    }
+  }
+  return out;
+}
+
 /** `SHOW CREATE TABLE` for each table, concatenated — the DDL the sink actually applied. */
 export async function chDumpSchema(ctx: Ctx, url: string, database: string, tables: string[]): Promise<string> {
   const parts: string[] = [];

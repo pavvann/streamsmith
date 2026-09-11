@@ -29,12 +29,16 @@ Commands
   new-run                              mint a run id, create runs/<id>/, remember it in runs/CURRENT
   gate        [--gate specs/gate.yaml] [--reuse-runs] [--skip-build] [--offline] [--rpc-url URL] [--verbose]
   publish     [--pkg-dir DIR] [--manifest substreams.yaml] [--spkg FILE] [--dry-run] [--team-slug S] [--verify-url]
-  deploy hosted        --spkg-url URL [--deployment-id ID] [--name N] [--ch-server H --ch-port 9440 --ch-user U --ch-database D --ch-secure]
-                       [--stop-block N] [--poll-timeout SEC] [--views FILE]   (env PORTAL_TOKEN, PORTAL_ORG_ID; CLICKHOUSE_URL to apply views)
+  deploy hosted        --spkg-url URL [--deployment-id ID] [--update] [--name N] [--ch-server H --ch-port 9440 --ch-user U --ch-database D --ch-secure]
+                       [--stop-block N] [--params STRING] [--poll-timeout SEC] [--views FILE]   (env PORTAL_TOKEN, PORTAL_ORG_ID, PORTAL_REFRESH_TOKEN; CLICKHOUSE_URL to apply views)
+                       --params is omitted unless given explicitly (the spkg carries the manifest defaults); --update reconfigures --deployment-id instead of creating one
   deploy self-managed  --spkg FILE [--dsn DSN] [--endpoint E] [--network N] [--start-block N] [--stop-block N] [--sink-binary B]
-                       [--flavor substreams-sink-sql|substreams-cli] [--views FILE]
+                       [--flavor substreams-sink-sql|substreams-cli] [--sink-info-folder DIR] [--no-final-blocks-only] [--views FILE]
+                       from-proto defaults: --final-blocks-only on, --clickhouse-sink-info-folder + cursor file under runs/<id>/ (never share a folder across databases)
   deploy views         [--views packages/erc4626-flows/sql/views.sql] [--clickhouse-url URL] [--database D] [--wait SEC]
+                       --views resolves against --root, not cwd; a missing file is an error only when --views is given explicitly
   deploy status        [--clickhouse-url URL] [--rpc-url URL] [--deployment-id ID]
+                       self-managed with no deploy.json works when --clickhouse-url is given: head from _blocks_, chain head from --rpc-url, lag, row counts
   deploy stop
   deploy login                         device-code login; prints export lines (never stores tokens)
   schema-dump [--clickhouse-url URL] [--database D] [--tables a,b] [--out FILE]
@@ -52,8 +56,9 @@ const OPTIONS = {
   "run-id": { type: "string" }, root: { type: "string" }, json: { type: "boolean" }, help: { type: "boolean", short: "h" },
   gate: { type: "string" }, "reuse-runs": { type: "boolean" }, "skip-build": { type: "boolean" }, verbose: { type: "boolean" }, offline: { type: "boolean" },
   "pkg-dir": { type: "string" }, manifest: { type: "string" }, spkg: { type: "string" }, "dry-run": { type: "boolean" }, "team-slug": { type: "string" }, "verify-url": { type: "boolean" },
-  "spkg-url": { type: "string" }, "deployment-id": { type: "string" }, name: { type: "string" }, "ch-server": { type: "string" }, "ch-port": { type: "string" }, "ch-user": { type: "string" }, "ch-database": { type: "string" }, "ch-secure": { type: "boolean" },
+  "spkg-url": { type: "string" }, "deployment-id": { type: "string" }, update: { type: "boolean" }, params: { type: "string" }, name: { type: "string" }, "ch-server": { type: "string" }, "ch-port": { type: "string" }, "ch-user": { type: "string" }, "ch-database": { type: "string" }, "ch-secure": { type: "boolean" },
   "stop-block": { type: "string" }, "start-block": { type: "string" }, "poll-timeout": { type: "string" }, dsn: { type: "string" }, endpoint: { type: "string" }, network: { type: "string" }, module: { type: "string" }, "sink-binary": { type: "string" }, flavor: { type: "string" }, "cursor-file": { type: "string" },
+  "sink-info-folder": { type: "string" }, "no-final-blocks-only": { type: "boolean" },
   "clickhouse-url": { type: "string" }, "rpc-url": { type: "string" }, database: { type: "string" }, tables: { type: "string" }, out: { type: "string" }, views: { type: "string" }, wait: { type: "string" },
   "schema-sql": { type: "string" }, "schema-hash": { type: "string" }, "mcp-manifest": { type: "string" }, "deploy-json": { type: "string" }, "publish-json": { type: "string" }, "gate-json": { type: "string" }, force: { type: "boolean" },
   receipt: { type: "string" }, recording: { type: "string" }, proto: { type: "string" },
@@ -102,7 +107,7 @@ async function applyViewsAfterDeploy(ctx: Ctx, v: Values, ss: StreamsmithConfig,
   }
   const database = clickhouseDatabase(ctx, s(v, "database") ?? s(v, "ch-database"), record.sink?.database ?? ss.sink?.connection?.database);
   const vo: Parameters<typeof applyViews>[1] = { url, database, requiredTables: ss.sink?.tables ?? [], waitSeconds };
-  if (s(v, "views")) vo.viewsPath = s(v, "views")!;
+  if (s(v, "views")) { vo.viewsPath = s(v, "views")!; vo.viewsPathExplicit = true; }
   record.views = await applyViews(ctx, vo);
   await writeJson(path, record);
 }
@@ -176,8 +181,10 @@ export async function main(argv: string[]): Promise<number> {
           const ho: Parameters<typeof deployHosted>[1] = { runId, streamsmith: ss, spkgUrl, clickhouse };
           if (pub?.packageHash) ho.packageHash = pub.packageHash;
           if (s(v, "deployment-id")) ho.deploymentId = s(v, "deployment-id")!;
+          if (b(v, "update")) ho.update = true;
           if (s(v, "name")) ho.name = s(v, "name")!;
           if (n(v, "stop-block") !== undefined) ho.stopBlock = n(v, "stop-block")!;
+          if (s(v, "params")) ho.params = s(v, "params")!;
           if (n(v, "poll-timeout") !== undefined) ho.pollTimeoutSeconds = n(v, "poll-timeout")!;
           const r = await deployHosted(ctx, ho);
           await applyViewsAfterDeploy(ctx, v, ss, r.record, r.path, n(v, "wait") ?? 0);
@@ -206,6 +213,8 @@ export async function main(argv: string[]): Promise<number> {
         if (s(v, "cursor-file")) so.cursorFile = s(v, "cursor-file")!;
         if (s(v, "sink-binary")) so.sinkBinary = s(v, "sink-binary")!;
         if (s(v, "flavor")) so.flavor = s(v, "flavor") as "substreams-sink-sql" | "substreams-cli";
+        if (s(v, "sink-info-folder")) so.sinkInfoFolder = s(v, "sink-info-folder")!;
+        so.finalBlocksOnly = !b(v, "no-final-blocks-only");
         const r = await startSelfManaged(ctx, so);
         await applyViewsAfterDeploy(ctx, v, ss, r.record, r.path, n(v, "wait") ?? 120);
         out(v, `self-managed pid ${r.record.pid} -> ${relative(ctx.root, r.path)}; views ${r.record.views ? (r.record.views.skipped ?? `${r.record.views.applied.length} statements`) : "not applied"}`, r.record);
@@ -218,7 +227,7 @@ export async function main(argv: string[]): Promise<number> {
         const existing = (await exists(p)) ? await readJson<DeployRecord>(p) : undefined;
         const database = clickhouseDatabase(ctx, s(v, "database"), existing?.sink?.database ?? ss.sink?.connection?.database);
         const vo: Parameters<typeof applyViews>[1] = { url, database, requiredTables: ss.sink?.tables ?? [], waitSeconds: n(v, "wait") ?? 0 };
-        if (s(v, "views")) vo.viewsPath = s(v, "views")!;
+        if (s(v, "views")) { vo.viewsPath = s(v, "views")!; vo.viewsPathExplicit = true; }
         const rec = await applyViews(ctx, vo);
         if (existing) {
           existing.views = rec;
@@ -245,7 +254,7 @@ export async function main(argv: string[]): Promise<number> {
           if (s(v, "tables")) st.tables = s(v, "tables")!.split(",");
           rec = await selfManagedStatus(ctx, st);
         }
-        out(v, `${rec.deploymentMode} ${rec.state ?? ""} head=${rec.headBlock ?? "?"} chain=${rec.chainHead ?? "?"} lag=${rec.lagBlocks ?? "?"} blocks${rec.lagSeconds !== undefined ? ` / ${rec.lagSeconds}s` : ""}`, rec);
+        out(v, `${rec.deploymentMode} ${rec.state ?? ""} head=${rec.headBlock ?? "?"} chain=${rec.chainHead ?? "?"} lag=${rec.lagBlocks ?? "?"} blocks${rec.lagSeconds !== undefined ? ` / ${rec.lagSeconds}s` : ""}${rec.rowCounts ? `; rows ${JSON.stringify(rec.rowCounts)}` : ""}`, rec);
         return 0;
       }
       if (sub === "stop") {

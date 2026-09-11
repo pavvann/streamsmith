@@ -4,14 +4,14 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { openSync, closeSync } from "node:fs";
 import { join, isAbsolute } from "node:path";
 import { hostname } from "node:os";
-import { stat } from "node:fs/promises";
+import { stat, mkdir } from "node:fs/promises";
 import type { Ctx } from "../util/ctx.ts";
 import { paths } from "../util/ctx.ts";
 import { exists, readJson, readText, writeJson, writeText } from "../util/fsx.ts";
 import type { StreamsmithConfig } from "../config/streamsmith.ts";
 import { hostFingerprint } from "../receipt.ts";
 import { sha256File } from "../util/hash.ts";
-import { chMaxBlock } from "./clickhouse.ts";
+import { chMaxBlock, chBlocksHead, chRowCounts } from "./clickhouse.ts";
 import { ethBlockNumber, BASE_BLOCK_TIME_SECONDS } from "./rpc.ts";
 import type { DeployRecord } from "./types.ts";
 
@@ -31,6 +31,14 @@ export interface SelfManagedOptions {
   sinkBinary?: string;
   flavor?: SinkFlavor;
   extraArgs?: string[];
+  /**
+   * `substreams-sink-sql` (from-proto only) stores a per-schema `<database>_schema_hash.txt` here, default cwd
+   * (docs/build/sink-spike.md §7). A folder left over from a run against a DIFFERENT database makes the sink skip
+   * `CREATE TABLE` and crash on insert, so every run gets its own folder — default `runs/<runId>/sinkinfo`.
+   */
+  sinkInfoFolder?: string;
+  /** from-proto only; default true (a bounded run does not flush its tail batch otherwise — sink-spike.md §6). */
+  finalBlocksOnly?: boolean;
   /** injectable for tests */
   spawnImpl?: typeof spawn;
 }
@@ -62,7 +70,10 @@ export function buildSinkCommand(o: SelfManagedOptions): { cmd: string; args: st
     args.push(...(o.extraArgs ?? []));
     return { cmd: o.sinkBinary ?? "substreams", args };
   }
-  const args = ["from-proto", o.dsn, o.spkg, module, "-e", o.endpoint, "--network", network, "-s", String(start), "--clickhouse-cursor-file-path", cursorFile];
+  const args = ["from-proto", o.dsn, o.spkg, module, "-e", o.endpoint, "--network", network, "-s", String(start)];
+  if (o.finalBlocksOnly ?? true) args.push("--final-blocks-only");
+  args.push("--clickhouse-cursor-file-path", cursorFile);
+  if (o.sinkInfoFolder) args.push("--clickhouse-sink-info-folder", o.sinkInfoFolder);
   if (o.stopBlock !== undefined) args.push("-t", String(o.stopBlock));
   args.push(...(o.extraArgs ?? []));
   return { cmd: o.sinkBinary ?? "substreams-sink-sql", args };
@@ -76,10 +87,12 @@ export async function startSelfManaged(ctx: Ctx, o: SelfManagedOptions): Promise
   const runDir = paths.runs(ctx, o.runId);
   const path = join(runDir, "deploy.json");
   const cursorFile = o.cursorFile ?? join(runDir, "clickhouse-cursor.txt");
+  const sinkInfoFolder = o.sinkInfoFolder ?? join(runDir, "sinkinfo");
   const logFile = join(runDir, "sink.log");
   const pidFile = join(runDir, "sink.pid");
   await writeText(logFile, "");
-  const { cmd, args } = buildSinkCommand({ ...o, cursorFile });
+  await mkdir(sinkInfoFolder, { recursive: true });
+  const { cmd, args } = buildSinkCommand({ ...o, cursorFile, sinkInfoFolder });
   const spawnImpl = o.spawnImpl ?? spawn;
   const fd = openSync(logFile, "a");
   const child: ChildProcess = spawnImpl(cmd, args, { cwd: ctx.root, detached: true, stdio: ["ignore", fd, fd], env: { ...process.env, ...ctx.env } });
@@ -136,13 +149,17 @@ export interface StatusOptions {
 
 export async function selfManagedStatus(ctx: Ctx, o: StatusOptions): Promise<DeployRecord> {
   const path = paths.runs(ctx, o.runId, "deploy.json");
-  if (!(await exists(path))) throw new Error(`no deploy.json for run ${o.runId}`);
-  const record = await readJson<DeployRecord>(path);
+  const hasRecord = await exists(path);
+  const chUrl = o.clickhouseUrl ?? ctx.env.CLICKHOUSE_RO_HTTP_URL;
+  if (!hasRecord && !chUrl) throw new Error(`no deploy.json for run ${o.runId} (pass --clickhouse-url to compute status without a prior \`deploy self-managed\` run)`);
+  const record: DeployRecord = hasRecord ? await readJson<DeployRecord>(path) : { deploymentMode: "self-managed-sink", runId: o.runId };
   const notes: string[] = [];
   if (record.pid !== undefined) {
     const alive = pidAlive(record.pid);
     record.state = alive ? "running" : "exited";
     notes.push(`pid ${record.pid} ${alive ? "alive" : "not running"}`);
+  } else if (!hasRecord) {
+    notes.push(`no deploy.json for run ${o.runId}; status computed from ClickHouse + RPC only`);
   }
   if (record.cursorFile) {
     if (await exists(record.cursorFile)) {
@@ -151,13 +168,23 @@ export async function selfManagedStatus(ctx: Ctx, o: StatusOptions): Promise<Dep
       record.cursor = { present: true, mtime: st.mtime.toISOString(), raw: raw.slice(0, 200) };
     } else record.cursor = { present: false };
   }
-  const chUrl = o.clickhouseUrl ?? ctx.env.CLICKHOUSE_RO_HTTP_URL;
   const database = o.database ?? record.sink?.database ?? o.streamsmith?.sink?.connection?.database ?? "default";
   const tables = o.tables ?? o.streamsmith?.sink?.tables ?? ["vault_flows", "share_value_observations", "vaults", "share_transfers"];
   if (chUrl) {
-    const m = await chMaxBlock(ctx, chUrl, database, tables);
-    if (m.maxBlock !== undefined) record.headBlock = m.maxBlock;
-    notes.push(`clickhouse max(_block_number_): ${JSON.stringify(m.perTable)}`);
+    // `_blocks_` (number, deleted — no leading-underscore injected columns) is created by every from-proto run
+    // regardless of the vault schema, so it is the head source of record; fall back to the data tables if it is
+    // absent or empty (e.g. an older sink run, or `_blocks_` not among `tables`).
+    const blocksHead = await chBlocksHead(ctx, chUrl, database);
+    if (blocksHead !== undefined) {
+      record.headBlock = blocksHead;
+      notes.push(`clickhouse _blocks_ max(number): ${blocksHead}`);
+    } else {
+      const m = await chMaxBlock(ctx, chUrl, database, tables);
+      if (m.maxBlock !== undefined) record.headBlock = m.maxBlock;
+      notes.push(`clickhouse max(_block_number_): ${JSON.stringify(m.perTable)}`);
+    }
+    record.rowCounts = await chRowCounts(ctx, chUrl, database, tables.includes("_blocks_") ? tables : [...tables, "_blocks_"]);
+    notes.push(`row counts: ${JSON.stringify(record.rowCounts)}`);
   } else notes.push("no ClickHouse URL (set CLICKHOUSE_RO_HTTP_URL or --clickhouse-url); headBlock not refreshed");
   try {
     record.chainHead = await ethBlockNumber(ctx, o.rpcUrl);

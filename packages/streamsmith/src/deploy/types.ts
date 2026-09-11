@@ -28,6 +28,8 @@ export interface DeployRecord {
   logFile?: string;
   cursorFile?: string;
   cursor?: { present: boolean; mtime?: string; raw?: string };
+  /** row counts per table (`deploy status`); null when the count query failed (e.g. table missing) */
+  rowCounts?: Record<string, number | null>;
   command?: string;
   /** ClickHouse views applied after the sink created the base tables (packages/erc4626-flows/sql/views.sql) */
   views?: ViewsRecord;

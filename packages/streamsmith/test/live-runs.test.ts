@@ -3,8 +3,9 @@
 // endpoint returned, copied into fixtures/live/ by `pnpm fixtures`.
 //
 // Two facts about the evidence, both deliberate:
-//  - the observation file was produced from `map_share_value_observations` (4 blocks) instead of `map_events`, to
-//    keep the free-tier block quota for the primary range; it is decoded with the module its envelope names.
+//  - the observation file is the gate's observation run (`map_events`, blocks 51092998..51093001): 2 lines, because
+//    block 51092998 also carries 2 flows and block 51093000 carries 2 flows + the 2 sampled observations; the 4 extra
+//    flow rows are outside the primary range and are counted below.
 //  - the primary file carries one `vaults` row for an unrelated chain-wide vault (0x98911f27…), which is what the
 //    first-sight probe is supposed to do; rpc_success_ratio_gte excludes it because it is not a configured vault.
 import { describe, it, expect } from "vitest";
@@ -74,7 +75,7 @@ describe("specs/gate.yaml assertions over the real live runs", () => {
     expect(runs.primary!.tables.share_value_observations).toHaveLength(0); // no multiple of 1800 in 51092254..51092453
     expect(runs.primary!.tables.vaults).toHaveLength(1);
     expect([runs.primary!.minBlock, runs.primary!.maxBlock]).toEqual([51092263, 51092449]);
-    expect(runs.observation!.lines).toBe(1);
+    expect(runs.observation!.lines).toBe(2);
     expect(runs.observation!.tables.share_value_observations).toHaveLength(2);
     expect(runs.primary!.decodeErrors).toEqual([]);
     expect(runs.primary!.envelopeErrors).toEqual([]);
@@ -92,7 +93,7 @@ describe("specs/gate.yaml assertions over the real live runs", () => {
     expect(detail("reference_flows_present")).toMatch(/4 reference rows present in 42 vault_flows rows; chain_id 8453 on every row/);
     expect(detail("execution_rate_sanity")).toMatch(/42 rows within \[1.0, 1.1\] across 2 vaults/);
     expect(detail("observation_present")).toMatch(/2 vaults observed exactly once at block 51093000 \(call_ok, interval 1800, hash\/timestamp match\)/);
-    expect(detail("ids_unique")).toMatch(/88 ids unique and well-formed/); // (42 flows + 1 vault) x 2 runs + 2 observations
+    expect(detail("ids_unique")).toMatch(/92 ids unique and well-formed/); // (42 flows + 1 vault) x 2 runs + 4 observation-run flows + 2 observations
   });
 
   it("no fail-level assertion fails, and the two warn-level cross-checks agree with the recorded eth_call values", () => {
@@ -103,7 +104,7 @@ describe("specs/gate.yaml assertions over the real live runs", () => {
     // 1.040743 / 1.039913 recorded from convertToAssets(1e18) at block 51093000; the rows carry 18 fractional
     // digits, so the comparison has to be decimal, not string
     expect(detail("observation_matches_reference")).toMatch(/4 values match the listed eth_call reference at block 51093000/);
-    expect(detail("rpc_success_ratio_gte")).toMatch(/44\/44 configured-vault rows have call_ok = 1.0000 \(need >= 0.99\)/);
+    expect(detail("rpc_success_ratio_gte")).toMatch(/48\/48 configured-vault rows have call_ok = 1.0000 \(need >= 0.99\)/);
     expect(detail("log_index_matches_rpc")).toMatch(/4 listed log_index values match the rows/);
     expect(detail("deterministic_rerun")).toMatch(/\(34 lines\) == primary_rerun/);
     expect(detail("output_decodes_against_contract")).toMatch(/69 lines decode as vaultflows.v1.Events with unknown fields rejected/);

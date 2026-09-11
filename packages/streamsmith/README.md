@@ -40,10 +40,10 @@ vendored: `substreams` (1.22.0), `buf` (1.72.0), optionally `substreams-sink-sql
 | `new-run` | mints a run id, creates `runs/<id>/`, records it in `runs/CURRENT` |
 | `gate` | executes `specs/gate.yaml`: build → 3 runs → 18 assertions → `runs/<id>/gate.json` |
 | `publish` | `substreams registry publish` (`--dry-run` records the command and the spkg sha256) |
-| `deploy hosted` | The Graph Market Portal API `sink_sql` deployment, polled to LIVE |
-| `deploy self-managed` | `substreams-sink-sql from-proto` (or `substreams sink clickhouse`) against your own DB |
-| `deploy views` | applies `packages/erc4626-flows/sql/views.sql` once the base tables exist |
-| `deploy status` \| `stop` \| `login` | live head/lag, teardown, device-code login (tokens are never stored) |
+| `deploy hosted` | The Graph Market Portal API `sink_sql` deployment, polled to LIVE. `--params` only when given explicitly (the spkg carries the manifest defaults); `--update --deployment-id ID` reconfigures instead of creating; on `unauthenticated` retries once via `RefreshToken` (`PORTAL_REFRESH_TOKEN`), then prints the `deploy login` instruction |
+| `deploy self-managed` | `substreams-sink-sql from-proto` (or `substreams sink clickhouse`) against your own DB. `--final-blocks-only` on by default (`--no-final-blocks-only` to opt out); cursor file and `--clickhouse-sink-info-folder` default under `runs/<runId>/` so a folder from a prior run against a different database can't make the sink skip `CREATE TABLE` |
+| `deploy views` | applies `packages/erc4626-flows/sql/views.sql` (or `--views FILE`, resolved against `--root`, not cwd) once the base tables exist, one statement per HTTP request; a missing file is an error only when `--views` is given explicitly |
+| `deploy status` \| `stop` \| `login` | live head/lag, teardown, device-code login (tokens are never stored). With `--clickhouse-url` this works even with no `runs/<id>/deploy.json`: head from `_blocks_`, chain head from `--rpc-url`, lag, row counts per table |
 | `schema-dump` | `SHOW CREATE TABLE` for the receipt's tables, normalized, for `sinkSchemaHash` |
 | `receipt` \| `receipt verify` | assembles / validates the receipt against `specs/receipt.schema.json` |
 | `mcp` | runs `pnpm --filter @ethonline26/mcpgen generate …`, binds `mcpManifestHash` into the receipt |
@@ -70,6 +70,7 @@ See `.env.example`. Summary:
 |---|---|---|
 | `SUBSTREAMS_API_TOKEN` (or `SUBSTREAMS_API_KEY`) | `gate`, `publish`, self-managed sink | data-plane JWT from `substreams auth`; without it the gate's runs exit 20 with `Unauthenticated` |
 | `PORTAL_TOKEN`, `PORTAL_ORG_ID` | `deploy hosted`, `deploy status/stop` | Portal API bearer — a different credential from the data-plane token |
+| `PORTAL_REFRESH_TOKEN` | `deploy hosted` | optional; on an `unauthenticated` Portal response, tried once via `RefreshToken` before falling back to the `deploy login` instruction |
 | `CLICKHOUSE_URL` | `deploy views`, `deploy status`, `schema-dump` | HTTP endpoint; `CLICKHOUSE_RO_HTTP_URL` is accepted as the legacy name |
 | `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD` | same | merged into `CLICKHOUSE_URL` when it carries no credentials; never logged (URLs are redacted) |
 | `CLICKHOUSE_DATABASE` (or `CLICKHOUSE_DB`) | same | falls back to `specs/streamsmith.yaml` `sink.connection.database` |
@@ -91,7 +92,10 @@ See `.env.example`. Summary:
 - **`parametersHash`** and **`parameters`** — canonical JSON of the vault list, sampling interval and chain id.
 - **`sinkSchemaHash`** — sha256 of the normalized DDL actually applied to the sink (`schema-dump`).
 - **`deploymentMode`** (`graph-market-hosted` or `self-managed-sink`), `deploymentId`, `endpoint`, `startBlock`,
-  `headBlock`, `lagBlocks`, `lagSeconds`, and `sink.hostFingerprint` (sha256 of `host:port` — never the DSN).
+  `headBlock`, `lagBlocks`, `lagSeconds`, and `sink.hostFingerprint` (sha256 of `host:port` — never the DSN). For
+  self-managed, `receipt --deploy-json <file>` reads these straight from `deploy status --json`'s output (any
+  `runs/<id>/deploy.json`-shaped file works); `outputModuleHash`/`moduleHashes` come from `substreams info <spkg>
+  --json` on the spkg being receipted, independent of `--deploy-json`.
 - **`gate`** — `passed`, the block `ranges` that were run, every assertion with its `detail`, and tool versions.
 - **`mcpManifestHash`** — sha256 of the manifest `@ethonline26/mcpgen` generated, written back by `streamsmith mcp`.
 

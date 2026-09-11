@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { readFile } from "node:fs/promises";
+import { readFile, access } from "node:fs/promises";
 import { join } from "node:path";
-import { PortalClient, field } from "../src/deploy/portal.ts";
+import { spawn } from "node:child_process";
+import { PortalClient, PortalError, field, isUnauthenticated } from "../src/deploy/portal.ts";
 import { deployHosted, AwaitingSecretError, summarizeState, isSettled } from "../src/deploy/hosted.ts";
-import { buildSinkCommand, parseDsn } from "../src/deploy/selfManaged.ts";
+import { buildSinkCommand, parseDsn, startSelfManaged, selfManagedStatus } from "../src/deploy/selfManaged.ts";
 import { chMaxBlock, chDumpSchema, redactUrl, clickhouseHttpUrl, clickhouseDatabase } from "../src/deploy/clickhouse.ts";
 import { splitSqlStatements, applyViews } from "../src/deploy/views.ts";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -96,13 +97,63 @@ describe("self-managed sink", () => {
   it("builds the from-proto command and parses the DSN without leaking secrets", () => {
     const { cmd, args } = buildSinkCommand({ runId: "r", streamsmith: ss, dsn: "clickhouse://sink:sinkpass@localhost:9000/vaultflows", spkg: "erc4626-flows-v0.1.0.spkg", endpoint: "base-mainnet.streamingfast.io:443", cursorFile: "runs/r/cursor.txt" });
     expect(cmd).toBe("substreams-sink-sql");
-    expect(args).toEqual(["from-proto", "clickhouse://sink:sinkpass@localhost:9000/vaultflows", "erc4626-flows-v0.1.0.spkg", "map_events", "-e", "base-mainnet.streamingfast.io:443", "--network", "base", "-s", "51001200", "--clickhouse-cursor-file-path", "runs/r/cursor.txt"]);
+    // --final-blocks-only defaults on (a bounded run does not flush its tail batch otherwise, sink-spike.md §6)
+    expect(args).toEqual(["from-proto", "clickhouse://sink:sinkpass@localhost:9000/vaultflows", "erc4626-flows-v0.1.0.spkg", "map_events", "-e", "base-mainnet.streamingfast.io:443", "--network", "base", "-s", "51001200", "--final-blocks-only", "--clickhouse-cursor-file-path", "runs/r/cursor.txt"]);
     const cli = buildSinkCommand({ runId: "r", streamsmith: ss, dsn: "d", spkg: "s", endpoint: "e", flavor: "substreams-cli", stopBlock: 5 });
     expect(cli.cmd).toBe("substreams");
     expect(cli.args.slice(0, 2)).toEqual(["sink", "clickhouse"]);
     expect(cli.args).toContain("--cursor-file-path");
     expect(parseDsn("clickhouse://sink:sinkpass@localhost:9000/vaultflows")).toEqual({ host: "localhost", port: 9000, database: "vaultflows", user: "sink" });
     expect(redactUrl("http://ro:ropass@localhost:8123/?database=vaultflows")).not.toContain("ropass");
+  });
+
+  it("adds --clickhouse-sink-info-folder when given, and --no-final-blocks-only drops --final-blocks-only", () => {
+    const withFolder = buildSinkCommand({ runId: "r", streamsmith: ss, dsn: "d", spkg: "s", endpoint: "e", cursorFile: "c.txt", sinkInfoFolder: "runs/r/sinkinfo" });
+    expect(withFolder.args).toEqual(["from-proto", "d", "s", "map_events", "-e", "e", "--network", "base", "-s", "51001200", "--final-blocks-only", "--clickhouse-cursor-file-path", "c.txt", "--clickhouse-sink-info-folder", "runs/r/sinkinfo"]);
+    const noFinal = buildSinkCommand({ runId: "r", streamsmith: ss, dsn: "d", spkg: "s", endpoint: "e", cursorFile: "c.txt", finalBlocksOnly: false });
+    expect(noFinal.args).not.toContain("--final-blocks-only");
+  });
+
+  it("startSelfManaged spawns with a run-scoped sink-info folder and cursor file, and --final-blocks-only by default", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const captured: { cmd?: string; args?: string[] } = {};
+      const fakeSpawn = ((cmd: string, args?: readonly string[]) => {
+        captured.cmd = cmd;
+        captured.args = args ? [...args] : [];
+        return { pid: 4321, unref: () => {} } as unknown as ReturnType<typeof spawn>;
+      }) as typeof spawn;
+      const r = await startSelfManaged(repo.ctx, { runId: "sm1", streamsmith: ss, dsn: "clickhouse://sink:pw@localhost:9000/vaultflows", spkg: "erc4626-flows-v0.1.0.spkg", endpoint: "e", spawnImpl: fakeSpawn });
+      expect(captured.cmd).toBe("substreams-sink-sql");
+      const a = captured.args!;
+      expect(a).toContain("--final-blocks-only");
+      const cursorIdx = a.indexOf("--clickhouse-cursor-file-path");
+      expect(a[cursorIdx + 1]).toBe(join(repo.root, "runs", "sm1", "clickhouse-cursor.txt"));
+      const folderIdx = a.indexOf("--clickhouse-sink-info-folder");
+      expect(folderIdx).toBeGreaterThan(-1);
+      const sinkInfoFolder = a[folderIdx + 1]!;
+      expect(sinkInfoFolder).toBe(join(repo.root, "runs", "sm1", "sinkinfo"));
+      // the folder is pre-created so the sink does not fail on a missing directory
+      expect(await access(sinkInfoFolder).then(() => true, () => false)).toBe(true);
+      expect(r.record.command).not.toContain("pw");
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("startSelfManaged: --no-final-blocks-only (finalBlocksOnly: false) omits the flag", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const captured: { args?: string[] } = {};
+      const fakeSpawn = ((cmd: string, args?: readonly string[]) => {
+        captured.args = args ? [...args] : [];
+        return { pid: 4322, unref: () => {} } as unknown as ReturnType<typeof spawn>;
+      }) as typeof spawn;
+      await startSelfManaged(repo.ctx, { runId: "sm2", streamsmith: ss, dsn: "clickhouse://sink:pw@localhost:9000/vaultflows", spkg: "erc4626-flows-v0.1.0.spkg", endpoint: "e", finalBlocksOnly: false, spawnImpl: fakeSpawn });
+      expect(captured.args).not.toContain("--final-blocks-only");
+    } finally {
+      await repo.cleanup();
+    }
   });
   it("computes head from ClickHouse and chain head from eth_blockNumber", async () => {
     const ctx = await createCtx({ root: REPO_ROOT, log: () => {}, fetch: async (url, init) => {
@@ -119,6 +170,41 @@ describe("self-managed sink", () => {
     const sql = await chDumpSchema(ctx, "http://ro:ropass@localhost:8123/", "default", ["vault_flows"]);
     expect(sql).toContain("-- default.vault_flows\nCREATE TABLE default.vault_flows\n(");
     expect(sql.endsWith(";\n")).toBe(true);
+  });
+
+  it("selfManagedStatus works with no deploy.json when --clickhouse-url is given: head from _blocks_, chain head from RPC, lag, row counts", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const fetch = async (url: string, init?: RequestInit) => {
+        const body = String(init?.body ?? "");
+        if (url.startsWith("https://rpc")) return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x30bb975" })); // 51100021
+        if (body.includes("_blocks_") && body.includes("max(number)")) return new Response("51100000\n");
+        if (body.startsWith("SELECT count()")) return new Response("171\n");
+        return new Response("");
+      };
+      const ctx = { ...repo.ctx, fetch };
+      const rec = await selfManagedStatus(ctx, { runId: "cold-1", streamsmith: ss, clickhouseUrl: "http://ro:ropass@localhost:8123/", rpcUrl: "https://rpc.example", database: "vaultflows" });
+      expect(rec.deploymentMode).toBe("self-managed-sink");
+      expect(rec.headBlock).toBe(51100000);
+      expect(rec.chainHead).toBe(51100021);
+      expect(rec.lagBlocks).toBe(21);
+      expect(rec.rowCounts).toBeDefined();
+      expect(Object.keys(rec.rowCounts!)).toContain("_blocks_");
+      expect(rec.rowCounts!["vault_flows"]).toBe(171);
+      const written = JSON.parse(await readFile(join(repo.root, "runs", "cold-1", "deploy.json"), "utf8"));
+      expect(written.headBlock).toBe(51100000);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("selfManagedStatus throws a clear error with no deploy.json and no --clickhouse-url", async () => {
+    const repo = await makeTempRepo();
+    try {
+      await expect(selfManagedStatus(repo.ctx, { runId: "cold-2", streamsmith: ss })).rejects.toThrow(/no deploy\.json for run cold-2/);
+    } finally {
+      await repo.cleanup();
+    }
   });
 });
 
@@ -184,5 +270,132 @@ describe("views after deploy (packages/erc4626-flows/sql/views.sql, optional)", 
     } finally {
       await repo.cleanup();
     }
+  });
+
+  it("--views explicit: a missing file is a hard error, not \"optional\"; a relative path resolves against ctx.root, never process.cwd()", async () => {
+    const repo = await makeTempRepo();
+    try {
+      expect(repo.root).not.toBe(process.cwd()); // sanity: the real cwd is the package root, not the temp repo
+      await expect(applyViews(repo.ctx, { url: "http://localhost:8123/", database: "default", viewsPath: "does/not/exist.sql", viewsPathExplicit: true })).rejects.toThrow(/--views does\/not\/exist\.sql not found/);
+      // the default path missing is still "optional" (no --views given) and is skipped, not an error
+      const skipped = await applyViews(repo.ctx, { url: "http://localhost:8123/", database: "default" });
+      expect(skipped.skipped).toMatch(/optional/);
+      // an explicit relative path resolves against ctx.root (repo.root here), not the real process.cwd()
+      const dir = join(repo.root, "custom", "sql");
+      await mkdir(dir, { recursive: true });
+      await writeFile(join(dir, "custom-views.sql"), "CREATE OR REPLACE VIEW v AS SELECT 1;\n");
+      const fetch = async (_url: string, init?: RequestInit) => {
+        const body = String(init?.body ?? "");
+        if (body.includes("engine IN ('View'")) return new Response("v\n");
+        return new Response("");
+      };
+      const ctx = { ...repo.ctx, fetch };
+      const rec = await applyViews(ctx, { url: "http://localhost:8123/", database: "default", viewsPath: "custom/sql/custom-views.sql", viewsPathExplicit: true });
+      expect(rec.skipped).toBeUndefined();
+      expect(rec.applied).toEqual(["CREATE OR REPLACE VIEW v AS SELECT 1"]);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+});
+
+describe("deployHosted: parameters, --update, and unauthenticated retry (docs/build/sink-spike.md §7)", () => {
+  const clickhouse = { server: "x", port: 9440, user: "default", database: "default", secure: true };
+
+  it("omits execution_config.parameters unless --params is passed explicitly, even though streamsmith.yaml carries params.value", async () => {
+    const repo = await makeTempRepo();
+    try {
+      expect(ss.params?.value).toBeTruthy(); // sanity: the config-derived default this bug used to leak
+      let execConfig: Record<string, unknown> | undefined;
+      const ff = fakeFetch((url, body) => {
+        const m = url.split("/").pop();
+        if (m === "HasDeploymentSecret") return { exists: true };
+        if (m === "Deploy") { execConfig = (body as { deployment_request: { sink_sql_deployment: { execution_config: Record<string, unknown> } } }).deployment_request.sink_sql_deployment.execution_config; return ""; }
+        if (m === "GetDeploymentState") return { success: true, deploymentState: { deploymentState: "DEPLOYMENT_STATE_DEPLOYED", executionStates: [{ state: "STATE_LIVE", currentBlock: 1, headBlock: 1 }] } };
+        return {};
+      });
+      const ctx = { ...repo.ctx, fetch: ff.fetch, env: { PORTAL_TOKEN: "t", PORTAL_ORG_ID: "org" } };
+      await deployHosted(ctx, { runId: "d10", streamsmith: ss, spkgUrl: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0", deploymentId: "dep-10", clickhouse });
+      expect(execConfig).not.toHaveProperty("parameters");
+
+      await deployHosted(ctx, { runId: "d11", streamsmith: ss, spkgUrl: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0", deploymentId: "dep-11", clickhouse, params: "vaults[]=0x1" });
+      expect(execConfig).toMatchObject({ parameters: "vaults[]=0x1" });
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("--update calls UpdateDeploymentConfig on the existing --deployment-id instead of Deploy/CreateDeployment", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const calledMethods: string[] = [];
+      const ff = fakeFetch((url) => {
+        const m = url.split("/").pop()!;
+        calledMethods.push(m);
+        if (m === "HasDeploymentSecret") return { exists: true };
+        if (m === "UpdateDeploymentConfig") return "";
+        if (m === "GetDeploymentState") return { success: true, deploymentState: { deploymentState: "DEPLOYMENT_STATE_DEPLOYED", executionStates: [{ state: "STATE_LIVE", currentBlock: 1, headBlock: 1 }] } };
+        return {};
+      });
+      const ctx = { ...repo.ctx, fetch: ff.fetch, env: { PORTAL_TOKEN: "t", PORTAL_ORG_ID: "org" } };
+      const r = await deployHosted(ctx, { runId: "d12", streamsmith: ss, spkgUrl: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0", deploymentId: "dep-12", clickhouse, update: true });
+      expect(calledMethods).not.toContain("CreateDeployment");
+      expect(calledMethods).not.toContain("Deploy");
+      expect(calledMethods).toContain("UpdateDeploymentConfig");
+      expect(r.record.deploymentId).toBe("dep-12");
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("--update requires --deployment-id", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const ctx = { ...repo.ctx, env: { PORTAL_TOKEN: "t", PORTAL_ORG_ID: "org" } };
+      await expect(deployHosted(ctx, { runId: "d13", streamsmith: ss, spkgUrl: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0", clickhouse, update: true })).rejects.toThrow(/--update requires --deployment-id/);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("retries once via RefreshToken on an unauthenticated response, then succeeds with the new token", async () => {
+    const repo = await makeTempRepo();
+    try {
+      let createCalls = 0;
+      const ff = fakeFetch((url) => {
+        const m = url.split("/").pop();
+        if (m === "CreateDeployment") { createCalls++; return createCalls === 1 ? { __status: 401, body: JSON.stringify({ code: "unauthenticated", message: "token expired" }) } : { deploymentId: "dep-14" }; }
+        if (m === "RefreshToken") return { access_token: "new-token", organization_id: "org" };
+        if (m === "HasDeploymentSecret") return { exists: true };
+        if (m === "Deploy") return "";
+        if (m === "GetDeploymentState") return { success: true, deploymentState: { deploymentState: "DEPLOYMENT_STATE_DEPLOYED", executionStates: [{ state: "STATE_LIVE", currentBlock: 1, headBlock: 1 }] } };
+        return {};
+      });
+      const ctx = { ...repo.ctx, fetch: ff.fetch, env: { PORTAL_TOKEN: "expired", PORTAL_ORG_ID: "org", PORTAL_REFRESH_TOKEN: "refresh-1" } };
+      const r = await deployHosted(ctx, { runId: "d15", streamsmith: ss, spkgUrl: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0", clickhouse });
+      expect(createCalls).toBe(2);
+      expect(r.record.deploymentId).toBe("dep-14");
+      expect(ff.calls.map((c) => c.url.split("/").pop())).toContain("RefreshToken");
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("throws the device-login instruction when unauthenticated and there is no PORTAL_REFRESH_TOKEN", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const ff = fakeFetch((url) => (url.endsWith("/CreateDeployment") ? { __status: 401, body: JSON.stringify({ code: "unauthenticated" }) } : {}));
+      const ctx = { ...repo.ctx, fetch: ff.fetch, env: { PORTAL_TOKEN: "expired", PORTAL_ORG_ID: "org" } };
+      await expect(deployHosted(ctx, { runId: "d16", streamsmith: ss, spkgUrl: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0", clickhouse })).rejects.toThrow(/deploy login/);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("isUnauthenticated recognizes 401 and the Connect-style unauthenticated code, but not other PortalErrors", () => {
+    expect(isUnauthenticated(new PortalError("Deploy failed: HTTP 401 nope", 401, "nope", "Deploy"))).toBe(true);
+    expect(isUnauthenticated(new PortalError("Deploy failed: HTTP 403 unauthenticated", 403, '{"code":"unauthenticated"}', "Deploy"))).toBe(true);
+    expect(isUnauthenticated(new PortalError("Deploy failed: HTTP 500 boom", 500, "boom", "Deploy"))).toBe(false);
+    expect(isUnauthenticated(new Error("network down"))).toBe(false);
   });
 });
