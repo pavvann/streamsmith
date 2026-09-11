@@ -61,14 +61,14 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 ## 5. MCP for vault flows (Sept 11)
 - [x] T5.1 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
 - [x] T5.2 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Hand-tune descriptions/SQL for the demo question; windows; limits.
-- [ ] T5.3 M A4 · Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
+- [~] T5.3 M O · (pending cloud receipt)  Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
 
 ## 6. Vaultpilot (Sept 11)
 - [x] T6.1 M A3 · (live: wallet + policy + agent signer created; daily cap app-side) Server (TS): Privy client, business wallet, agent authorization key as additional signer, policy JSON (earn → 2 vault ids, per-action cap, daily aggregation), revocation path documented.
 - [ ] T6.2 M A3 · Earn deposit / withdraw / position for both vault ids; capture tx hashes. dep: T0.7
-- [ ] T6.3 M A3 · Decision service: observed-window share-value growth (min 24h obs), min differential, outflow guardrail, cooldown, staleness refusal via `pipeline_status`, `maxWithdraw`, self-action exclusion, idempotency, intermediate-failure handling (withdraw ok → deposit fail ⇒ idle + alert).
-- [ ] T6.4 M A3 · One-screen UI (Next.js): position, two observations + exact window, decision + rule, policy result, provenance, tx links, control/revocation info.
-- [ ] T6.5 M A3 · Demo: denied unapproved vault, then approved below-cap action from live signal. Initial funding into the lower-growth vault.
+- [x] T6.3 M A10b · (113 tests) Decision service: observed-window share-value growth (min 24h obs), min differential, outflow guardrail, cooldown, staleness refusal via `pipeline_status`, `maxWithdraw`, self-action exclusion, idempotency, intermediate-failure handling (withdraw ok → deposit fail ⇒ idle + alert).
+- [x] T6.4 M A10b · (Next 15, builds) One-screen UI (Next.js): position, two observations + exact window, decision + rule, policy result, provenance, tx links, control/revocation info.
+- [~] T6.5 M A10b+O · (demo:denied verified live; deposit/rotate need funding) Demo: denied unapproved vault, then approved below-cap action from live signal. Initial funding into the lower-growth vault.
 - [ ] T6.6 C A3 · Intents for above-cap actions only if Earn path supports it first try.
 
 ## 7. Evidence, docs, video, submission (Sept 12–13)
