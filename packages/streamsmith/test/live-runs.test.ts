@@ -107,6 +107,6 @@ describe("specs/gate.yaml assertions over the real live runs", () => {
     expect(detail("rpc_success_ratio_gte")).toMatch(/48\/48 configured-vault rows have call_ok = 1.0000 \(need >= 0.99\)/);
     expect(detail("log_index_matches_rpc")).toMatch(/4 listed log_index values match the rows/);
     expect(detail("deterministic_rerun")).toMatch(/\(34 lines\) == primary_rerun/);
-    expect(detail("output_decodes_against_contract")).toMatch(/69 lines decode as vaultflows.v1.Events with unknown fields rejected/);
+    expect(detail("output_decodes_against_contract")).toMatch(/70 lines decode as vaultflows.v1.Events with unknown fields rejected/);
   });
 });
