@@ -15,6 +15,7 @@ import { runPublish, type PublishRecord } from "./publish.ts";
 import { deployHosted, hostedStatus, portalLogin, AwaitingSecretError, EXIT_AWAITING_SECRET } from "./deploy/hosted.ts";
 import { startSelfManaged, selfManagedStatus, stopSelfManaged } from "./deploy/selfManaged.ts";
 import { chDumpSchema, clickhouseHttpUrl, clickhouseDatabase } from "./deploy/clickhouse.ts";
+import { renderSchemaFromSpkg, SCHEMA_FLAVORS, type SchemaFlavor } from "./schema/render.ts";
 import { applyViews, DEFAULT_VIEWS_PATH } from "./deploy/views.ts";
 import type { DeployRecord } from "./deploy/types.ts";
 import { assembleReceipt, writeReceipt, hashSpkg, hashSchemaSql, loadReceipt, validateReceipt, loadReceiptSchema, receiptHash, receiptFileName } from "./receipt.ts";
@@ -28,6 +29,8 @@ const USAGE = `streamsmith <command> [options]
 Commands
   new-run                              mint a run id, create runs/<id>/, remember it in runs/CURRENT
   gate        [--gate specs/gate.yaml] [--reuse-runs] [--skip-build] [--offline] [--rpc-url URL] [--verbose]
+                                       --reuse-runs reuses the run jsonl only; it does NOT skip the build (pass
+                                       --skip-build too if you also want to keep the current spkg)
   publish     [--pkg-dir DIR] [--manifest substreams.yaml] [--spkg FILE] [--dry-run] [--team-slug S] [--verify-url]
   deploy hosted        --spkg-url URL [--deployment-id ID] [--update] [--name N] [--ch-server H --ch-port 9440 --ch-user U --ch-database D --ch-secure]
                        [--stop-block N] [--params STRING] [--poll-timeout SEC] [--views FILE]   (env PORTAL_TOKEN, PORTAL_ORG_ID, PORTAL_REFRESH_TOKEN; CLICKHOUSE_URL to apply views)
@@ -43,7 +46,12 @@ Commands
   deploy stop
   deploy login                         device-code login; prints export lines (never stores tokens)
   schema-dump [--clickhouse-url URL] [--database D] [--tables a,b] [--out FILE]
-  receipt     --spkg FILE (--schema-sql FILE | --schema-hash HEX) [--mcp-manifest FILE] [--deploy-json FILE] [--force]
+  schema-render --spkg FILE [--out FILE] [--database D] [--engine cloud|oss]
+                                       renders the from-proto sink's DDL offline from the spkg's proto descriptors
+                                       (no database, no network) and prints its sha256 — the same value schema-dump
+                                       produces against a live ClickHouse Cloud deployment
+  receipt     --spkg FILE (--schema-sql FILE | --schema-hash HEX | --schema-from-spkg [--database D] [--engine E])
+              [--mcp-manifest FILE] [--deploy-json FILE] [--force]
   receipt verify FILE                  validate a receipt file against specs/receipt.schema.json
   mcp         [--receipt FILE] [--out packages/mcp-vaultflows] [--proto specs/vaultflows.proto] [--views FILE]
                                        runs \`pnpm --filter @ethonline26/mcpgen generate …\`, binds mcpManifestHash into the receipt
@@ -61,7 +69,7 @@ const OPTIONS = {
   "stop-block": { type: "string" }, "start-block": { type: "string" }, "poll-timeout": { type: "string" }, dsn: { type: "string" }, endpoint: { type: "string" }, network: { type: "string" }, module: { type: "string" }, "sink-binary": { type: "string" }, flavor: { type: "string" }, "cursor-file": { type: "string" },
   "sink-info-folder": { type: "string" }, "no-final-blocks-only": { type: "boolean" },
   "clickhouse-url": { type: "string" }, "rpc-url": { type: "string" }, database: { type: "string" }, tables: { type: "string" }, out: { type: "string" }, views: { type: "string" }, wait: { type: "string" },
-  "schema-sql": { type: "string" }, "schema-hash": { type: "string" }, "mcp-manifest": { type: "string" }, "deploy-json": { type: "string" }, "publish-json": { type: "string" }, "gate-json": { type: "string" }, force: { type: "boolean" },
+  "schema-sql": { type: "string" }, "schema-hash": { type: "string" }, "schema-from-spkg": { type: "boolean" }, engine: { type: "string" }, "mcp-manifest": { type: "string" }, "deploy-json": { type: "string" }, "publish-json": { type: "string" }, "gate-json": { type: "string" }, force: { type: "boolean" },
   receipt: { type: "string" }, recording: { type: "string" }, proto: { type: "string" },
   id: { type: "string" }, title: { type: "string" }, skills: { type: "string" }, model: { type: "string" }, result: { type: "string" }, chain: { type: "string" }, goal: { type: "string" }, note: { type: "string", multiple: true },
 } as const;
@@ -111,6 +119,21 @@ async function applyViewsAfterDeploy(ctx: Ctx, v: Values, ss: StreamsmithConfig,
   if (s(v, "views")) { vo.viewsPath = s(v, "views")!; vo.viewsPathExplicit = true; }
   record.views = await applyViews(ctx, vo);
   await writeJson(path, record);
+}
+
+function schemaFlavor(v: Values): SchemaFlavor {
+  const e = s(v, "engine");
+  if (!e) return "clickhouse-cloud";
+  const f = SCHEMA_FLAVORS[e.toLowerCase()];
+  if (!f) throw new Error(`unknown --engine "${e}" (cloud | oss)`);
+  return f;
+}
+
+/** Render the sink's DDL from the spkg alone (schema-render, and `receipt --schema-from-spkg`). */
+async function renderSinkSchema(ctx: Ctx, v: Values, ss: StreamsmithConfig, spkgPath: string) {
+  const pkg = protoPackageOf(await readText(abs(ctx, ss.contract))) ?? "vaultflows.v1";
+  const database = clickhouseDatabase(ctx, s(v, "database"), ss.sink?.connection?.database);
+  return renderSchemaFromSpkg(ctx, abs(ctx, spkgPath), pkg, { database, flavor: schemaFlavor(v) });
 }
 
 async function findReceiptForRun(ctx: Ctx, runId: string): Promise<string | undefined> {
@@ -283,6 +306,17 @@ export async function main(argv: string[]): Promise<number> {
       out(v, `${relative(ctx.root, file)} sha256 ${sha256Hex(sql)} (${tables.length} tables)`, { file, sinkSchemaHash: sha256Hex(sql), tables });
       return 0;
     }
+    case "schema-render": {
+      const runId = await resolveRunId(ctx, v, true);
+      const ss = await loadStreamsmithConfig(ssPath);
+      const spkg = s(v, "spkg");
+      if (!spkg) throw new Error("--spkg is required");
+      const r = await renderSinkSchema(ctx, v, ss, spkg);
+      const file = s(v, "out") ? abs(ctx, s(v, "out")!) : paths.runs(ctx, runId, "schema.rendered.sql");
+      await writeText(file, r.sql);
+      out(v, `${relative(ctx.root, file)} sha256 ${r.hash} (${r.tables.length} tables, database ${r.database}, ${r.flavor})`, { file, sinkSchemaHash: r.hash, tables: r.tables, database: r.database, flavor: r.flavor });
+      return 0;
+    }
     case "receipt": {
       if (sub === "verify") {
         const file = rest[0] ?? s(v, "receipt");
@@ -305,9 +339,18 @@ export async function main(argv: string[]): Promise<number> {
       if (!spkg) throw new Error("--spkg is required (no publish.json / gate.json spkg path to fall back on)");
       const packageHash = await hashSpkg(abs(ctx, spkg));
       let sinkSchemaHash = s(v, "schema-hash")?.toLowerCase();
-      if (!sinkSchemaHash) {
+      if (b(v, "schema-from-spkg")) {
+        // offline source for sinkSchemaHash: the from-proto DDL is a pure function of the spkg's descriptors, so a
+        // dead/unreachable database no longer blocks the receipt (and the MCP behind it) — rehearsal-1.md R1
+        if (sinkSchemaHash || s(v, "schema-sql")) throw new Error("--schema-from-spkg cannot be combined with --schema-sql / --schema-hash");
+        const rendered = await renderSinkSchema(ctx, v, ss, spkg);
+        const renderedPath = paths.runs(ctx, runId, "schema.rendered.sql");
+        await writeText(renderedPath, rendered.sql);
+        ctx.log(`receipt: sinkSchemaHash rendered from ${spkg} (database ${rendered.database}, ${rendered.flavor}) -> ${relative(ctx.root, renderedPath)}`);
+        sinkSchemaHash = rendered.hash;
+      } else if (!sinkSchemaHash) {
         const sqlPath = s(v, "schema-sql") ? abs(ctx, s(v, "schema-sql")!) : paths.runs(ctx, runId, "schema.sql");
-        if (!(await exists(sqlPath))) throw new Error(`schema.sql not found (${relative(ctx.root, sqlPath)}); run \`streamsmith schema-dump\` or pass --schema-sql / --schema-hash`);
+        if (!(await exists(sqlPath))) throw new Error(`schema.sql not found (${relative(ctx.root, sqlPath)}); run \`streamsmith schema-dump\` (live database) or \`streamsmith schema-render --spkg <file>\` (offline), or pass --schema-sql / --schema-hash / --schema-from-spkg`);
         sinkSchemaHash = await hashSchemaSql(sqlPath);
       }
       let protoDescriptorHash = gate.descriptor?.specHash;

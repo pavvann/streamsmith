@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Guardian } from "../runtime/guardian.ts";
 import { runDataTool, runPipelineStatus } from "../runtime/tools.ts";
 import type { Manifest } from "../runtime/types.ts";
-import { FakeChainHead, FakeClickHouse, GENERATED_DIR, liveColumnsFromManifest, readFixtureReceipt, type FakeWorld } from "./helpers.ts";
+import { FakeChainHead, FakeClickHouse, GENERATED_DIR, liveColumnsFromManifest, readGeneratedReceipt, type FakeWorld } from "./helpers.ts";
 
 const manifest = JSON.parse(readFileSync(join(GENERATED_DIR, "manifest.json"), "utf8")) as Manifest;
 const tool = (n: string) => manifest.tools.find((t) => t.name === n)!;
@@ -12,7 +12,7 @@ const tool = (n: string) => manifest.tools.find((t) => t.name === n)!;
 async function setup(over: Partial<FakeWorld> = {}, chain = new FakeChainHead(51_093_100)) {
   const w: FakeWorld = { columns: liveColumnsFromManifest(manifest), headBlock: 51_093_000, headTimestamp: 1_788_975_347, counts: {}, rows: [], ...over };
   const ch = new FakeClickHouse(w);
-  const g = new Guardian({ manifest, readReceipt: async () => readFixtureReceipt(), clickhouse: ch, chainHead: chain, database: "vaultflows", maxLagBlocks: 300, checkIntervalMs: 60_000 });
+  const g = new Guardian({ manifest, readReceipt: async () => readGeneratedReceipt(), clickhouse: ch, chainHead: chain, database: "vaultflows", maxLagBlocks: 300, checkIntervalMs: 60_000 });
   await g.check();
   ch.calls = [];
   return { ctx: { guardian: g, clickhouse: ch }, ch, w };
@@ -60,10 +60,27 @@ describe("generated tool handlers", () => {
     const { ctx } = await setup({ rows: [], counts: { share_value_observations: 5 } });
     const r = await runDataTool(ctx, tool("share_value_growth"), {});
     const w = (r.payload.provenance as { observedWindow: Record<string, unknown> }).observedWindow;
-    expect(w).toMatchObject({ hours: null, source: "share_value_observations", startTimestamp: 1_788_975_347 - 7 * 86400, endTimestamp: 1_788_975_347 });
+    // `hours` used to be null whenever no windowHours argument was given, even though both bounds were known
+    // (runs/live/cloud/mcp-live-probe.txt); with no request it is the observed span, here exactly 7 days.
+    expect(w).toMatchObject({ hours: 168, source: "share_value_observations", observedFromTimestamp: 1_788_975_347 - 7 * 86400, observedToTimestamp: 1_788_975_347, startTimestamp: 1_788_975_347 - 7 * 86400, endTimestamp: 1_788_975_347 });
     const { ctx: ctx2 } = await setup({ rows: [], counts: { share_value_observations: 0 } });
     const r2 = await runDataTool(ctx2, tool("share_value_growth"), { windowHours: 24 });
     expect((r2.payload.provenance as { observedWindow: Record<string, unknown> }).observedWindow).toMatchObject({ hours: 24, observedFromTimestamp: null, observedToTimestamp: null, startTimestamp: null, endTimestamp: null });
+  });
+
+  it("derives observedWindow.hours from the bounds only when no window was requested", async () => {
+    const window = async (over: Parameters<typeof setup>[0], args: Record<string, unknown>) => {
+      const { ctx } = await setup({ counts: { share_value_observations: 5 }, ...over });
+      const r = await runDataTool(ctx, tool("share_value_growth"), args);
+      return (r.payload.provenance as { observedWindow: Record<string, unknown> }).observedWindow;
+    };
+    // a partial hour is reported as a fraction, never rounded away
+    expect(await window({ windowSpanSeconds: 5400 }, {})).toMatchObject({ hours: 1.5, startTimestamp: 1_788_975_347 - 5400, endTimestamp: 1_788_975_347 });
+    expect(await window({ windowSpanSeconds: 900 }, {})).toMatchObject({ hours: 0.25 });
+    // a requested window still wins, and start stays exactly `to - hours*3600` rather than the observed minimum
+    expect(await window({ windowSpanSeconds: 5400 }, { windowHours: 1 })).toMatchObject({ hours: 1, observedFromTimestamp: 1_788_975_347 - 5400, startTimestamp: 1_788_975_347 - 3600 });
+    // a requested window wider than the data clamps the start to the first observation, and hours stays as asked
+    expect(await window({ windowSpanSeconds: 5400 }, { windowHours: 48 })).toMatchObject({ hours: 48, startTimestamp: 1_788_975_347 - 5400 });
   });
 
   it("truncated is reported when the page is full", async () => {

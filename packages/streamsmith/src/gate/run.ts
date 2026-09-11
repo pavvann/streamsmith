@@ -67,8 +67,12 @@ export interface GateOptions {
   gatePath?: string;
   streamsmithPath?: string;
   runId?: string;
-  /** Skip build and runs; evaluate the jsonl already present at each run's output path. */
+  /**
+   * Reuse the jsonl already present at each run's output path instead of calling `substreams run`. Independent of
+   * `skipBuild`: the package is still built unless `skipBuild` is also set.
+   */
   reuseRuns?: boolean;
+  /** Skip the build step; `gate.json` records `build: { skipped: true }`. */
   skipBuild?: boolean;
   verbose?: boolean;
   /** Do not touch the public RPC for the warn-level cross-checks. */
@@ -181,7 +185,10 @@ export async function runGate(ctx: Ctx, opts: GateOptions = {}): Promise<GateOut
     for (const p of expectedOutputs) out[p] = await exists(isAbsolute(p) ? p : join(ctx.root, p));
     return out;
   };
-  if (!opts.reuseRuns && !opts.skipBuild) {
+  // `--reuse-runs` reuses the run outputs only. It used to imply `--skip-build`, which quietly produced a
+  // receipt-grade gate.json with `build: { skipped: true }` in it (rehearsal-1.md R7 / feedback/graph.md A14 #10);
+  // the two flags are independent, exactly as the help says.
+  if (!opts.skipBuild) {
     const [cmd, ...args] = gate.build.command;
     ctx.log(`gate: build in ${buildCwd}: ${gate.build.command.join(" ")}`);
     const r = await ctx.runner.run(cmd!, args, { cwd: buildCwdAbs, timeoutMs: gate.build.timeoutSeconds * 1000, echoStderr: opts.verbose });

@@ -23,16 +23,21 @@ interface WindowBounds { from: number | null; to: number | null }
 function observedWindowFor(spec: ToolSpec, args: ToolArgs, bounds: WindowBounds | null): ObservedWindow | null {
   if (!spec.window) return null;
   const p = spec.params.find((x) => x.kind === "windowHours");
-  const hours = p ? effectiveInt(p, args[p.name]) ?? null : null;
+  const requested = p ? effectiveInt(p, args[p.name]) ?? null : null;
   const from = bounds?.from ?? null;
   const to = bounds?.to ?? null;
+  // start/end are computed from the *requested* window so that `to - hours*3600` stays exact integer seconds; the
+  // reported `hours` then falls back to the span actually observed, which is what a caller checking "have we seen
+  // enough history to act?" needs (it used to be null whenever the tool had no windowHours argument).
+  const startTimestamp = to === null ? null : requested === null ? from : Math.max(from ?? 0, to - requested * 3600);
+  const hours = requested ?? (from !== null && to !== null ? (to - from) / 3600 : null);
   return {
     hours,
     column: spec.window.column,
     source: spec.window.table,
     observedFromTimestamp: from,
     observedToTimestamp: to,
-    startTimestamp: to === null ? null : hours === null ? from : Math.max(from ?? 0, to - hours * 3600),
+    startTimestamp,
     endTimestamp: to,
   };
 }

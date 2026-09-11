@@ -17,8 +17,22 @@ export const GENERATED_DIR = join(REPO_ROOT, "packages", "mcp-vaultflows");
 export const LIVE_PRIMARY_JSONL = join(REPO_ROOT, "runs", "live", "primary-51092254-51092454.jsonl");
 export const LIVE_OBSERVATION_JSONL = join(REPO_ROOT, "runs", "live", "observation-51092998-51093002.jsonl");
 
+/**
+ * The receipt the checked-in packages/mcp-vaultflows was generated from — `generate` copies it next to
+ * manifest.json, so it is the receipt that generated package's guardian must accept. It is NOT
+ * fixtures/receipt.example.json: since the real deployment (runs/20260910T234439Z-1fr9) the generated package is
+ * built from the real receipt, and pinning the tests to the fixture made every guardian check refuse with
+ * `receipt_mismatch` against the real manifest.
+ */
+export const GENERATED_RECEIPT = join(GENERATED_DIR, "receipt.json");
+
 export function readFixtureReceipt(): RuntimeReceipt {
   return JSON.parse(readFileSync(FIXTURE_RECEIPT, "utf8")) as RuntimeReceipt;
+}
+
+/** The receipt that matches `GENERATED_DIR/manifest.json`, whichever receipt that package was generated from. */
+export function readGeneratedReceipt(): RuntimeReceipt {
+  return JSON.parse(readFileSync(GENERATED_RECEIPT, "utf8")) as RuntimeReceipt;
 }
 
 /** Plausible live types for the injected columns (compared by name only, so any type must pass). */
@@ -40,6 +54,8 @@ export interface FakeWorld {
   counts: Record<string, number>;
   rows: Array<Record<string, unknown>>;
   failClickhouse?: string;
+  /** span of the faked min..max window bounds, in seconds (default 7 days) */
+  windowSpanSeconds?: number;
 }
 
 /** ClickHouse fake routed on the SQL text the runtime builds. Records every query. */
@@ -66,7 +82,8 @@ export class FakeClickHouse implements ClickHouseClient {
     if (sql.includes("AS window_end")) {
       const table = /FROM ([a-z_]+)/.exec(sql)![1]!;
       const n = this.world.counts[table] ?? 1;
-      return { meta: [], data: [{ window_start: String(this.world.headTimestamp - 7 * 86400), window_end: String(this.world.headTimestamp), n: String(n) }], rows: 1 };
+      const span = this.world.windowSpanSeconds ?? 7 * 86400;
+      return { meta: [], data: [{ window_start: String(this.world.headTimestamp - span), window_end: String(this.world.headTimestamp), n: String(n) }], rows: 1 };
     }
     return { meta: [{ name: "id", type: "String" }], data: this.world.rows, rows: this.world.rows.length };
   }

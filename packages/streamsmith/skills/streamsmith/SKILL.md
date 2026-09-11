@@ -50,7 +50,9 @@ pnpm --filter @ethonline26/streamsmith streamsmith deploy hosted --spkg-url <url
 pnpm --filter @ethonline26/streamsmith streamsmith deploy self-managed --spkg <file>   # --final-blocks-only on by default; sink-info folder + cursor file default under runs/<id>/
 pnpm --filter @ethonline26/streamsmith streamsmith deploy views      # applies packages/erc4626-flows/sql/views.sql; --views resolves against --root, missing explicit file is an error
 pnpm --filter @ethonline26/streamsmith streamsmith deploy status --clickhouse-url <url>   # works with no deploy.json: head from _blocks_, RPC chain head, lag, row counts
+pnpm --filter @ethonline26/streamsmith streamsmith schema-render --spkg <file> --database <db>   # the sink's DDL + sinkSchemaHash, offline
 pnpm --filter @ethonline26/streamsmith streamsmith receipt --spkg <file> --schema-sql <file> [--deploy-json <deploy-status.json>]
+pnpm --filter @ethonline26/streamsmith streamsmith receipt --spkg <file> --schema-from-spkg --database <db>   # same receipt with no database in reach
 pnpm --filter @ethonline26/streamsmith streamsmith mcp               # delegates to @ethonline26/mcpgen
 pnpm --filter @ethonline26/streamsmith streamsmith manifest start|finish
 pnpm --filter @ethonline26/streamsmith streamsmith casestudy
@@ -77,6 +79,31 @@ pnpm --filter @ethonline26/streamsmith streamsmith casestudy
 6. `mcp` — shells out to `pnpm --filter @ethonline26/mcpgen generate …` and writes `mcpManifestHash` back into the
    receipt. Streamsmith never generates MCP code itself.
 7. `manifest finish` / `casestudy` — the AI-usage record for the submission.
+
+## Known build-time traps
+
+Every one of these cost a blind rehearsal build time (docs/build/rehearsal-1.md); none is in the official skills.
+
+1. **No `sink:` block with only `module:` in `substreams.yaml`.** `substreams protogen` — the *first* command you
+   run — fails with `parsing sink configuration: sink: "type" unspecified`. For from-proto, either omit the `sink:`
+   block entirely and pass the module as a trailing positional argument, or write a complete `module` + `type` +
+   `config` block. (`substreams-sql/SKILL.md` says otherwise; it is wrong.)
+2. **`uint256` ABI arguments need `num-bigint = "0.4"` as a direct dependency.** Abigen writes bare
+   `num_bigint::Sign::…` paths into the file it generates in *your* crate, exactly like `ethabi`. And there is no
+   `From<&str>`/`TryFrom<&str>` for `substreams::scalar::BigInt`: parse decimal strings with
+   `use std::str::FromStr; BigInt::from_str(s)`.
+3. **Every `substreams run` needs `--limit-processed-blocks 0`** (see Hard rule 4) — store preparation alone is
+   ~91k blocks per stage here, and the CLI refuses over 10,000.
+4. **One `--clickhouse-sink-info-folder` per target database.** A folder left over from another database makes the
+   sink skip `CREATE TABLE` and then crash on insert. `deploy self-managed` defaults it under `runs/<runId>/`.
+5. **`deploy status` works with no `deploy.json`** — pass `--clickhouse-url` (head from `_blocks_`) and
+   `--rpc-url` (chain head). You do not need a prior `deploy self-managed` in this run to report head and lag.
+6. **A dead database no longer blocks the receipt.** `schema-render --spkg <file>` renders the from-proto DDL from
+   the package's own descriptors and prints the same `sinkSchemaHash` a live `schema-dump` would; `receipt
+   --schema-from-spkg` uses it directly. Pass `--database` (or set `CLICKHOUSE_DATABASE`): the database name
+   prefixes every table and is part of the hash.
+7. **`gate --reuse-runs` does not skip the build.** It reuses the run jsonl only; add `--skip-build` when you also
+   mean to keep the current spkg.
 
 ## The fail-closed contract
 

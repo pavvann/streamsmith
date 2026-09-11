@@ -30,7 +30,9 @@ Every successful response carries `provenance`: `packageHash`, `outputModuleHash
 `sinkSchemaHash`, `schemaColumnSetHash`, `deploymentMode`, `deploymentId`, `chainId`, `headBlock`, `headTimestamp`, `chainHead`,
 `lagBlocks`, `observedWindow` and `checkedAt`. `observedWindow` is measured on the data, never on configuration: `observedFromTimestamp` /
 `observedToTimestamp` are min/max of the window column over live rows, `startTimestamp` / `endTimestamp` are this query's bounds
-(`hours` back from the newest row, or the whole observed window when `hours` is null).
+(the requested `windowHours` back from the newest row, or the whole observed window when the tool takes no such argument).
+`hours` is the length of that window: the requested value when there is one, otherwise the observed span
+`(observedToTimestamp - observedFromTimestamp) / 3600`; it is null only when the source table is empty.
 
 SQL is read-only and parameterized: identifiers come from the manifest, values are bound as ClickHouse query parameters
 (`{name:Type}` + `param_name`), `readonly=1`, `max_execution_time` and a 10 s client timeout on every request, `LIMIT` <= 500.

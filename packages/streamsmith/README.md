@@ -45,7 +45,8 @@ vendored: `substreams` (1.22.0), `buf` (1.72.0), optionally `substreams-sink-sql
 | `deploy views` | applies `packages/erc4626-flows/sql/views.sql` (or `--views FILE`, resolved against `--root`, not cwd) once the base tables exist, one statement per HTTP request; a missing file is an error only when `--views` is given explicitly |
 | `deploy status` \| `stop` \| `login` | live head/lag, teardown, device-code login (tokens are never stored). With `--clickhouse-url` this works even with no `runs/<id>/deploy.json`: head from `_blocks_`, chain head from `--rpc-url`, lag, row counts per table |
 | `schema-dump` | `SHOW CREATE TABLE` for the receipt's tables, normalized, for `sinkSchemaHash` |
-| `receipt` \| `receipt verify` | assembles / validates the receipt against `specs/receipt.schema.json` |
+| `schema-render` | the same DDL rendered **offline** from the spkg's proto descriptors — no database, no network — and its sha256; `--database` / `--engine cloud\|oss` select the two deployment-dependent parts |
+| `receipt` \| `receipt verify` | assembles / validates the receipt against `specs/receipt.schema.json`. `sinkSchemaHash` comes from `--schema-sql` (a live dump), `--schema-hash`, or `--schema-from-spkg` (rendered offline) |
 | `mcp` | runs `pnpm --filter @ethonline26/mcpgen generate …`, binds `mcpManifestHash` into the receipt |
 | `manifest start\|finish`, `casestudy` | the AI-usage record for the submission |
 | `hash descriptor\|spkg\|sql\|params\|file` | the individual hashes, for debugging a mismatch |
@@ -73,7 +74,7 @@ See `.env.example`. Summary:
 | `PORTAL_REFRESH_TOKEN` | `deploy hosted` | optional; on an `unauthenticated` Portal response, tried once via `RefreshToken` before falling back to the `deploy login` instruction |
 | `CLICKHOUSE_URL` | `deploy views`, `deploy status`, `schema-dump` | HTTP endpoint; `CLICKHOUSE_RO_HTTP_URL` is accepted as the legacy name |
 | `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD` | same | merged into `CLICKHOUSE_URL` when it carries no credentials; never logged (URLs are redacted) |
-| `CLICKHOUSE_DATABASE` (or `CLICKHOUSE_DB`) | same | falls back to `specs/streamsmith.yaml` `sink.connection.database` |
+| `CLICKHOUSE_DATABASE` (or `CLICKHOUSE_DB`) | same, plus `schema-render` / `receipt --schema-from-spkg` | falls back to `specs/streamsmith.yaml` `sink.connection.database`; it is part of `sinkSchemaHash`, so it matters offline too |
 | `BASE_RPC_URL` | `gate` warn-level checks | defaults to `https://mainnet.base.org`; `gate --offline` skips the RPC entirely |
 
 ## What the receipt binds
@@ -90,7 +91,9 @@ See `.env.example`. Summary:
   the algorithm written out in `specs/gate.yaml` `descriptorHash` (whose embedded Python script is the oracle the
   test suite compares against).
 - **`parametersHash`** and **`parameters`** — canonical JSON of the vault list, sampling interval and chain id.
-- **`sinkSchemaHash`** — sha256 of the normalized DDL actually applied to the sink (`schema-dump`).
+- **`sinkSchemaHash`** — sha256 of the normalized DDL applied to the sink. Two interchangeable sources: a live
+  `schema-dump` (`SHOW CREATE TABLE` over HTTP) or `schema-render --spkg <file>` / `receipt --schema-from-spkg`,
+  which derive the same DDL from the package's proto annotations offline. See below.
 - **`deploymentMode`** (`graph-market-hosted` or `self-managed-sink`), `deploymentId`, `endpoint`, `startBlock`,
   `headBlock`, `lagBlocks`, `lagSeconds`, and `sink.hostFingerprint` (sha256 of `host:port` — never the DSN). For
   self-managed, `receipt --deploy-json <file>` reads these straight from `deploy status --json`'s output (any
@@ -98,6 +101,32 @@ See `.env.example`. Summary:
   --json` on the spkg being receipted, independent of `--deploy-json`.
 - **`gate`** — `passed`, the block `ranges` that were run, every assertion with its `detail`, and tool versions.
 - **`mcpManifestHash`** — sha256 of the manifest `@ethonline26/mcpgen` generated, written back by `streamsmith mcp`.
+
+### `sinkSchemaHash` without a database
+
+The from-proto sink derives its DDL from the annotated proto and nothing else, so the DDL — and its hash — is a pure
+function of the spkg. `streamsmith schema-render --spkg <file> --database <db>` renders it with no database and no
+network, and `streamsmith receipt --schema-from-spkg` writes that hash into the receipt (and keeps the rendered SQL
+at `runs/<runId>/schema.rendered.sql`). This is what stops a full disk or a cold container from taking out the
+receipt and the MCP behind it, as it did in the blind rehearsal (`docs/build/rehearsal-1.md` R1).
+
+The two hashes are **equal, not merely comparable** — no normalization is applied to one side and not the other.
+`test/schema-render.test.ts` renders `packages/erc4626-flows/erc4626-flows-v0.1.0.spkg` and asserts the result is
+byte-identical to `runs/20260910T234439Z-1fr9/schema.sql`, the dump taken from the real ClickHouse Cloud deployment
+(`6d57b7cd…`). What is rendered is therefore the DDL as the **server reports it back**, which differs from the
+`CREATE TABLE IF NOT EXISTS …` string the sink sends only in ways the server fixes deterministically: `VARCHAR` →
+`String`, `timestamp` → `DateTime`, `Decimal128(18)` → `Decimal(38, 18)`, backticked column names one per line, and
+the always-echoed `index_granularity = 8192`.
+
+Two inputs are deployment-dependent and must be supplied, because they are genuinely not in the spkg:
+
+| input | flag | default |
+|---|---|---|
+| database name (it prefixes every table, so it is inside the hash) | `--database` | `CLICKHOUSE_DATABASE`, else `specs/streamsmith.yaml` `sink.connection.database` |
+| engine: ClickHouse Cloud substitutes `SharedReplacingMergeTree('/clickhouse/tables/{uuid}/{shard}', '{replica}', …)` for the `ReplacingMergeTree(_version_, _deleted_)` the sink asks for | `--engine cloud\|oss` | `cloud` |
+
+`--engine cloud` is the verified one (it is what the committed dump was taken from); `oss` renders the plain engine
+a self-hosted server keeps, and is not pinned against a live dump.
 
 ## The fail-closed contract the MCP implements
 
@@ -121,6 +150,8 @@ src/gate/               run.ts (orchestrator), assertions.ts (one evaluator per 
                         jsonl.ts (protojson envelopes), contract.ts (descriptor-driven decode), rpc.ts
 src/proto/descriptor.ts normalized descriptor hash (spec side and spkg side) + `substreams info`
 src/deploy/             portal.ts, hosted.ts, selfManaged.ts, clickhouse.ts, views.ts, rpc.ts
+src/schema/render.ts    the from-proto sink's ClickHouse DDL, rendered offline from the spkg's descriptors
+src/schema/jsonschema.ts  the JSON Schema validator the receipt is checked against
 src/receipt.ts          assemble, validate, hash, and the fail-closed check
 src/mcp.ts              delegation to @ethonline26/mcpgen
 skills/streamsmith/     the Claude Code skill; .claude-plugin/plugin.json packages it

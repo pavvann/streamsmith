@@ -8,7 +8,7 @@ import { sha256Hex, sha256Canonical } from "../src/hash.ts";
 import { parseReceipt, receiptParametersCanonical, validateJsonSchema } from "../src/receipt.ts";
 import type { Manifest } from "../runtime/types.ts";
 import { parse as parseYaml } from "yaml";
-import { FIXTURE_RECEIPT, GENERATED_DIR, PKG_ROOT, SPEC_GATE_YAML, SPEC_PROTO, SPEC_RECEIPT_SCHEMA, VIEWS_SQL } from "./helpers.ts";
+import { FIXTURE_RECEIPT, GENERATED_DIR, GENERATED_RECEIPT, PKG_ROOT, SPEC_GATE_YAML, SPEC_PROTO, SPEC_RECEIPT_SCHEMA, VIEWS_SQL } from "./helpers.ts";
 
 const temps: string[] = [];
 async function tmp(): Promise<string> {
@@ -53,8 +53,10 @@ describe("generator", () => {
       expect(await readFile(join(a, rel), "utf8"), rel).toBe(await readFile(join(b, rel), "utf8"));
     }
     expect(sha256Hex(await readFile(ra.manifestPath))).toBe(sha256Hex(await readFile(rb.manifestPath)));
-    // and the checked-in generated package is what this generator produces from the fixture
-    expect(await readFile(join(GENERATED_DIR, "manifest.json"), "utf8")).toBe(await readFile(ra.manifestPath, "utf8"));
+    // and the checked-in generated package is what this generator produces from the receipt it ships (which since
+    // the real deployment is the real receipt, not fixtures/receipt.example.json)
+    const c = await generate({ ...common, receipt: GENERATED_RECEIPT, out: await tmp() });
+    expect(await readFile(join(GENERATED_DIR, "manifest.json"), "utf8"), "packages/mcp-vaultflows is stale — re-run `streamsmith mcp`").toBe(await readFile(c.manifestPath, "utf8"));
   });
 
   it("manifest carries the receipt identity, expected column sets, hashes and 7 tools", async () => {
@@ -63,8 +65,9 @@ describe("generator", () => {
     expect(Object.keys(m.expectedSchema.tables)).toEqual(["vault_flows", "share_value_observations", "vaults", "share_transfers"]);
     expect(m.expectedSchema.columnSetHash).toMatch(/^[0-9a-f]{64}$/);
     expect(m.toolsHash).toBe(sha256Canonical(m.tools));
-    expect(m.receipt.sha256).toBe(sha256Hex(await readFile(FIXTURE_RECEIPT)));
-    expect(m.package).toMatchObject({ name: "erc4626-flows", version: "v0.1.0", outputModule: "map_events", outputModuleHash: "a56f04211f28c507923e4d3949033e2c3d9c0fa1", chainId: 8453, deploymentMode: "self-managed-sink", startBlock: 51_001_200 });
+    expect(m.receipt.sha256).toBe(sha256Hex(await readFile(GENERATED_RECEIPT)));
+    // the real deployment's module hash (receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json)
+    expect(m.package).toMatchObject({ name: "erc4626-flows", version: "v0.1.0", outputModule: "map_events", outputModuleHash: "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a", chainId: 8453, deploymentMode: "self-managed-sink", startBlock: 51_001_200 });
     expect(m.vaults).toEqual(["0x050ce30b927da55177a4914ec73480238bad56f0", "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"]);
     expect(m.policy).toMatchObject({ maxLagBlocksDefault: 300, checkIntervalSeconds: 60, queryTimeoutMs: 10_000, maxLimit: 500 });
     const vf = m.tools.find((t) => t.name === "vault_flows")!;

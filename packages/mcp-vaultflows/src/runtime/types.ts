@@ -146,7 +146,10 @@ export interface RuntimeReceipt {
  * rows of `source`), never from configuration such as the pipeline's start block.
  */
 export interface ObservedWindow {
-  /** requested trailing window in hours; null = the entire observed window */
+  /**
+   * Length of the window in hours: the requested trailing window when the tool takes one, otherwise the observed
+   * span `(observedToTimestamp - observedFromTimestamp) / 3600`. Null only when the table is empty.
+   */
   hours: number | null;
   /** unix-seconds column the window applies to */
   column: string;

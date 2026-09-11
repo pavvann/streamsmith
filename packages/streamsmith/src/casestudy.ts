@@ -95,7 +95,8 @@ export async function writeCaseStudy(ctx: Ctx, o: CaseStudyOptions): Promise<{ p
     "substreams build",
     firstRun ? firstRun.command.replace(/^.*?substreams /, "substreams ") : `substreams run substreams.yaml ${gate?.package.outputModule ?? "map_events"} -e base-mainnet.streamingfast.io:443 -s <start> -t +200 -o jsonl`,
     ...(runSpec ? [`# gate range ${runSpec[1].range}: ${runSpec[1].lines} jsonl lines, rows ${JSON.stringify(runSpec[1].rows)}`] : []),
-    `pnpm -C packages/streamsmith streamsmith gate --run-id ${o.runId} --reuse-runs`,
+    // --skip-build as well: the spkg from the `substreams build` two lines up is the one being gated
+    `pnpm -C packages/streamsmith streamsmith gate --run-id ${o.runId} --reuse-runs --skip-build`,
   ];
   const provided = [
     "`substreams-dev` / `substreams-ethereum`: manifest, module graph, ABI decoding and `eth_call` batching patterns used to write the package.",

@@ -239,22 +239,54 @@ describe("runGate over specs/gate.yaml (build and runs faked; buf and substreams
     }
   });
 
-  it("--reuse-runs evaluates the existing jsonl without build or run", async () => {
+  it("--reuse-runs --skip-build evaluates the existing jsonl without build or run", async () => {
     const repo = await makeTempRepo({ gateYaml: await gateWithoutBuf() });
     try {
       const first = await runGate(repo.ctx, { runId: "t6", offline: true });
       expect(first.exitCode).toBe(0);
       const before = repo.runner.fake.calls.length;
-      const again = await runGate(repo.ctx, { runId: "t6", reuseRuns: true, offline: true });
+      const again = await runGate(repo.ctx, { runId: "t6", reuseRuns: true, skipBuild: true, offline: true });
       expect(again.exitCode).toBe(0);
       expect(repo.runner.fake.calls.slice(before).some((c) => c.args[0] === "run" || c.args[0] === "build")).toBe(false);
       expect(again.report.build?.skipped).toBe(true);
       expect(again.report.runs.primary?.reused).toBe(true);
-      const missing = await runGate(repo.ctx, { runId: "t6-missing", reuseRuns: true, offline: true });
+      const missing = await runGate(repo.ctx, { runId: "t6-missing", reuseRuns: true, skipBuild: true, offline: true });
       expect(missing.exitCode).toBe(20);
       expect(missing.report.error).toMatch(/--reuse-runs: runs\/t6-missing\/primary.jsonl does not exist/);
     } finally {
       await repo.cleanup();
     }
   }, 120000);
+
+  /**
+   * rehearsal-1.md R7 / feedback/graph.md A14 #10: `--reuse-runs` used to imply `--skip-build`, so re-checking the
+   * assertions quietly produced a gate.json with no build evidence in it. The flags are independent.
+   */
+  it("--reuse-runs alone still builds; only --skip-build skips the build", async () => {
+    const repo = await makeTempRepo({ gateYaml: await gateWithoutBuf() });
+    try {
+      expect((await runGate(repo.ctx, { runId: "t7", offline: true })).exitCode).toBe(0);
+      const before = repo.runner.fake.calls.length;
+      const reused = await runGate(repo.ctx, { runId: "t7", reuseRuns: true, offline: true });
+      expect(reused.exitCode).toBe(0);
+      const since = repo.runner.fake.calls.slice(before);
+      expect(since.filter((c) => c.cmd === "substreams" && c.args[0] === "build")).toHaveLength(1);
+      expect(since.some((c) => c.cmd === "substreams" && c.args[0] === "run")).toBe(false);
+      expect(reused.report.build?.skipped).toBe(false);
+      expect(reused.report.build?.logFile).toBe("runs/t7/build.log");
+      expect(reused.report.runs.primary?.reused).toBe(true);
+
+      const skipped = await runGate(repo.ctx, { runId: "t7", reuseRuns: true, skipBuild: true, offline: true });
+      expect(skipped.report.build?.skipped).toBe(true);
+      // a build failure now reaches the exit code even when the runs are reused
+      const broken = await makeTempRepo({ gateYaml: await gateWithoutBuf(), buildFails: true });
+      try {
+        expect((await runGate(broken.ctx, { runId: "t8", reuseRuns: true, offline: true })).exitCode).toBe(10);
+      } finally {
+        await broken.cleanup();
+      }
+    } finally {
+      await repo.cleanup();
+    }
+  }, 180000);
 });

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { Guardian } from "../runtime/guardian.ts";
 import { columnSetHash, diffColumnSets, normalizeType } from "../runtime/schemahash.ts";
 import type { Manifest, RuntimeReceipt } from "../runtime/types.ts";
-import { FakeChainHead, FakeClickHouse, GENERATED_DIR, liveColumnsFromManifest, readFixtureReceipt, type FakeWorld } from "./helpers.ts";
+import { FakeChainHead, FakeClickHouse, GENERATED_DIR, liveColumnsFromManifest, readGeneratedReceipt, type FakeWorld } from "./helpers.ts";
 
 const manifest = JSON.parse(readFileSync(join(GENERATED_DIR, "manifest.json"), "utf8")) as Manifest;
 
@@ -16,7 +16,7 @@ function guardian(w: FakeWorld, opts: { chain?: FakeChainHead; receipt?: Runtime
   const ch = new FakeClickHouse(w);
   const g = new Guardian({
     manifest,
-    readReceipt: async () => opts.receipt ?? readFixtureReceipt(),
+    readReceipt: async () => opts.receipt ?? readGeneratedReceipt(),
     clickhouse: ch,
     chainHead: opts.chain ?? new FakeChainHead(51_093_100),
     database: "vaultflows",
@@ -51,7 +51,7 @@ describe("fail-closed guardian", () => {
       outputModuleHash: manifest.package.outputModuleHash,
       parametersHash: manifest.receipt.parametersHash,
       deploymentMode: "self-managed-sink",
-      deploymentId: "fixture-local-clickhouse",
+      deploymentId: manifest.package.deploymentId, // null for a self-managed sink, an id for a hosted one
       headBlock: 51_093_000,
       chainHead: 51_093_100,
       lagBlocks: 100,
@@ -139,7 +139,7 @@ describe("fail-closed guardian", () => {
   });
 
   it("refuses receipt_mismatch when the receipt on disk no longer matches the generated manifest", async () => {
-    const receipt = { ...readFixtureReceipt(), packageHash: "0".repeat(64) };
+    const receipt = { ...readGeneratedReceipt(), packageHash: "0".repeat(64) };
     const { g } = guardian(world(), { receipt });
     await g.check();
     const r = g.gate()!;
@@ -166,7 +166,7 @@ describe("fail-closed guardian", () => {
     const { g } = guardian(w, { chain: new FakeChainHead(10_000) });
     await g.check();
     expect(g.gate()!.reason).toBe("schema_mismatch");
-    const { g: g2 } = guardian(w, { chain: new FakeChainHead(10_000), receipt: { ...readFixtureReceipt(), parametersHash: "f".repeat(64) } });
+    const { g: g2 } = guardian(w, { chain: new FakeChainHead(10_000), receipt: { ...readGeneratedReceipt(), parametersHash: "f".repeat(64) } });
     await g2.check();
     expect(g2.gate()!.reason).toBe("receipt_mismatch");
   });
