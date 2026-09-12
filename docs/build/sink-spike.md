@@ -265,8 +265,52 @@ DSN: `clickhouse://sink:<pw>@<host>:9440/vaultflows?secure=true`. No stop block 
 
 **Finding (cost one failed run):** the sink stores a per-schema "sink info" file (`vaultflows_schema_hash.txt`) in `--clickhouse-sink-info-folder` (default: cwd). A file left by the LOCAL run made the CLOUD run read `sink_info: {schema_hash: 07a6ec95…}`, skip `CREATE TABLE`, and die on `Table vaultflows._blocks_ does not exist` at block 51001204. Always give each target database its own sink-info folder. Streamsmith's `deploy` self-managed mode must pass this flag (open item for the CLI).
 
-Hosted deployment `depdehi448c87998ebb763b`: first Deploy crash-looped on `param for module "vaults[]"` (raw params string passed to `execution_config.parameters`; the spkg already carries the manifest defaults, so omit the field). Retry blocked on an expired Portal token (refresh window ~8 h); needs a new device login.
+Hosted deployment `depdehi448c87998ebb763b`: first Deploy crash-looped on `param for module "vaults[]"` (raw params string passed to `execution_config.parameters`; the spkg already carries the manifest defaults, so omit the field). Retry blocked on an expired Portal token (refresh window ~8 h); needs a new device login. Resolved in §7.2.
 
 ### §7.1 Backfill telemetry (05:32 IST)
 Rate ≈ 4,050 blocks/min against ClickHouse Cloud (ap-south-1) with `--final-blocks-only`; 77k blocks in 19 min; ETA to live ≈ 17 min from a 146k-block start gap. Row counts at block 51,078,275: vault_flows 8,971 · share_value_observations 22 · vaults 493 (chain-wide first-sight meta).
 **Column names in the sink's block table are `number, hash, timestamp, version, deleted`** (table `_blocks_`), not `_block_number_`; data tables carry injected `_block_number_`, `_block_timestamp_`, `_version_`, `_deleted_`. Anything computing head/lag from `_blocks_` must use `max(number)`.
+
+### §7.2 Hosted deployment: root cause and fix (Sept 12)
+
+**Root cause.** A hosted deployment's container start command is generated once, at the first
+`Deploy` for that deployment id. `depdehi448c87998ebb763b` was created with
+`execution_config.parameters` set to the raw module parameter string
+(`vaults[]=0x…&vaults[]=0x…&interval=1800&chain_id=8453`). The runtime splits that field as
+`-p <string>`, so the first token became a module name and the pod died with
+`param for module "vaults[]": module not found`.
+
+**Why the obvious repairs do not work.** `UpdateDeploymentConfig` restarts the pods but does not
+regenerate the start command, so the bad `-p` survives the restart. `Deploy` on an existing
+deployment id is rejected as already existing. Neither call can undo a start command that was
+generated wrong.
+
+**Fix.** Create a *fresh* deployment with no `parameters` field at all. The published spkg carries
+the manifest's `params:` defaults, so the modules receive their configuration from the package and
+the runner passes nothing. `depnywi036749442f3c55e7` was deployed that way on Sept 12 and its pod
+log confirms the difference:
+
+```
+"sinker from CLI"  manifest_path https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0
+                   params []  output_module_name map_events  start_block 51001200  stop_block 0
+"sinker configured" output_module_type proto:vaultflows.v1.Events
+                   output_module_hash 8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a
+"creating schema"  name vaultflows_hosted  root_message_descriptor Events
+```
+
+`params []` is the fix, and `output_module_hash` is the same module hash the gate and the receipt
+bind. The old deployment is left in place for the operator to delete from the Graph Market UI; no
+delete endpoint is called from this repository.
+
+**Consequence for tooling.** Because a hosted deployment must not be re-`Deploy`ed just to produce
+evidence about itself, `streamsmith deploy hosted --attach --deployment-id ID` records a running
+deployment from read-only calls only (`GetDeploymentState`, `Logs`) plus the sink's own database and
+an independent chain head. The Portal reports a catching-up pod's progress in `head_block` with no
+`current_block`, so head and lag are taken from `max(number)` in the target database's `_blocks_`
+table against `eth_blockNumber`, and the Portal's own numbers are kept as notes rather than
+relabelled.
+
+**Grants.** The hosted sink connects as `default`. The `ro` user already had `SELECT` on
+`vaultflows_hosted`, but the `sink` user has no grants there, so the views in
+`packages/erc4626-flows/sql/views.sql` are applied with the admin credential
+(`streamsmith deploy views --database vaultflows_hosted`), not the sink credential.

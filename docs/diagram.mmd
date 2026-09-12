@@ -8,7 +8,7 @@ flowchart TD
         direction TB
         GATE["gate<br/>specs/gate.yaml, 18 assertions"]
         PUBLISH["publish<br/>substreams.dev registry"]
-        DEPLOY["deploy<br/>self-managed-sink live;<br/>graph-market-hosted pending"]
+        DEPLOY["deploy<br/>graph-market-hosted + self-managed-sink,<br/>one receipt each"]
         RECEIPT["receipt<br/>receipts/erc4626-flows-*.json"]
         MCPGEN["mcp<br/>packages/mcpgen"]
         GATE --> PUBLISH --> DEPLOY --> RECEIPT --> MCPGEN

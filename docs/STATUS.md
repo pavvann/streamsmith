@@ -56,16 +56,47 @@ A dated record of what was built, what it measured, and what is still open. Time
 - 07:45: the A14 blind rehearsal PASSED (gate 18/18 on the first gate attempt; 3 build-time traps found). `contract-v1` tagged. A16 fixing the traps + offline schema hash + observedWindow.hours. README/ARCHITECTURE/SUBMISSION written.
 - 12:30: Vaultpilot UI redesigned (A17, two rounds); screenshot docs/build/ui-redesign.png. Runs locally on :3000 against cloud data.
 
+## Sept 12 — Graph Market hosted deployment live
+
+- Hosted deployment `depnywi036749442f3c55e7` created on The Graph Market and `DEPLOYMENT_STATE_DEPLOYED` /
+  `STATE_CATCHING_UP` from start block 51001200, writing to a second ClickHouse Cloud database
+  `vaultflows_hosted` on the same service. The self-managed sink into `vaultflows` keeps running as the
+  fallback; the two never write to the same database.
+- Root cause of the first hosted attempt's failure, and why a reconfigure could not repair it:
+  `docs/build/sink-spike.md` §7.2. The fix is a fresh deployment with no `execution_config.parameters`;
+  the pod log confirms `params []`.
+- New Streamsmith command `deploy hosted --attach --deployment-id ID`: records a deployment that is already
+  running from read-only Portal calls (`GetDeploymentState`, `Logs`) plus the sink's database and an
+  independent chain head. `Deploy`, `UpdateDeploymentConfig` and `CreateDeployment` all restart or duplicate
+  a running pod, so none of them can be used to produce evidence about one.
+- Run `20260912T103328Z-vipc`: views applied to `vaultflows_hosted` (both return rows for both vaults);
+  `schema-render` equals `schema-dump` byte for byte (sha256 `89f10609…`); gate 16/16 fail-level assertions
+  passed reusing the recorded stream output of run `20260910T234439Z-1fr9` (same module hash, same ranges);
+  receipt `receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json` with
+  `deploymentMode: graph-market-hosted`, valid against `specs/receipt.schema.json`.
+- MCP probe against the hosted database (`runs/live/cloud/mcp-live-probe-hosted.txt`): provenance reports
+  `graph-market-hosted`, the receipt matches the manifest, the live column set matches the receipt's schema
+  hash, the `ro` credential is detected as a read-only profile and no per-query settings are sent, a tampered
+  receipt produces `receipt_mismatch`, and the data tools refuse with `stale_data` while the sink is still
+  catching up.
+- Vaultpilot dry run with the cloud source pointed at `vaultflows_hosted` and the hosted receipt: the pipeline
+  stamp shows `mode graph-market-hosted` with the receipt hashes, and the decision service holds with
+  `pipeline_refused (stale_data)` and `stale_pipeline` — the fail-closed rule working as specified.
+- **Open:** the hosted sink had not caught up when this was written, so `packages/mcp-vaultflows` and the
+  dashboard still read `vaultflows`. Switching them is an environment change
+  (`CLICKHOUSE_DATABASE` / `CH_CLOUD_DATABASE`, `MCP_MANIFEST_PATH`, `MCP_RECEIPT_PATH`) plus a regenerated
+  MCP from the hosted receipt, once lag is under 300 blocks.
+
 ## Current state (Sept 11, ~13:00)
 **Read in this order:** this file (bottom-up), docs/TASKS.md (tracker with `[x]`/`[~]`/`[!]`), docs/SUBMISSION.md (gates), docs/RECORDING.md (Sept 12 protocol), README.md.
 
-Everything that does not require an operator account or funds is built, green (streamsmith 106 tests, mcpgen 80, vaultpilot 113; CI green) and committed. The pipeline is live: the package is published (substreams.dev `erc4626-flows` v0.1.0, module hash 8e4892cf…); a self-managed sink feeds ClickHouse Cloud steadily at lag 200–250 (pid file runs/live/cloud/sink.pid); the receipt receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json records gate 18/18; the MCP answers live with provenance; Vaultpilot's decision service and redesigned UI run against cloud data (`--source cloud`; start command in apps/vaultpilot/README.md); the contract is frozen at tag `contract-v1`; the blind one-prompt rehearsal passed (docs/build/rehearsal-1.md).
+Everything that does not require an operator account or funds is built, green and committed. The package is published (substreams.dev `erc4626-flows` v0.1.0, module hash 8e4892cf…) and runs through two deployments: hosted on The Graph Market (`depnywi036749442f3c55e7` → `vaultflows_hosted`, receipt receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json, backfilling) and self-managed (`substreams-sink-sql` → `vaultflows`, pid file runs/live/cloud/sink.pid, steady at lag 200–250, receipt receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json with gate 18/18). The MCP answers live with provenance off the self-managed database; Vaultpilot's decision service and redesigned UI run against the same data (`--source cloud`; start command in apps/vaultpilot/README.md); the contract is frozen at tag `contract-v1`; the blind one-prompt rehearsal passed (docs/build/rehearsal-1.md).
 
 **Pending operator steps** (all independent of each other):
 1. Fund the treasury wallet `0xcdC8B69799bCb135C04A1052b918787125571fDC` with ~50 USDC on Base, then run `pnpm --filter @ethonline26/vaultpilot demo:deposit --amount 25 --execute` into the lower-growth vault, then `demo:rotate --execute` if the differential exceeds 2 bps.
 2. Confirm Privy gas sponsorship (App pays, on Base).
 3. Book the recording slot for Sept 12.
-4. Optional hosted Graph Market redeploy: a new device login (POST PortalApi/DeviceAuthorize; save the FULL DeviceToken response to .portal-token.json), then runs/live/cloud/redeploy-hosted.sh.
+4. Delete the superseded hosted deployment `depdehi448c87998ebb763b` from the Graph Market UI. It is the failed first attempt; no delete endpoint is called from this repository.
 
 **Next work once the wallet is funded:** deposit + rotation with real tx hashes, surfaced in the ledger and the UI. Sept 12: stage a fresh directory and the `vaultflows_rec` database per docs/RECORDING.md, then record the one-prompt run and the video. Sept 13 before 12:00 EDT: submit (Graph both tracks + Privy both tracks, Start Fresh).
 

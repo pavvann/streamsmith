@@ -5,17 +5,30 @@ Building a blockchain data feed usually means writing indexer code, testing it, 
 ## What is live right now
 
 The published Substreams package `erc4626-flows` v0.1.0 (output module `map_events`, module hash
-`8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a`) is on the substreams.dev registry and streamed live from
-`base-mainnet.streamingfast.io:443` into a ClickHouse Cloud database through a self-managed
-`substreams-sink-sql` sink (`deploymentMode: self-managed-sink` in the
-[Deployment Receipt](receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json)). At the last recorded
-probe the sink head was block 51,148,236 against a chain head of 51,148,464 — 228 blocks / ~456 s
-behind — and the generated `mcp-vaultflows` server's `share_value_growth` tool reported both
-configured Base vaults growing in observed-window share value by about **0.037%** over the same
-79-hour, 43-observation window (blocks 51,004,800 → 51,147,000), with `pipeline_status` confirming
-the receipt matched the live schema (`runs/live/cloud/mcp-live-probe.txt`). The gate that produced
-this receipt passed all 18 assertions on this same live data, including an RPC cross-check against
-`eth_getTransactionReceipt`/`convertToAssets` at the cited blocks.
+`8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a`) is on the substreams.dev registry and runs on Base
+mainnet through **two** independent deployments of the same package, each with its own Deployment
+Receipt and its own ClickHouse Cloud database:
+
+| | Deployment | Database | Receipt |
+|---|---|---|---|
+| Hosted | The Graph Market, `depnywi036749442f3c55e7` | `vaultflows_hosted` | [`…-20260912T103328Z-vipc.json`](receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json) — `deploymentMode: graph-market-hosted` |
+| Fallback | self-managed `substreams-sink-sql` | `vaultflows` | [`…-20260910T234439Z-1fr9.json`](receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json) — `deploymentMode: self-managed-sink` |
+
+The hosted deployment was created on Sept 12 and is backfilling from its start block 51,001,200; its
+rendered and dumped sink schemas are byte-identical (sha256
+`89f106091e7bdd69b025018f24ecdea75d7f0a8acc9e0087eccd3d1287a20e48`) and both views answer against it
+(`runs/20260912T103328Z-vipc/`). Until it reaches the chain head, the fail-closed MCP refuses its
+data with `stale_data` — by design — so the tools and the dashboard still read the self-managed
+database (`runs/live/cloud/mcp-live-probe-hosted.txt` records both halves of that behaviour).
+
+At the last recorded probe of the self-managed sink the head was block 51,148,236 against a chain
+head of 51,148,464 — 228 blocks / ~456 s behind — and the generated `mcp-vaultflows` server's
+`share_value_growth` tool reported both configured Base vaults growing in observed-window share
+value by about **0.037%** over a 79-hour, 43-observation window (blocks 51,004,800 → 51,147,000),
+with `pipeline_status` confirming the receipt matched the live schema
+(`runs/live/cloud/mcp-live-probe.txt`). The gate behind both receipts passes on this same live data,
+including an RPC cross-check against `eth_getTransactionReceipt`/`convertToAssets` at the cited
+blocks.
 
 ## Architecture
 
@@ -30,7 +43,7 @@ flowchart TD
         direction TB
         GATE["gate<br/>specs/gate.yaml, 18 assertions"]
         PUBLISH["publish<br/>substreams.dev registry"]
-        DEPLOY["deploy<br/>self-managed-sink live;<br/>graph-market-hosted pending"]
+        DEPLOY["deploy<br/>graph-market-hosted + self-managed-sink,<br/>one receipt each"]
         RECEIPT["receipt<br/>receipts/erc4626-flows-*.json"]
         MCPGEN["mcp<br/>packages/mcpgen"]
         GATE --> PUBLISH --> DEPLOY --> RECEIPT --> MCPGEN
@@ -115,7 +128,7 @@ that satisfies it. Where a bullet is not yet satisfied, that is stated instead o
 | Bullet | Evidence |
 |---|---|
 | "Must compose 2+ Graph products OR build meaningfully on a standardized schema" | Imports Pinax's `erc4626` Substreams package and layers a documented, versioned ERC-4626 output contract on top of it: [`specs/vaultflows.proto`](specs/vaultflows.proto); module graph in [`packages/erc4626-flows/README.md`](packages/erc4626-flows/README.md#modules) (`erc4626:map_events` → `map_flows`/`map_share_value_observations` → `map_events`). |
-| "Live data only (Subgraph Studio / The Graph Market). Mocked/local/static = DQ" | [Deployment Receipt](receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json) (`endpoint: base-mainnet.streamingfast.io:443`, `headBlock 51148236`, `lagBlocks 228`) and a live query result in [`runs/live/cloud/mcp-live-probe.txt`](runs/live/cloud/mcp-live-probe.txt). |
+| "Live data only (Subgraph Studio / The Graph Market). Mocked/local/static = DQ" | Hosted on The Graph Market: deployment `depnywi036749442f3c55e7`, [receipt](receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json) with `deploymentMode: graph-market-hosted`, evidence in [`runs/20260912T103328Z-vipc/`](runs/20260912T103328Z-vipc/README.md) and [`runs/live/cloud/mcp-live-probe-hosted.txt`](runs/live/cloud/mcp-live-probe-hosted.txt). Fallback self-managed sink on the same Graph endpoint: [receipt](receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json) (`endpoint: base-mainnet.streamingfast.io:443`, `headBlock 51148236`, `lagBlocks 228`) with a live query result in [`runs/live/cloud/mcp-live-probe.txt`](runs/live/cloud/mcp-live-probe.txt). |
 | "Show what became easier because of the shared schema" | [`packages/erc4626-flows/README.md`](packages/erc4626-flows/README.md#compose-it) "Compose it": any package can `import` the module unmodified or `use:` a submodule directly, params overridable with `-p`. |
 | "Public repo + 2–4 min video" | Repo is public. **Video not recorded yet — left out; see Limitations.** |
 
@@ -150,11 +163,15 @@ that satisfies it. Where a bullet is not yet satisfied, that is stated instead o
 
 ## Limitations
 
-- **Self-managed sink vs. hosted status.** The pipeline live today runs on a self-managed
-  `substreams-sink-sql` sink into ClickHouse Cloud (`deploymentMode: self-managed-sink` in the
-  receipt). A hosted deployment on The Graph Market (`depdehi448c87998ebb763b`) was attempted; it
-  crash-looped on a parameters-format error that has since been diagnosed and fixed in
-  `runs/live/cloud/redeploy-hosted.sh`, but the corrected redeploy has not been run yet.
+- **The hosted deployment is still backfilling.** `depnywi036749442f3c55e7` is deployed, healthy
+  and writing to `vaultflows_hosted`, and its receipt is the one that records
+  `deploymentMode: graph-market-hosted`. It started on Sept 12 from block 51,001,200 and had not
+  reached the chain head when this was written, so the MCP and the Vaultpilot dashboard still read
+  the self-managed database `vaultflows`; switching them over is an environment change once lag
+  falls under the 300-block freshness limit. The first hosted attempt
+  (`depdehi448c87998ebb763b`) crash-looped on a parameters-format error — root cause, why a
+  reconfigure could not repair it, and the fix are in
+  [`docs/build/sink-spike.md` §7.2](docs/build/sink-spike.md).
 - **10% wrapper fee.** Both Privy Earn vaults are fee wrappers around the underlying Morpho vaults,
   and each wrapper keeps 10% of generated returns. The pipeline observes the underlying vault, so
   every growth figure shown is *before* that fee — disclosed in

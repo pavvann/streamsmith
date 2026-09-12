@@ -26,3 +26,24 @@ Facts learned: the CLI refuses requests over 10,000 processed blocks unless `--l
 store preparation from the original 6-week start block was 3.6M blocks (2 stages), which motivated
 moving the start block to 51001200 (182,000 blocks, then cached). The `map_events` module hash changed with
 the contract, so the first run after the change paid store preparation again (82,646 blocks, 138 s).
+
+## Hosted deployment (Sept 12, 2026)
+
+A second, hosted pipeline for the same package runs on The Graph Market
+(deployment `depnywi036749442f3c55e7`, Portal API HostedService), writing to a separate ClickHouse
+Cloud database `vaultflows_hosted` on the same service. The self-managed sink in this directory
+keeps running into `vaultflows` and stays the documented fallback; neither writes to the other's
+database.
+
+The hosted deployment's evidence lives in `runs/20260912T103328Z-vipc/` (see its README): views,
+a read-only deploy record, the schema hash, the gate report and the receipt
+`receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json` (`deploymentMode: graph-market-hosted`).
+
+`cloud/mcp-live-probe-hosted.txt` is an MCP probe against the hosted database with a server
+generated from that receipt. It shows `deploymentMode: graph-market-hosted` with the receipt
+matching the manifest and the live column set matching the receipt's schema hash, and it shows the
+data tools refusing with `stale_data` while the hosted sink is still catching up from its start
+block. The committed `packages/mcp-vaultflows` and the Vaultpilot dashboard therefore still read
+`vaultflows`; the switch to `vaultflows_hosted` is an environment change
+(`CLICKHOUSE_DATABASE` / `CH_CLOUD_DATABASE`, `MCP_MANIFEST_PATH`, `MCP_RECEIPT_PATH`) once lag
+falls below 300 blocks.

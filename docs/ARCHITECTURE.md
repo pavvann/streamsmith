@@ -20,7 +20,7 @@ flowchart TD
         direction TB
         GATE["gate<br/>specs/gate.yaml, 18 assertions"]
         PUBLISH["publish<br/>substreams.dev registry"]
-        DEPLOY["deploy<br/>self-managed-sink live;<br/>graph-market-hosted pending"]
+        DEPLOY["deploy<br/>graph-market-hosted + self-managed-sink,<br/>one receipt each"]
         RECEIPT["receipt<br/>receipts/erc4626-flows-*.json"]
         MCPGEN["mcp<br/>packages/mcpgen"]
         GATE --> PUBLISH --> DEPLOY --> RECEIPT --> MCPGEN
@@ -56,9 +56,16 @@ Source: `docs/diagram.mmd` (kept byte-identical to the block above).
 4. **Publish.** The `.spkg` is packed and pushed to the substreams.dev registry as `erc4626-flows`
    v0.1.0 (`docs/STATUS.md`, Sept 10 22:10 entry).
 5. **Deploy.** Either `graph-market-hosted` (The Graph Market Portal API) or `self-managed-sink`
-   (`substreams-sink-sql from-proto` against a self-provisioned database). The live deployment today
-   is `self-managed-sink` into ClickHouse Cloud — see Limitations in the root README for the hosted
-   attempt's status.
+   (`substreams-sink-sql from-proto` against a self-provisioned database). Both are live for this
+   package, each writing to its own ClickHouse Cloud database and each carrying its own receipt:
+   hosted deployment `depnywi036749442f3c55e7` → `vaultflows_hosted`
+   (`receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json`), self-managed sink → `vaultflows`
+   (`receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json`). A deployment that is already running
+   is recorded with `streamsmith deploy hosted --attach`, which uses read-only Portal calls only —
+   `Deploy`, `UpdateDeploymentConfig` and `CreateDeployment` all restart or duplicate a running pod,
+   so none of them may be used to produce evidence about one. See Limitations in the root README for
+   the hosted deployment's backfill status and `docs/build/sink-spike.md` §7.2 for the start-command
+   failure that made a fresh deployment necessary.
 6. **Receipt.** The central artifact, validated against `specs/receipt.schema.json` before it is
    written. See "What each hash binds" below.
 7. **MCP.** `packages/mcpgen` reads the proto contract, the receipt and the applied views

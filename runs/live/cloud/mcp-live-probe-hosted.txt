@@ -1,0 +1,143 @@
+MCP live probe — Graph Market hosted deployment (2026-09-12)
+===========================================================
+
+Server under test: the MCP package `mcpgen generate` emits from
+receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json (deploymentMode graph-market-hosted,
+deployment depnywi036749442f3c55e7), spoken to over stdio. Reads go to ClickHouse Cloud database
+`vaultflows_hosted` as the `ro` user; BASE_RPC_URL is https://mainnet.base.org.
+
+The package was generated into a scratch directory, NOT into packages/mcp-vaultflows: the hosted
+sink is still catching up from its start block, so the committed MCP continues to serve the
+self-managed database `vaultflows`. This transcript is the evidence that the hosted path is wired
+correctly and that its freshness gate behaves as designed.
+
+server startup line:
+  connected; 7 tools; package erc4626-flows v0.1.0 (graph-market-hosted); database vaultflows_hosted; maxLagBlocks 300
+
+
+1. Shipped policy (maxLagBlocks 300): the freshness gate refuses
+---------------------------------------------------------------
+
+pipeline_status -> refused: true, reason "stale_data",
+  detail: "sink head is 193193 blocks behind the chain head (limit 300)"
+
+  package.deploymentMode        graph-market-hosted
+  package.deploymentId          depnywi036749442f3c55e7
+  package.outputModuleHash      8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a
+  package.packageHash           662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0
+  receipt.sinkSchemaHash        89f106091e7bdd69b025018f24ecdea75d7f0a8acc9e0087eccd3d1287a20e48
+  receipt.matchesManifest       true      (mismatch: [])
+  receipt.gatePassed            true      ranges 51092254:51092454, 51092254:51092454, 51092998:51093002
+  schema.ok                     true
+  schema.expectedColumnSetHash  8c06996df5e357bc08d20bc3e6adabc6908453545f515cc7f4227dcf4fb440b3
+  schema.actualColumnSetHash    8c06996df5e357bc08d20bc3e6adabc6908453545f515cc7f4227dcf4fb440b3
+  live                          headBlock 51017096, chainHead 51210289, lagBlocks 193193, chainId 8453
+  clickhouse                    settingsMode "readonly-profile", settingsSent false
+                                ("the credential's ClickHouse profile is read-only server-side and refuses
+                                 per-query settings, so none are sent; the client-side timeout still applies")
+  errors                        []
+
+share_value_growth -> isError: true
+  {"refused": true, "reason": "stale_data",
+   "detail": "sink head is 193193 blocks behind the chain head (limit 300)",
+   "expected": {"maxLagBlocks": 300},
+   "actual": {"lagBlocks": 193193, "headBlock": 51017096, "chainHead": 51210289}}
+
+vault_flows_24h -> isError: true, same refusal.
+
+This is the correct behaviour: the hosted sink has not reached the chain head, so no data tool
+answers. It is also why the dashboard and the committed MCP stay on `vaultflows` for now.
+
+
+2. Refusal chain: a tampered receipt
+------------------------------------
+
+The receipt on disk was copied and its sinkSchemaHash replaced with 64 zeros; RECEIPT_PATH pointed
+at the copy. No other input changed.
+
+pipeline_status -> refused: true, reason "receipt_mismatch",
+  detail: "the receipt on disk no longer describes the package this server was generated from; regenerate the MCP"
+  receipt.matchesManifest  false
+  receipt.mismatch         [{"field": "sinkSchemaHash",
+                             "manifest": "89f106091e7bdd69b025018f24ecdea75d7f0a8acc9e0087eccd3d1287a20e48",
+                             "receipt":  "0000000000000000000000000000000000000000000000000000000000000000"}]
+
+vault_flows_24h -> isError: true, reason "receipt_mismatch".
+
+receipt_mismatch takes precedence over stale_data: schema.ok was still true and the lag was still
+192815 blocks, and the server refused on the receipt first.
+
+
+3. Query path against the hosted database (freshness limit raised for the probe only)
+-------------------------------------------------------------------------------------
+
+To exercise the views and the provenance block while the sink is still catching up, the same server
+was started with MAX_LAG_BLOCKS=1000000. Nothing else changed. The shipped default is 300 and is
+what section 1 shows; this section is not a freshness claim.
+
+share_value_growth -> isError: none, rowCount 2, truncated false
+  columns: vault String; first_block_number UInt64; first_block_timestamp UInt64;
+           first_assets_per_share_normalized String; last_block_number UInt64;
+           last_block_timestamp UInt64; last_assets_per_share_normalized String;
+           growth Nullable(Float64); observed_hours Float64; observation_count UInt64
+  rows:
+  [
+   {"vault": "0x050ce30b927da55177a4914ec73480238bad56f0",
+    "first_block_number": 51004800, "first_block_timestamp": 1788798947,
+    "first_assets_per_share_normalized": "1.040504",
+    "last_block_number": 51012000, "last_block_timestamp": 1788813347,
+    "last_assets_per_share_normalized": "1.040524",
+    "growth": 0.000019221454218287803, "observed_hours": 4, "observation_count": 3},
+   {"vault": "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9",
+    "first_block_number": 51004800, "first_block_timestamp": 1788798947,
+    "first_assets_per_share_normalized": "1.039674",
+    "last_block_number": 51012000, "last_block_timestamp": 1788813347,
+    "last_assets_per_share_normalized": "1.039694",
+    "growth": 0.000019236799227329016, "observed_hours": 4, "observation_count": 3}
+  ]
+  provenance: {"packageHash": "662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0",
+               "outputModuleHash": "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a",
+               "parametersHash": "baa6ae91bb4047064c246d4541b33c8cf91c6e6a867be766a16c5be9524100cd",
+               "protoDescriptorHash": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9",
+               "sinkSchemaHash": "89f106091e7bdd69b025018f24ecdea75d7f0a8acc9e0087eccd3d1287a20e48",
+               "schemaColumnSetHash": "8c06996df5e357bc08d20bc3e6adabc6908453545f515cc7f4227dcf4fb440b3",
+               "deploymentMode": "graph-market-hosted", "deploymentId": "depnywi036749442f3c55e7",
+               "chainId": 8453, "headBlock": 51017843, "headTimestamp": 1788825033,
+               "chainHead": 51210309, "lagBlocks": 192466,
+               "observedWindow": {"hours": 4, "column": "block_timestamp",
+                                  "source": "share_value_observations",
+                                  "observedFromTimestamp": 1788798947,
+                                  "observedToTimestamp": 1788813347,
+                                  "startTimestamp": 1788798947, "endTimestamp": 1788813347},
+               "checkedAt": "2026-09-12T10:46:05.993Z",
+               "clickhouse": {"settingsMode": "readonly-profile", "settingsSent": false}}
+
+vault_flows_24h -> isError: none, rowCount 2, truncated false
+  rows:
+  [
+   {"vault": "0x050ce30b927da55177a4914ec73480238bad56f0",
+    "window_end_timestamp": 1788825033, "window_start_timestamp": 1788738633,
+    "deposit_count": 1292, "withdraw_count": 531,
+    "assets_in_normalized": "412848.242871", "assets_out_normalized": "178310.074298",
+    "net_assets_normalized": "234538.168573", "flows_without_metadata": 0},
+   {"vault": "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9",
+    "window_end_timestamp": 1788825033, "window_start_timestamp": 1788738633,
+    "deposit_count": 230, "withdraw_count": 133,
+    "assets_in_normalized": "70782.173293", "assets_out_normalized": "117951.972503",
+    "net_assets_normalized": "-47169.79921", "flows_without_metadata": 0}
+  ]
+  provenance: same hashes, deploymentMode graph-market-hosted, headBlock 51017843,
+              chainHead 51210309, lagBlocks 192466, observedWindow null,
+              clickhouse settingsMode "readonly-profile", settingsSent false.
+
+The observed window ends at the sink's own newest row (1788825033), not at wall-clock time — the
+views answer "what the pipeline has observed", and lag is reported separately in provenance.
+
+
+What this probe does not show
+-----------------------------
+
+The hosted deployment had not caught up at the time of the probe, so there is no run in which a data
+tool answered under the shipped maxLagBlocks of 300. That check, and the cut-over of
+packages/mcp-vaultflows and the Vaultpilot dashboard to `vaultflows_hosted`, are the remaining steps
+once lag falls below 300.
