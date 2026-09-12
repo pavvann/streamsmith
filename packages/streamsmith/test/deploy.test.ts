@@ -3,7 +3,7 @@ import { readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { PortalClient, PortalError, field, isUnauthenticated } from "../src/deploy/portal.ts";
-import { deployHosted, attachHosted, parsePodExecutionConfig, AwaitingSecretError, summarizeState, isSettled } from "../src/deploy/hosted.ts";
+import { deployHosted, attachHosted, parsePodExecutionConfig, isObservedConfigComplete, AwaitingSecretError, summarizeState, isSettled } from "../src/deploy/hosted.ts";
 import { buildSinkCommand, parseDsn, startSelfManaged, selfManagedStatus } from "../src/deploy/selfManaged.ts";
 import { chQuery, chMaxBlock, chRowCounts, chDumpSchema, redactUrl, clickhouseHttpUrl, clickhouseDatabase } from "../src/deploy/clickhouse.ts";
 import { splitSqlStatements, applyViews } from "../src/deploy/views.ts";
@@ -174,6 +174,52 @@ describe("deploy hosted --attach", () => {
       expect(JSON.stringify(r.record)).not.toContain("ropass");
       const onDisk = JSON.parse(await readFile(join(repo.root, "runs", "at1", "deploy.json"), "utf8"));
       expect(onDisk.deploymentMode).toBe("graph-market-hosted");
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("retries Logs with a longer tail when the startup lines have scrolled out of it", async () => {
+    const repo = await makeTempRepo();
+    try {
+      // a pod that has been up a while: a short tail holds only the periodic stats lines
+      const shortTail = { success: true, podLogs: [{ podName: "erc4626-flowsbasecli-ss-dep-5-0", logs: JSON.stringify({ message: "substreams stream stats", last_block: "#51007758" }) }] };
+      const tails: number[] = [];
+      const fetch = async (url: string, init?: RequestInit) => {
+        if (url.endsWith("/GetDeploymentState")) return new Response(JSON.stringify({ success: true, deploymentState: { deploymentState: "DEPLOYMENT_STATE_DEPLOYED", executionStates: [{ state: "STATE_CATCHING_UP" }] } }));
+        if (url.endsWith("/Logs")) {
+          const body = JSON.parse(String(init?.body ?? "{}")) as { tail_lines?: number };
+          tails.push(body.tail_lines ?? 0);
+          return new Response(JSON.stringify(tails.length === 1 ? shortTail : LOGS_RESPONSE));
+        }
+        throw new Error(`unexpected ${url}`);
+      };
+      const ctx = { ...repo.ctx, fetch, env: { PORTAL_TOKEN: "t", PORTAL_ORG_ID: "org" } };
+      const r = await attachHosted(ctx, { runId: "at4", streamsmith: ss, deploymentId: "dep-5", clickhouse: { server: "h", port: 9440, user: "default", database: "vaultflows_hosted", secure: true } });
+      expect(tails.length).toBe(2);
+      expect(tails[1]!).toBeGreaterThan(tails[0]!);
+      expect(r.record.spkg).toBe("https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0");
+      expect(isObservedConfigComplete(r.record.executionConfig)).toBe(true);
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("says so when even the long tail does not reach the startup lines", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const onlyStats = { success: true, podLogs: [{ podName: "p-0", logs: JSON.stringify({ message: "substreams stream stats" }) }] };
+      const fetch = async (url: string) => {
+        if (url.endsWith("/GetDeploymentState")) return new Response(JSON.stringify({ success: true, deploymentState: { deploymentState: "DEPLOYMENT_STATE_DEPLOYED", executionStates: [{ state: "STATE_LIVE" }] } }));
+        if (url.endsWith("/Logs")) return new Response(JSON.stringify(onlyStats));
+        throw new Error(`unexpected ${url}`);
+      };
+      const ctx = { ...repo.ctx, fetch, env: { PORTAL_TOKEN: "t", PORTAL_ORG_ID: "org" } };
+      const r = await attachHosted(ctx, { runId: "at5", streamsmith: ss, deploymentId: "dep-6", clickhouse: { server: "h", port: 9440, user: "default", database: "vaultflows_hosted", secure: true }, spkgUrl: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0" });
+      expect(r.record.notes?.some((n) => n.startsWith("execution config not fully observed"))).toBe(true);
+      // the caller-supplied URL still identifies the package; the record never invents an execution config
+      expect(r.record.spkg).toBe("https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0");
+      expect(isObservedConfigComplete(r.record.executionConfig)).toBe(false);
     } finally {
       await repo.cleanup();
     }

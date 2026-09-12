@@ -129,7 +129,7 @@
       "pnpm": "10.26.1"
     }
   },
-  "createdAt": "2026-09-12T10:43:10.311Z",
+  "createdAt": "2026-09-12T10:55:35.378Z",
   "moduleHashes": {
     "store_vault_seen": "9b6ebcb6396c199abcca4feed89b2bbced5c71b9",
     "map_vault_probe": "58950ab582007b1d30f5313860d713cf52a62734",
@@ -139,12 +139,13 @@
     "map_events": "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a",
     "erc4626:map_events": "9d3e4a81797e43b37f46443144913096d3a3080c"
   },
+  "packageUrl": "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0",
   "runId": "20260912T103328Z-vipc",
   "endpoint": "base-mainnet.streamingfast.io:443",
   "deploymentId": "depnywi036749442f3c55e7",
-  "headBlock": 51014900,
-  "lagBlocks": 195320,
-  "lagSeconds": 390640,
+  "headBlock": 51029585,
+  "lagBlocks": 181004,
+  "lagSeconds": 362008,
   "sink": {
     "kind": "clickhouse",
     "mode": "from-proto",

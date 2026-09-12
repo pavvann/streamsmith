@@ -1,6 +1,7 @@
 {
   "deploymentMode": "graph-market-hosted",
   "deploymentId": "depnywi036749442f3c55e7",
+  "spkg": "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0",
   "outputModule": "map_events",
   "network": "base",
   "startBlock": 51001200,
@@ -14,27 +15,35 @@
   "runId": "20260912T103328Z-vipc",
   "executionConfig": {
     "podName": "erc4626-flowsbasecli-ss-depnywi036749442f3c55e7-0",
+    "spkgUrl": "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0",
+    "outputModule": "map_events",
+    "startBlock": 51001200,
+    "stopBlock": 0,
+    "parameters": [],
+    "finalBlocksOnly": false,
+    "moduleOutputType": "proto:vaultflows.v1.Events",
+    "outputModuleHash": "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a",
     "database": "vaultflows_hosted"
   },
-  "headBlock": 51014900,
+  "headBlock": 51029585,
   "rowCounts": {
-    "vault_flows": 2047,
-    "share_value_observations": 6,
-    "vaults": 235,
+    "vault_flows": 2679,
+    "share_value_observations": 8,
+    "vaults": 293,
     "share_transfers": 0,
-    "_blocks_": 1993
+    "_blocks_": 2661
   },
-  "chainHead": 51210220,
-  "lagBlocks": 195320,
-  "lagSeconds": 390640,
-  "checkedAt": "2026-09-12T10:43:08.804Z",
+  "chainHead": 51210589,
+  "lagBlocks": 181004,
+  "lagSeconds": 362008,
+  "checkedAt": "2026-09-12T10:55:26.374Z",
   "notes": [
     "GetDeploymentState: DEPLOYMENT_STATE_DEPLOYED/STATE_CATCHING_UP",
     "execution config read from pod log (erc4626-flowsbasecli-ss-depnywi036749442f3c55e7-0)",
-    "portal head_block: 51014372",
-    "portal head_block_time_drift: 391674s",
-    "clickhouse _blocks_ max(number): 51014900",
-    "row counts: {\"vault_flows\":2047,\"share_value_observations\":6,\"vaults\":235,\"share_transfers\":0,\"_blocks_\":1993}"
+    "portal head_block: 51029476",
+    "portal head_block_time_drift: 362216s",
+    "clickhouse _blocks_ max(number): 51029585",
+    "row counts: {\"vault_flows\":2679,\"share_value_observations\":8,\"vaults\":293,\"share_transfers\":0,\"_blocks_\":2661}"
   ],
   "views": {
     "file": "packages/erc4626-flows/sql/views.sql",

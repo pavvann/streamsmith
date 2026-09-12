@@ -211,6 +211,12 @@ export interface HostedAttachOptions {
   portal?: PortalClient;
 }
 
+/** The fields that only the runner's startup lines carry. Their absence means the log tail no longer reaches
+ * back to pod start, not that the deployment lacks them — so the caller retries with a longer tail. */
+export function isObservedConfigComplete(c: ObservedExecutionConfig | undefined): boolean {
+  return Boolean(c && c.spkgUrl && c.outputModule && c.startBlock !== undefined);
+}
+
 /** Parse the hosted runner's own startup lines out of a `Logs` response. Best effort: a shape change downgrades
  * to "not observed", never to a wrong value. */
 export function parsePodExecutionConfig(logsResponse: unknown): ObservedExecutionConfig | undefined {
@@ -259,10 +265,22 @@ async function attemptAttachHosted(ctx: Ctx, o: HostedAttachOptions, portal: Por
   const summary = summarizeState(state);
   notes.push(`GetDeploymentState: ${summary.state}`);
 
+  // The execution config lives only in the runner's startup lines, so a pod that has been up for a while pushes
+  // them past a short tail: the first attempt here silently recorded a deployment with no spkg URL because the
+  // default tail no longer reached block zero. Ask for a modest tail, then once for a much longer one when the
+  // startup lines are not in it, and say so plainly when even that does not reach them.
   let observed: ObservedExecutionConfig | undefined;
+  const firstTail = o.logTailLines ?? 1000;
   try {
-    observed = parsePodExecutionConfig(await portal.logs(o.deploymentId, o.logTailLines ?? 400));
-    notes.push(observed ? `execution config read from pod log (${observed.podName ?? "pod"})` : "Logs returned no startup lines to read the execution config from");
+    observed = parsePodExecutionConfig(await portal.logs(o.deploymentId, firstTail));
+    if (!isObservedConfigComplete(observed)) {
+      const longTail = Math.max(firstTail * 20, 20000);
+      notes.push(`Logs(tail ${firstTail}) did not reach the runner's startup lines; retrying with tail ${longTail}`);
+      const retry = parsePodExecutionConfig(await portal.logs(o.deploymentId, longTail));
+      if (isObservedConfigComplete(retry) || (retry && !observed)) observed = retry;
+    }
+    if (isObservedConfigComplete(observed)) notes.push(`execution config read from pod log (${observed!.podName ?? "pod"})`);
+    else notes.push(`execution config not fully observed: the runner's startup lines are no longer in the retained pod log${observed ? ` (partial: ${Object.keys(observed).join(", ")})` : ""}`);
   } catch (err) {
     notes.push(`Logs failed: ${(err as Error).message.slice(0, 200)}`);
   }
