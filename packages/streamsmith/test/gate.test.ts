@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import YAML from "yaml";
 import { parseSpecYaml } from "../src/util/yaml.ts";
-import { runGate, runCommandArgv, templateVars, runOutputPath } from "../src/gate/run.ts";
+import { runGate, runCommandArgv, templateVars, runOutputPath, relPathInRoot } from "../src/gate/run.ts";
 import { parseGateConfig, loadGateConfig } from "../src/config/gate.ts";
 import { makeTempRepo, hasBuf, runFixture, REPO_ROOT, fakeRpc } from "./helpers.ts";
 
@@ -61,6 +61,13 @@ describe("specs/gate.yaml as written", () => {
   });
 });
 
+describe("relPathInRoot", () => {
+  it("keeps a path outside the repo absolute and makes one inside it relative", () => {
+    expect(relPathInRoot("/repo", "/repo/specs/gate.yaml")).toBe("specs/gate.yaml");
+    expect(relPathInRoot("/repo", "/elsewhere/gate.yaml")).toBe("/elsewhere/gate.yaml");
+  });
+});
+
 describe("runGate over specs/gate.yaml (build and runs faked; buf and substreams info/pack real when installed)", () => {
   it("exits 0 on fixtures that satisfy the file and writes runs/<id>/gate.json", async () => {
     const repo = await makeTempRepo({ gateYaml: await gateWithoutBuf() });
@@ -73,6 +80,8 @@ describe("runGate over specs/gate.yaml (build and runs faked; buf and substreams
       expect(r.report.passed).toBe(true);
       expect(r.report.ranges).toEqual(["51092254:51092454", "51092254:51092454", "51092998:51093002"]);
       expect(r.report.warnings).toEqual([]);
+      // committed evidence carries no machine path: the gate file is named relative to the repo root
+      expect(r.report.gateConfigPath).toBe("specs/gate.yaml");
       expect(Object.keys(r.report.runs)).toEqual(["primary", "primary_rerun", "observation"]);
       expect(r.report.runs.primary).toMatchObject({ lines: 5, badLines: 0, rows: { vault_flows: 5, share_value_observations: 0 }, blocks: [51092263, 51092449], file: "runs/t1/primary.jsonl", range: "51092254:51092454" });
       expect(r.report.runs.observation!.rows.share_value_observations).toBe(2);

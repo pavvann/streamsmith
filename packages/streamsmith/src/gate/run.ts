@@ -56,6 +56,7 @@ export interface GateReport {
   endpoint?: string;
   network?: string;
   authEnvPresent?: boolean;
+  /** the gate file, relative to the repo root when it lives inside it */
   gateConfigPath: string;
   gateConfigHash: string;
   startedAt: string;
@@ -124,11 +125,20 @@ export function runOutputPath(ctx: Ctx, gate: GateConfig, run: GateRunSpec, runI
   return isAbsolute(rel) ? rel : join(ctx.root, rel);
 }
 
+/** Repo-relative when `p` is inside `root` (no machine path in committed evidence), otherwise `p` unchanged. */
+export function relPathInRoot(root: string, p: string): string {
+  const rel = relative(root, p);
+  return rel && !rel.startsWith("..") && !isAbsolute(rel) ? rel : p;
+}
+
 export async function runGate(ctx: Ctx, opts: GateOptions = {}): Promise<GateOutcome> {
   const startedAt = ctx.now().toISOString();
   const runId = opts.runId ?? newRunId(ctx.now());
   const runDir = paths.runs(ctx, runId);
   const gatePath = resolve(ctx.root, opts.gatePath ?? paths.specs(ctx, "gate.yaml"));
+  // gate.json is committed evidence in a public repository, so the recorded path is repo-relative whenever the
+  // gate file lives inside the repository; only a gate file outside it is named absolutely.
+  const gatePathRecorded = relPathInRoot(ctx.root, gatePath);
   const reportPath = join(runDir, "gate.json");
 
   let gate: GateConfig;
@@ -142,7 +152,7 @@ export async function runGate(ctx: Ctx, opts: GateOptions = {}): Promise<GateOut
   } catch (err) {
     const report: GateReport = {
       gateVersion: 1, runId, status: "config_error", passed: false, exitCode: 1, ranges: [], assertions: [], warnings: [], toolVersions: {}, runs: {},
-      package: { dir: "", manifest: "" }, gateConfigPath: gatePath, gateConfigHash: gateText ? sha256Hex(gateText) : "", startedAt, finishedAt: ctx.now().toISOString(),
+      package: { dir: "", manifest: "" }, gateConfigPath: gatePathRecorded, gateConfigHash: gateText ? sha256Hex(gateText) : "", startedAt, finishedAt: ctx.now().toISOString(),
       error: (err as Error).message,
     };
     await writeJson(reportPath, report);
@@ -158,7 +168,7 @@ export async function runGate(ctx: Ctx, opts: GateOptions = {}): Promise<GateOut
     gateVersion: 1, runId, status: "passed", passed: false, exitCode: gate.exitCodes.pass, ranges: Object.values(gate.runs).map((r) => `${r.startBlock}:${r.stopBlock}`),
     assertions: [], warnings: [], toolVersions, runs: {},
     package: { dir: gate.package.dir, manifest: gate.package.manifest, spkg: vars.spkg },
-    gateConfigPath: gatePath, gateConfigHash: sha256Hex(gateText), startedAt, finishedAt: startedAt,
+    gateConfigPath: gatePathRecorded, gateConfigHash: sha256Hex(gateText), startedAt, finishedAt: startedAt,
   };
   for (const k of ["name", "version", "outputModule", "outputType"] as const) if (gate.package[k]) report.package[k] = gate.package[k]!;
   if (gate.endpoint) report.endpoint = gate.endpoint;
