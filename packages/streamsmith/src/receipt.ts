@@ -145,7 +145,11 @@ export function assembleReceipt(i: BuildReceiptInputs): Receipt {
     createdAt: i.createdAt,
   };
   if (moduleHashes && Object.keys(moduleHashes).length) r.moduleHashes = moduleHashes;
-  const url = i.packageUrl ?? i.publish?.packageUrl;
+  // A hosted deployment runs an spkg it fetched from a URL, and that URL is recorded in the deploy record even
+  // when this repository never ran `publish` in the same run — the receipt should name the artifact the
+  // deployment actually loads. A self-managed record's `spkg` is a local path, so only absolute URLs qualify.
+  const deployedUrl = i.deploy?.spkg && /^https?:\/\//i.test(i.deploy.spkg) ? i.deploy.spkg : undefined;
+  const url = i.packageUrl ?? i.publish?.packageUrl ?? deployedUrl;
   if (url) r.packageUrl = url;
   const publishedAt = i.registryPublishedAt ?? i.publish?.registryPublishedAt;
   if (publishedAt) r.registryPublishedAt = publishedAt;

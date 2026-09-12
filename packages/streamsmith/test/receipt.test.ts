@@ -49,6 +49,19 @@ describe("receipt", () => {
     expect(validateReceipt(r, schema).errors).toEqual([]);
   });
 
+  it("names the spkg URL a hosted deployment runs when there is no publish record in the run", () => {
+    const base = { streamsmith: ss, gate, packageHash: H, moduleHashes: HASHES, protoDescriptorHash: "b".repeat(64), sinkSchemaHash: "c".repeat(64), runId: "r", createdAt: "2026-09-11T10:00:00.000Z" };
+    const hosted = assembleReceipt({ ...base, deploy: { deploymentMode: "graph-market-hosted" as const, runId: "r", deploymentId: "dep", spkg: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0" } });
+    expect(hosted.packageUrl).toBe("https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0");
+    expect(validateReceipt(hosted, schema).errors).toEqual([]);
+    // a self-managed record's spkg is a local path, which is not a URL and must not become one
+    const selfManaged = assembleReceipt({ ...base, deploy: { deploymentMode: "self-managed-sink" as const, runId: "r", spkg: "packages/erc4626-flows/erc4626-flows-v0.1.0.spkg" } });
+    expect(selfManaged.packageUrl).toBeUndefined();
+    // an explicit publish record still wins
+    const withPublish = assembleReceipt({ ...base, packageUrl: "https://example.invalid/p", deploy: { deploymentMode: "graph-market-hosted" as const, runId: "r", spkg: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0" } });
+    expect(withPublish.packageUrl).toBe("https://example.invalid/p");
+  });
+
   it("requires outputModuleHash (spkg bytes are not reproducible; the module hash is the identity) and falls back to publish/gate module hashes", () => {
     const base = { streamsmith: ss, gate, packageHash: H, protoDescriptorHash: "b".repeat(64), sinkSchemaHash: "c".repeat(64), createdAt: "2026-09-11T10:00:00.000Z" };
     expect(() => assembleReceipt(base)).toThrow(/outputModuleHash is required/);
