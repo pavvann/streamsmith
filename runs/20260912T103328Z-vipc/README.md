@@ -52,3 +52,17 @@ It carries no `mcpManifestHash`: no MCP server has been generated from it yet, b
 of the run the hosted sink was still catching up from its start block and the freshness gate
 (`maxLagBlocks` 300) refuses. `runs/live/cloud/mcp-live-probe-hosted.txt` records what a server
 generated from this receipt does answer, and what it refuses.
+
+## Catch-up at the time of the run
+
+The hosted pod started at 10:25:28Z from block 51,001,200. Measured over a 5-minute window
+(`max(number)` in `vaultflows_hosted._blocks_` against `eth_blockNumber` at https://mainnet.base.org):
+
+| | head | chain head | lag |
+|---|---|---|---|
+| 10:52:25Z | 51,026,764 | 51,210,499 | 183,735 |
+| 10:57:26Z | 51,031,267 | 51,210,649 | 179,382 |
+
+4,503 blocks in 301 s = ~898 blocks/min processed; the chain advanced 150 blocks in the same window,
+so the gap closes at ~868 blocks/min net and reaching the 300-block freshness limit takes about
+3.4 h from 10:57Z.

@@ -82,6 +82,10 @@ A dated record of what was built, what it measured, and what is still open. Time
 - Vaultpilot dry run with the cloud source pointed at `vaultflows_hosted` and the hosted receipt: the pipeline
   stamp shows `mode graph-market-hosted` with the receipt hashes, and the decision service holds with
   `pipeline_refused (stale_data)` and `stale_pipeline` — the fail-closed rule working as specified.
+- Catch-up measured over a 5-minute window (`max(number)` in `vaultflows_hosted._blocks_` against
+  `eth_blockNumber` at https://mainnet.base.org): 10:52:25Z head 51,026,764 lag 183,735 → 10:57:26Z head
+  51,031,267 lag 179,382. The sink processes ~898 blocks/min and closes the gap at ~868 blocks/min net,
+  so reaching the 300-block freshness limit takes about 3.4 h from 10:57Z.
 - **Open:** the hosted sink had not caught up when this was written, so `packages/mcp-vaultflows` and the
   dashboard still read `vaultflows`. Switching them is an environment change
   (`CLICKHOUSE_DATABASE` / `CH_CLOUD_DATABASE`, `MCP_MANIFEST_PATH`, `MCP_RECEIPT_PATH`) plus a regenerated
