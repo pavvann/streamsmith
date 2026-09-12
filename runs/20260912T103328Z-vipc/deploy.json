@@ -1,0 +1,54 @@
+{
+  "deploymentMode": "graph-market-hosted",
+  "deploymentId": "depnywi036749442f3c55e7",
+  "outputModule": "map_events",
+  "network": "base",
+  "startBlock": 51001200,
+  "state": "DEPLOYMENT_STATE_DEPLOYED/STATE_CATCHING_UP",
+  "sink": {
+    "kind": "clickhouse",
+    "mode": "from-proto",
+    "database": "vaultflows_hosted",
+    "hostFingerprint": "fbb35e8d115035d0ff8a45539d3a5e0c143701e3e40590b3769eed59823f6831"
+  },
+  "runId": "20260912T103328Z-vipc",
+  "executionConfig": {
+    "podName": "erc4626-flowsbasecli-ss-depnywi036749442f3c55e7-0",
+    "database": "vaultflows_hosted"
+  },
+  "headBlock": 51014900,
+  "rowCounts": {
+    "vault_flows": 2047,
+    "share_value_observations": 6,
+    "vaults": 235,
+    "share_transfers": 0,
+    "_blocks_": 1993
+  },
+  "chainHead": 51210220,
+  "lagBlocks": 195320,
+  "lagSeconds": 390640,
+  "checkedAt": "2026-09-12T10:43:08.804Z",
+  "notes": [
+    "GetDeploymentState: DEPLOYMENT_STATE_DEPLOYED/STATE_CATCHING_UP",
+    "execution config read from pod log (erc4626-flowsbasecli-ss-depnywi036749442f3c55e7-0)",
+    "portal head_block: 51014372",
+    "portal head_block_time_drift: 391674s",
+    "clickhouse _blocks_ max(number): 51014900",
+    "row counts: {\"vault_flows\":2047,\"share_value_observations\":6,\"vaults\":235,\"share_transfers\":0,\"_blocks_\":1993}"
+  ],
+  "views": {
+    "file": "packages/erc4626-flows/sql/views.sql",
+    "present": true,
+    "statements": 2,
+    "applied": [
+      "CREATE OR REPLACE VIEW vault_flows_24h AS WITH (SELECT max(block_timestamp) FROM vault_flows WHERE _deleted_ = 0) AS window_end SELECT vault, toUInt64(window_end) AS window_end_timestamp, toUInt64(window_end - 86400) AS window_start_timestamp, countIf(direction = 'deposit') AS deposit_count, countIf(direction = 'withdraw') AS withdraw_count, sumIf(assets_normalized, direction = 'deposit' AND meta_valid = true) AS assets_in_normalized, sumIf(assets_normalized, direction = 'withdraw' AND meta_valid = true) AS assets_out_normalized, assets_in_normalized - assets_out_normalized AS net_assets_normalized, countIf(meta_valid = false) AS flows_without_metadata FROM vault_flows WHERE _deleted_ = 0 AND block_timestamp > window_end - 86400 GROUP BY vault",
+      "CREATE OR REPLACE VIEW share_value_growth AS SELECT vault, min(block_number) AS first_block_number, argMin(block_timestamp, block_number) AS first_block_timestamp, argMin(assets_per_share_normalized, block_number) AS first_assets_per_share_normalized, max(block_number) AS last_block_number, argMax(block_timestamp, block_number) AS last_block_timestamp, argMax(assets_per_share_normalized, block_number) AS last_assets_per_share_normalized, if(first_assets_per_share_normalized = 0, NULL, toFloat64(last_assets_per_share_normalized) / toFloat64(first_assets_per_share_normalized) - 1) AS growth, (last_block_timestamp - first_block_timestamp) / 3600 AS observed_hours, count() AS observation_count FROM share_value_observations WHERE _deleted_ = 0 AND call_ok = true /*@window*/ GROUP BY vault"
+    ],
+    "views": [
+      "share_value_growth",
+      "vault_flows_24h"
+    ],
+    "appliedAt": "2026-09-12T10:33:36.266Z",
+    "sha256": "83d1c9ee570b15e7cf191878e04dbb00966edce3e61f247e1d218ec2e74bb534"
+  }
+}
