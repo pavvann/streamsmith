@@ -12,11 +12,11 @@ import { runGate, moduleHashesOf } from "./gate/run.ts";
 import { loadStreamsmithConfig, parametersHash, receiptParameters, type StreamsmithConfig } from "./config/streamsmith.ts";
 import { specDescriptor, spkgDescriptor, protoPackageOf, substreamsInfo } from "./proto/descriptor.ts";
 import { runPublish, type PublishRecord } from "./publish.ts";
-import { deployHosted, hostedStatus, portalLogin, AwaitingSecretError, EXIT_AWAITING_SECRET } from "./deploy/hosted.ts";
+import { deployHosted, attachHosted, hostedStatus, portalLogin, AwaitingSecretError, EXIT_AWAITING_SECRET } from "./deploy/hosted.ts";
 import { startSelfManaged, selfManagedStatus, stopSelfManaged } from "./deploy/selfManaged.ts";
 import { chDumpSchema, clickhouseHttpUrl, clickhouseDatabase } from "./deploy/clickhouse.ts";
 import { renderSchemaFromSpkg, SCHEMA_FLAVORS, type SchemaFlavor } from "./schema/render.ts";
-import { applyViews, DEFAULT_VIEWS_PATH } from "./deploy/views.ts";
+import { applyViews, DEFAULT_VIEWS_PATH, type ViewsRecord } from "./deploy/views.ts";
 import type { DeployRecord } from "./deploy/types.ts";
 import { assembleReceipt, writeReceipt, hashSpkg, hashSchemaSql, loadReceipt, validateReceipt, loadReceiptSchema, receiptHash, receiptFileName } from "./receipt.ts";
 import type { GateReport } from "./gate/run.ts";
@@ -35,6 +35,10 @@ Commands
   deploy hosted        --spkg-url URL [--deployment-id ID] [--update] [--name N] [--ch-server H --ch-port 9440 --ch-user U --ch-database D --ch-secure]
                        [--stop-block N] [--params STRING] [--poll-timeout SEC] [--views FILE]   (env PORTAL_TOKEN, PORTAL_ORG_ID, PORTAL_REFRESH_TOKEN; CLICKHOUSE_URL to apply views)
                        --params is omitted unless given explicitly (the spkg carries the manifest defaults); --update reconfigures --deployment-id instead of creating one
+  deploy hosted --attach --deployment-id ID [--ch-server H --ch-port 9440 --ch-user U --ch-database D] [--clickhouse-url URL] [--rpc-url URL] [--spkg-url URL]
+                       records a deployment that is ALREADY running into runs/<id>/deploy.json and deploys nothing:
+                       read-only GetDeploymentState + Logs (execution config as the pod reports it), head and row
+                       counts from the sink's database, chain head from --rpc-url
   deploy self-managed  --spkg FILE [--dsn DSN] [--endpoint E] [--network N] [--start-block N] [--stop-block N] [--sink-binary B]
                        [--flavor substreams-sink-sql|substreams-cli] [--sink-info-folder DIR] [--no-final-blocks-only] [--views FILE]
                        from-proto defaults: --final-blocks-only on, --clickhouse-sink-info-folder + cursor file under runs/<id>/ (never share a folder across databases)
@@ -65,7 +69,7 @@ const OPTIONS = {
   "run-id": { type: "string" }, root: { type: "string" }, json: { type: "boolean" }, help: { type: "boolean", short: "h" },
   gate: { type: "string" }, "reuse-runs": { type: "boolean" }, "skip-build": { type: "boolean" }, verbose: { type: "boolean" }, offline: { type: "boolean" },
   "pkg-dir": { type: "string" }, manifest: { type: "string" }, spkg: { type: "string" }, "dry-run": { type: "boolean" }, "team-slug": { type: "string" }, "verify-url": { type: "boolean" },
-  "spkg-url": { type: "string" }, "deployment-id": { type: "string" }, update: { type: "boolean" }, params: { type: "string" }, name: { type: "string" }, "ch-server": { type: "string" }, "ch-port": { type: "string" }, "ch-user": { type: "string" }, "ch-database": { type: "string" }, "ch-secure": { type: "boolean" },
+  "spkg-url": { type: "string" }, "deployment-id": { type: "string" }, update: { type: "boolean" }, attach: { type: "boolean" }, params: { type: "string" }, name: { type: "string" }, "ch-server": { type: "string" }, "ch-port": { type: "string" }, "ch-user": { type: "string" }, "ch-database": { type: "string" }, "ch-secure": { type: "boolean" },
   "stop-block": { type: "string" }, "start-block": { type: "string" }, "poll-timeout": { type: "string" }, dsn: { type: "string" }, endpoint: { type: "string" }, network: { type: "string" }, module: { type: "string" }, "sink-binary": { type: "string" }, flavor: { type: "string" }, "cursor-file": { type: "string" },
   "sink-info-folder": { type: "string" }, "no-final-blocks-only": { type: "boolean" },
   "clickhouse-url": { type: "string" }, "rpc-url": { type: "string" }, database: { type: "string" }, tables: { type: "string" }, out: { type: "string" }, views: { type: "string" }, wait: { type: "string" },
@@ -192,6 +196,41 @@ export async function main(argv: string[]): Promise<number> {
         return 0;
       }
       const runId = await resolveRunId(ctx, v, true);
+      if (sub === "hosted" && b(v, "attach")) {
+        const deploymentId = s(v, "deployment-id") ?? ctx.env.HOSTED_DEPLOYMENT_ID;
+        if (!deploymentId) throw new Error("--attach requires --deployment-id (or HOSTED_DEPLOYMENT_ID)");
+        if (b(v, "update")) throw new Error("--attach and --update are mutually exclusive: --attach never changes the deployment");
+        const conn = ss.sink?.connection ?? {};
+        const server = s(v, "ch-server") ?? ctx.env.CLICKHOUSE_SERVER ?? ctx.env.CH_CLOUD_HOST ?? conn.host;
+        if (!server) throw new Error("ClickHouse server required: --ch-server or CLICKHOUSE_SERVER (recorded as a host fingerprint, never a DSN)");
+        const opts: Parameters<typeof attachHosted>[1] = {
+          runId,
+          streamsmith: ss,
+          deploymentId,
+          clickhouse: {
+            server,
+            port: n(v, "ch-port") ?? Number(ctx.env.CLICKHOUSE_NATIVE_PORT ?? conn.port ?? 9440),
+            user: s(v, "ch-user") ?? conn.user ?? "default",
+            database: clickhouseDatabase(ctx, s(v, "ch-database") ?? s(v, "database"), conn.database),
+            secure: b(v, "ch-secure") || (conn.secure ?? true),
+          },
+        };
+        const chUrl = clickhouseHttpUrl(ctx, s(v, "clickhouse-url"));
+        if (chUrl) opts.clickhouseUrl = chUrl;
+        if (s(v, "rpc-url")) opts.rpcUrl = s(v, "rpc-url")!;
+        if (s(v, "spkg-url")) opts.spkgUrl = s(v, "spkg-url")!;
+        if (s(v, "tables")) opts.tables = s(v, "tables")!.split(",");
+        if (b(v, "verbose")) opts.verbose = true;
+        const r = await attachHosted(ctx, opts);
+        // carry the views applied to that database in this run, when `deploy views` recorded them separately
+        const vp = paths.runs(ctx, runId, "views.json");
+        if (!r.record.views && (await exists(vp))) {
+          r.record.views = await readJson<ViewsRecord>(vp);
+          await writeJson(r.path, r.record);
+        }
+        out(v, `hosted(attached) ${r.record.deploymentId} ${r.record.state ?? ""} head=${r.record.headBlock ?? "?"} chain=${r.record.chainHead ?? "?"} lag=${r.record.lagBlocks ?? "?"} blocks -> ${relative(ctx.root, r.path)}`, r.record);
+        return 0;
+      }
       if (sub === "hosted") {
         const spkgUrl = s(v, "spkg-url") ?? (await (async () => { const p = paths.runs(ctx, runId, "publish.json"); return (await exists(p)) ? (await readJson<PublishRecord>(p)).packageUrl : undefined; })());
         if (!spkgUrl) throw new Error("--spkg-url is required (or publish first so runs/<id>/publish.json has packageUrl)");

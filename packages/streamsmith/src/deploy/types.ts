@@ -33,5 +33,30 @@ export interface DeployRecord {
   command?: string;
   /** ClickHouse views applied after the sink created the base tables (packages/erc4626-flows/sql/views.sql) */
   views?: ViewsRecord;
+  /** hosted only: the execution config the running pod reports, read back from Portal `Logs` (`deploy hosted --attach`) */
+  executionConfig?: ObservedExecutionConfig;
   notes?: string[];
+}
+
+/**
+ * What the hosted runner says it started with. Read from the pod's own startup log lines rather than from the
+ * request we would have sent, so the record describes the deployment that is running — the Portal read-only API
+ * has no call that returns a deployment's stored config.
+ */
+export interface ObservedExecutionConfig {
+  /** where the log lines came from (`Logs` pod name) */
+  podName?: string;
+  /** manifest_path: the spkg URL the runner resolved */
+  spkgUrl?: string;
+  outputModule?: string;
+  moduleOutputType?: string;
+  outputModuleHash?: string;
+  startBlock?: number;
+  /** 0 means unbounded */
+  stopBlock?: number;
+  /** module parameters the runner received; an empty array is the fix for the start-command failure in docs/build/sink-spike.md §7 */
+  parameters?: string[];
+  /** database (from-proto schema name) the runner initialized */
+  database?: string;
+  finalBlocksOnly?: boolean;
 }

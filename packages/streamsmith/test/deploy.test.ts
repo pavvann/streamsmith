@@ -3,7 +3,7 @@ import { readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { PortalClient, PortalError, field, isUnauthenticated } from "../src/deploy/portal.ts";
-import { deployHosted, AwaitingSecretError, summarizeState, isSettled } from "../src/deploy/hosted.ts";
+import { deployHosted, attachHosted, parsePodExecutionConfig, AwaitingSecretError, summarizeState, isSettled } from "../src/deploy/hosted.ts";
 import { buildSinkCommand, parseDsn, startSelfManaged, selfManagedStatus } from "../src/deploy/selfManaged.ts";
 import { chQuery, chMaxBlock, chRowCounts, chDumpSchema, redactUrl, clickhouseHttpUrl, clickhouseDatabase } from "../src/deploy/clickhouse.ts";
 import { splitSqlStatements, applyViews } from "../src/deploy/views.ts";
@@ -87,6 +87,112 @@ describe("deployHosted", () => {
       expect(r.record).toMatchObject({ deploymentId: "dep-2", headBlock: 51100000, chainHead: 51100012, lagBlocks: 12, lagSeconds: 24, state: "DEPLOYMENT_STATE_DEPLOYED/STATE_LIVE", packageHash: "ab" });
       expect(r.record.sink?.hostFingerprint).toHaveLength(64);
       expect(ff.calls.map((c) => c.url.split("/").pop())).not.toContain("CreateDeployment");
+    } finally {
+      await repo.cleanup();
+    }
+  });
+});
+
+/** The startup lines the hosted runner writes, in the shape Portal `Logs` returns them. */
+const POD_LOG_LINES = [
+  JSON.stringify({ severity: "INFO", logger: "substreams", message: "reading substreams manifest", manifest_path: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0" }),
+  JSON.stringify({ severity: "INFO", logger: "substreams", message: "sinker from CLI", manifest_path: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0", params: [], network: "", output_module_name: "map_events", expected_module_type: "vaultflows.v1.Events", start_block: 51001200, stop_block: 0, final_blocks_only: false }),
+  JSON.stringify({ severity: "INFO", logger: "substreams", message: "sinker configured", output_module_name: "map_events", output_module_type: "proto:vaultflows.v1.Events", output_module_hash: "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a", start_block: 51001200 }),
+  JSON.stringify({ severity: "INFO", logger: "substreams", message: "creating schema", name: "vaultflows_hosted", root_message_descriptor: "Events" }),
+  "not json at all",
+].join("\n");
+
+const LOGS_RESPONSE = { success: true, podLogs: [{ podName: "erc4626-flowsbasecli-ss-dep-3-0", logs: POD_LOG_LINES }] };
+
+describe("deploy hosted --attach", () => {
+  it("parses the execution config the running pod reports", () => {
+    expect(parsePodExecutionConfig(LOGS_RESPONSE)).toEqual({
+      podName: "erc4626-flowsbasecli-ss-dep-3-0",
+      spkgUrl: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0",
+      outputModule: "map_events",
+      moduleOutputType: "proto:vaultflows.v1.Events",
+      outputModuleHash: "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a",
+      startBlock: 51001200,
+      stopBlock: 0,
+      parameters: [],
+      database: "vaultflows_hosted",
+      finalBlocksOnly: false,
+    });
+    expect(parsePodExecutionConfig({ success: true, podLogs: [] })).toBeUndefined();
+    expect(parsePodExecutionConfig({ success: true, podLogs: [{ podName: "p", logs: "plain text\nlines" }] })).toBeUndefined();
+  });
+
+  it("records a running deployment from read-only calls: no Deploy, no CreateDeployment, no UpdateDeploymentConfig", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const seen: string[] = [];
+      const fetch = async (url: string, init?: RequestInit) => {
+        const body = String(init?.body ?? "");
+        if (url.includes("/sf.portalapi.v1.")) {
+          const method = url.split("/").pop()!;
+          seen.push(method);
+          if (method === "GetDeploymentState") {
+            // a catching-up pod: the Portal reports the sink's own progress as head_block and no current_block
+            return new Response(JSON.stringify({ success: true, deploymentState: { deploymentState: "DEPLOYMENT_STATE_DEPLOYED", replica: "1", readyReplicas: "1", executionStates: [{ podName: "erc4626-flowsbasecli-ss-dep-3-0", state: "STATE_CATCHING_UP", headBlock: "51005010", headBlockTimeDrift: 409678.7 }] } }));
+          }
+          if (method === "Logs") return new Response(JSON.stringify(LOGS_RESPONSE));
+          throw new Error(`attach must not call ${method}`);
+        }
+        if (url.startsWith("https://rpc")) return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x30d63d0" })); // 51209168
+        if (body.includes("_blocks_") && body.includes("max(number)")) return new Response("51005010\n");
+        if (body.startsWith("SELECT count()")) return new Response("846\n");
+        return new Response("");
+      };
+      const ctx = { ...repo.ctx, fetch, env: { PORTAL_TOKEN: "t", PORTAL_ORG_ID: "org" } };
+      const r = await attachHosted(ctx, {
+        runId: "at1",
+        streamsmith: ss,
+        deploymentId: "dep-3",
+        clickhouse: { server: "host.clickhouse.cloud", port: 9440, user: "default", database: "vaultflows_hosted", secure: true },
+        clickhouseUrl: "http://ro:ropass@localhost:8123/",
+        rpcUrl: "https://rpc.example",
+      });
+      expect(seen).toEqual(["GetDeploymentState", "Logs"]);
+      expect(r.record).toMatchObject({
+        deploymentMode: "graph-market-hosted",
+        deploymentId: "dep-3",
+        spkg: "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.0",
+        outputModule: "map_events",
+        network: "base",
+        startBlock: 51001200,
+        state: "DEPLOYMENT_STATE_DEPLOYED/STATE_CATCHING_UP",
+        headBlock: 51005010,
+        chainHead: 51209168,
+        lagBlocks: 204158,
+      });
+      expect(r.record.sink).toMatchObject({ kind: "clickhouse", mode: "from-proto", database: "vaultflows_hosted" });
+      expect(r.record.sink?.hostFingerprint).toHaveLength(64);
+      expect(r.record.executionConfig?.parameters).toEqual([]);
+      expect(r.record.rowCounts).toMatchObject({ vault_flows: 846, _blocks_: 846 });
+      // head and lag come from the sink's database and an independent chain head, not from the Portal numbers
+      expect(r.record.notes?.some((n) => n.startsWith("portal head_block: 51005010"))).toBe(true);
+      expect(JSON.stringify(r.record)).not.toContain("ropass");
+      const onDisk = JSON.parse(await readFile(join(repo.root, "runs", "at1", "deploy.json"), "utf8"));
+      expect(onDisk.deploymentMode).toBe("graph-market-hosted");
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  it("still records the deployment when Logs is unavailable, and refuses without a deployment id", async () => {
+    const repo = await makeTempRepo();
+    try {
+      const fetch = async (url: string) => {
+        if (url.endsWith("/GetDeploymentState")) return new Response(JSON.stringify({ success: true, deploymentState: { deploymentState: "DEPLOYMENT_STATE_DEPLOYED", executionStates: [{ state: "STATE_LIVE", currentBlock: "51209000", headBlock: "51209010" }] } }));
+        if (url.endsWith("/Logs")) return new Response("boom", { status: 500 });
+        throw new Error(`unexpected ${url}`);
+      };
+      const ctx = { ...repo.ctx, fetch, env: { PORTAL_TOKEN: "t", PORTAL_ORG_ID: "org" } };
+      const r = await attachHosted(ctx, { runId: "at2", streamsmith: ss, deploymentId: "dep-4", clickhouse: { server: "h", port: 9440, user: "default", database: "vaultflows_hosted", secure: true } });
+      expect(r.record.executionConfig).toBeUndefined();
+      expect(r.record.startBlock).toBe(ss.startBlock);
+      expect(r.record.notes?.some((n) => n.startsWith("Logs failed:"))).toBe(true);
+      await expect(attachHosted(ctx, { runId: "at3", streamsmith: ss, deploymentId: "", clickhouse: { server: "h", port: 9440, user: "default", database: "d", secure: true } })).rejects.toThrow(/--deployment-id/);
     } finally {
       await repo.cleanup();
     }

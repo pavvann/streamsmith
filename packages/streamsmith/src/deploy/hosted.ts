@@ -1,14 +1,18 @@
 // Hosted deploy on The Graph Market via the Portal API HostedService (facts (e)).
 // Sequence: CreateDeployment (unless --deployment-id) → HasDeploymentSecret (stop with the secret URL when the
 // human has not staged the DB password) → Deploy (retry on DB cold start) → poll GetDeploymentState → head/lag.
+// `attachHosted` is the read-only counterpart: it describes a deployment that is already running (GetDeploymentState
+// + Logs + the sink's database + an independent chain head) and never calls a mutating endpoint.
 import { join } from "node:path";
 import type { Ctx } from "../util/ctx.ts";
 import { paths } from "../util/ctx.ts";
 import { writeJson, readJsonLenient } from "../util/fsx.ts";
 import type { StreamsmithConfig } from "../config/streamsmith.ts";
 import { hostFingerprint } from "../receipt.ts";
-import { PortalClient, PortalError, isUnauthenticated, type ClickhouseOutput, type DeploymentStateSummary } from "./portal.ts";
-import type { DeployRecord } from "./types.ts";
+import { PortalClient, PortalError, asInt, field, isUnauthenticated, type ClickhouseOutput, type DeploymentStateSummary } from "./portal.ts";
+import { chBlocksHead, chMaxBlock, chRowCounts } from "./clickhouse.ts";
+import { ethBlockNumber, BASE_BLOCK_TIME_SECONDS } from "./rpc.ts";
+import type { DeployRecord, ObservedExecutionConfig } from "./types.ts";
 
 export const EXIT_AWAITING_SECRET = 40;
 
@@ -184,6 +188,160 @@ export async function deployHosted(ctx: Ctx, opts: HostedDeployOptions): Promise
     }
     const freshPortal = new PortalClient(ctx, { token: refreshed.accessToken, organizationId: refreshed.organizationId ?? portal.organizationId });
     return attemptDeployHosted(ctx, opts, freshPortal);
+  }
+}
+
+export interface HostedAttachOptions {
+  runId: string;
+  streamsmith: StreamsmithConfig;
+  /** the deployment to describe; never created, never reconfigured */
+  deploymentId: string;
+  /** the ClickHouse output the deployment writes to (non-secret fields only) */
+  clickhouse: ClickhouseOutput;
+  /** ClickHouse HTTP URL used to read head and row counts; credentials stay in the URL and are never recorded */
+  clickhouseUrl?: string;
+  rpcUrl?: string;
+  tables?: string[];
+  /** spkg URL to record when the pod log does not carry one */
+  spkgUrl?: string;
+  packageHash?: string;
+  logTailLines?: number;
+  blockTimeSeconds?: number;
+  verbose?: boolean;
+  portal?: PortalClient;
+}
+
+/** Parse the hosted runner's own startup lines out of a `Logs` response. Best effort: a shape change downgrades
+ * to "not observed", never to a wrong value. */
+export function parsePodExecutionConfig(logsResponse: unknown): ObservedExecutionConfig | undefined {
+  const pods = field<unknown[]>(logsResponse, "pod_logs") ?? [];
+  for (const pod of pods) {
+    const text = field<string>(pod, "logs");
+    if (!text) continue;
+    const out: ObservedExecutionConfig = {};
+    const podName = field<string>(pod, "pod_name");
+    if (podName) out.podName = podName;
+    for (const line of text.split("\n")) {
+      if (!line.startsWith("{")) continue;
+      let rec: Record<string, unknown>;
+      try {
+        rec = JSON.parse(line) as Record<string, unknown>;
+      } catch {
+        continue;
+      }
+      const message = String(rec.message ?? "");
+      if (message === "sinker from CLI") {
+        const url = field<string>(rec, "manifest_path"); if (url) out.spkgUrl = url;
+        const mod = field<string>(rec, "output_module_name"); if (mod) out.outputModule = mod;
+        const start = asInt(field(rec, "start_block")); if (start !== undefined) out.startBlock = start;
+        const stop = asInt(field(rec, "stop_block")); if (stop !== undefined) out.stopBlock = stop;
+        const params = field<unknown[]>(rec, "params"); if (Array.isArray(params)) out.parameters = params.map(String);
+        const fbo = field(rec, "final_blocks_only"); if (fbo !== undefined) out.finalBlocksOnly = Boolean(fbo);
+      } else if (message === "sinker configured") {
+        const type = field<string>(rec, "output_module_type"); if (type) out.moduleOutputType = type;
+        const hash = field<string>(rec, "output_module_hash"); if (hash) out.outputModuleHash = hash;
+        const mod = field<string>(rec, "output_module_name"); if (mod) out.outputModule = mod;
+      } else if (message === "creating schema" || message === "initializing schema") {
+        const name = field<string>(rec, "name"); if (name) out.database = name;
+      }
+    }
+    if (Object.keys(out).length > (out.podName ? 1 : 0)) return out;
+  }
+  return undefined;
+}
+
+async function attemptAttachHosted(ctx: Ctx, o: HostedAttachOptions, portal: PortalClient): Promise<{ record: DeployRecord; path: string }> {
+  const ss = o.streamsmith;
+  const path = paths.runs(ctx, o.runId, "deploy.json");
+  const notes: string[] = [];
+
+  const state = await portal.getDeploymentState(o.deploymentId);
+  const summary = summarizeState(state);
+  notes.push(`GetDeploymentState: ${summary.state}`);
+
+  let observed: ObservedExecutionConfig | undefined;
+  try {
+    observed = parsePodExecutionConfig(await portal.logs(o.deploymentId, o.logTailLines ?? 400));
+    notes.push(observed ? `execution config read from pod log (${observed.podName ?? "pod"})` : "Logs returned no startup lines to read the execution config from");
+  } catch (err) {
+    notes.push(`Logs failed: ${(err as Error).message.slice(0, 200)}`);
+  }
+
+  const record: DeployRecord = {
+    deploymentMode: "graph-market-hosted",
+    deploymentId: o.deploymentId,
+    spkg: observed?.spkgUrl ?? o.spkgUrl,
+    outputModule: observed?.outputModule ?? ss.outputModule,
+    network: ss.deployment?.network ?? ss.network,
+    startBlock: observed?.startBlock ?? ss.startBlock,
+    state: summary.state,
+    sink: { kind: "clickhouse", mode: "from-proto", database: o.clickhouse.database, hostFingerprint: hostFingerprint(o.clickhouse.server, o.clickhouse.port) },
+    runId: o.runId,
+  };
+  if (record.spkg === undefined) delete record.spkg;
+  if (o.packageHash) record.packageHash = o.packageHash;
+  if (observed) record.executionConfig = observed;
+  if (observed?.database && observed.database !== o.clickhouse.database) {
+    notes.push(`pod log initialized schema "${observed.database}" but --ch-database is "${o.clickhouse.database}"`);
+  }
+  // The Portal reports the sink's own progress as `head_block` with no `current_block` on a catching-up pod, so
+  // head and lag are taken from the database the sink writes to and an independent chain head, exactly as the
+  // self-managed path does. Portal numbers are kept as notes, never silently relabelled.
+  if (summary.headBlock !== undefined) notes.push(`portal current_block: ${summary.headBlock}`);
+  if (summary.chainHead !== undefined) notes.push(`portal head_block: ${summary.chainHead}`);
+  if (summary.lagSeconds !== undefined) notes.push(`portal head_block_time_drift: ${summary.lagSeconds}s`);
+
+  const tables = o.tables ?? ss.sink?.tables ?? ["vault_flows", "share_value_observations", "vaults", "share_transfers"];
+  if (o.clickhouseUrl) {
+    const blocksHead = await chBlocksHead(ctx, o.clickhouseUrl, o.clickhouse.database, o.verbose);
+    if (blocksHead !== undefined) {
+      record.headBlock = blocksHead;
+      notes.push(`clickhouse _blocks_ max(number): ${blocksHead}`);
+    } else {
+      const m = await chMaxBlock(ctx, o.clickhouseUrl, o.clickhouse.database, tables, o.verbose);
+      if (m.maxBlock !== undefined) record.headBlock = m.maxBlock;
+      notes.push(`clickhouse max(_block_number_): ${JSON.stringify(m.perTable)}`);
+    }
+    record.rowCounts = await chRowCounts(ctx, o.clickhouseUrl, o.clickhouse.database, tables.includes("_blocks_") ? tables : [...tables, "_blocks_"], o.verbose);
+    notes.push(`row counts: ${JSON.stringify(record.rowCounts)}`);
+  } else notes.push("no ClickHouse HTTP URL (pass --clickhouse-url); headBlock and row counts not recorded");
+
+  try {
+    record.chainHead = await ethBlockNumber(ctx, o.rpcUrl, o.verbose);
+  } catch (err) {
+    notes.push(`eth_blockNumber failed: ${(err as Error).message.slice(0, 200)}`);
+  }
+  if (record.headBlock !== undefined && record.chainHead !== undefined) {
+    record.lagBlocks = Math.max(0, record.chainHead - record.headBlock);
+    record.lagSeconds = record.lagBlocks * (o.blockTimeSeconds ?? BASE_BLOCK_TIME_SECONDS);
+  }
+  record.checkedAt = ctx.now().toISOString();
+  record.notes = notes;
+  await writeJson(path, record);
+  ctx.log(`deploy(hosted --attach): ${record.state} head=${record.headBlock ?? "?"} chain=${record.chainHead ?? "?"} lag=${record.lagBlocks ?? "?"} blocks -> ${path}`);
+  return { record, path };
+}
+
+/**
+ * Record an already-running hosted deployment into `runs/<id>/deploy.json` without deploying anything.
+ *
+ * Only read-only Portal calls are made (`GetDeploymentState`, `Logs`): `Deploy`, `UpdateDeploymentConfig` and
+ * `CreateDeployment` all restart or duplicate the running pod, so a cut-over that only needs a receipt must not
+ * reach for them. Head, lag and row counts come from the sink's own database plus an independent chain head.
+ */
+export async function attachHosted(ctx: Ctx, o: HostedAttachOptions): Promise<{ record: DeployRecord; path: string }> {
+  if (!o.deploymentId) throw new Error("--attach requires --deployment-id (it describes an existing deployment; it never creates one)");
+  const portal = o.portal ?? new PortalClient(ctx);
+  try {
+    return await attemptAttachHosted(ctx, o, portal);
+  } catch (err) {
+    if (!isUnauthenticated(err)) throw err;
+    const refreshToken = ctx.env.PORTAL_REFRESH_TOKEN;
+    if (!refreshToken) throw new Error("unauthenticated (PORTAL_TOKEN expired or invalid); run `streamsmith deploy login`, export the printed PORTAL_TOKEN / PORTAL_ORG_ID, and retry — or set PORTAL_REFRESH_TOKEN to retry automatically");
+    ctx.log("deploy(hosted --attach): unauthenticated; retrying once via RefreshToken (PORTAL_REFRESH_TOKEN)");
+    const refreshed = await portal.refreshToken(refreshToken);
+    const fresh = new PortalClient(ctx, { token: refreshed.accessToken, organizationId: refreshed.organizationId ?? portal.organizationId });
+    return attemptAttachHosted(ctx, o, fresh);
   }
 }
 
