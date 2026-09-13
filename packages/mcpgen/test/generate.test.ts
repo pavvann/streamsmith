@@ -66,8 +66,9 @@ describe("generator", () => {
     expect(m.expectedSchema.columnSetHash).toMatch(/^[0-9a-f]{64}$/);
     expect(m.toolsHash).toBe(sha256Canonical(m.tools));
     expect(m.receipt.sha256).toBe(sha256Hex(await readFile(GENERATED_RECEIPT)));
-    // the real deployment's module hash (receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json)
-    expect(m.package).toMatchObject({ name: "erc4626-flows", version: "v0.1.0", outputModule: "map_events", outputModuleHash: "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a", chainId: 8453, deploymentMode: "self-managed-sink", startBlock: 51_001_200 });
+    // the live deployment's identity: the hosted receipt (receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json),
+    // which is what `streamsmith mcp` last generated the checked-in package from
+    expect(m.package).toMatchObject({ name: "erc4626-flows", version: "v0.1.0", outputModule: "map_events", outputModuleHash: "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a", chainId: 8453, deploymentMode: "graph-market-hosted", deploymentId: "depnywi036749442f3c55e7", startBlock: 51_001_200 });
     expect(m.vaults).toEqual(["0x050ce30b927da55177a4914ec73480238bad56f0", "0xbeef0e0834849acc03f0089f01f4f1eeb06873c9"]);
     expect(m.policy).toMatchObject({ maxLagBlocksDefault: 300, checkIntervalSeconds: 60, queryTimeoutMs: 10_000, maxLimit: 500 });
     const vf = m.tools.find((t) => t.name === "vault_flows")!;

@@ -20,9 +20,9 @@ export const LIVE_OBSERVATION_JSONL = join(REPO_ROOT, "runs", "live", "observati
 /**
  * The receipt the checked-in packages/mcp-vaultflows was generated from — `generate` copies it next to
  * manifest.json, so it is the receipt that generated package's guardian must accept. It is NOT
- * fixtures/receipt.example.json: since the real deployment (runs/20260910T234439Z-1fr9) the generated package is
- * built from the real receipt, and pinning the tests to the fixture made every guardian check refuse with
- * `receipt_mismatch` against the real manifest.
+ * fixtures/receipt.example.json: since the first real deployment the generated package is built from the real
+ * receipt (now the hosted one, runs/20260912T103328Z-vipc), and pinning the tests to the fixture made every
+ * guardian check refuse with `receipt_mismatch` against the real manifest.
  */
 export const GENERATED_RECEIPT = join(GENERATED_DIR, "receipt.json");
 

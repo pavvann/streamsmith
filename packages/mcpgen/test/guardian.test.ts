@@ -50,8 +50,8 @@ describe("fail-closed guardian", () => {
       packageHash: manifest.package.packageHash,
       outputModuleHash: manifest.package.outputModuleHash,
       parametersHash: manifest.receipt.parametersHash,
-      deploymentMode: "self-managed-sink",
-      deploymentId: manifest.package.deploymentId, // null for a self-managed sink, an id for a hosted one
+      deploymentMode: "graph-market-hosted",
+      deploymentId: manifest.package.deploymentId, // an id for a hosted deployment, null for a self-managed sink
       headBlock: 51_093_000,
       chainHead: 51_093_100,
       lagBlocks: 100,
