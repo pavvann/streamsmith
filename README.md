@@ -36,6 +36,29 @@ while the receipt and the schema are still fine
 live data, including an RPC cross-check against `eth_getTransactionReceipt`/`convertToAssets` at the
 cited blocks.
 
+### Recorded one-prompt run
+
+The claim in the first paragraph — one request in, a verified pipeline out — was run once for the
+record, in a separate directory with none of this repository's package code in it. The whole of it is
+sealed in [`runs/recorded/20260913T114823Z-nyom/`](runs/recorded/20260913T114823Z-nyom/README.md).
+
+The baseline was a commit tagged `clean-start`: 112 files — the frozen contract
+`specs/vaultflows.proto`, the gate, the two tools, the workspace — and no `packages/erc4626-flows`.
+A human typed one message, the path [`specs/prompt.md`](specs/prompt.md), and nothing after it.
+
+| | |
+|---|---|
+| Gate | **passed, exit 0** — 18 assertions, 18 passed (16 fail-severity, 2 warn-severity), one `substreams build`, no retries |
+| Published | [`substreams.dev/packages/erc4626-flows/v0.1.1`](https://substreams.dev/packages/erc4626-flows/v0.1.1) |
+| Module hash | `22c9d75e3161308ee9690d9fa1012eca10ac6ef3` — different code from the reference package's `8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a`, same contract and same gate |
+| Deployed | self-managed sink into ClickHouse `vaultflows_rec`; the live databases were untouched |
+| Receipt | [`…-v0.1.1-20260913T114823Z-nyom.json`](receipts/erc4626-flows-v0.1.1-20260913T114823Z-nyom.json), with `mcpManifestHash` bound to the MCP server the run generated |
+| Time | **4 min 51 s** from the run manifest to the receipt; **9 min 51 s** through applying the package's views |
+
+The folder holds the run records, the generated package source, and the full `git` diff and patch
+against `clean-start`, so the boundary between what was given and what was produced is checkable line
+by line. No video or terminal capture exists and none is claimed; the evidence is the directory.
+
 ## Architecture
 
 ```mermaid
@@ -142,7 +165,7 @@ that satisfies it. Where a bullet is not yet satisfied, that is stated instead o
 
 | Bullet | Evidence |
 |---|---|
-| "Featured challenge: Substreams SKILLs → one prompt → deployed Substreams pipeline" | Code generation via the official skills is disclosed in [AI-USAGE.md](AI-USAGE.md); the protocol is specified in `docs/PROJECT.md` §5; the resulting pipeline is deployed and live (receipt above). **The single uninterrupted, timestamped one-prompt-to-receipt recording the protocol describes has not been captured yet** (`docs/TASKS.md` task T7.3 is unchecked) — left as a partial claim; see Limitations. |
+| "Featured challenge: Substreams SKILLs → one prompt → deployed Substreams pipeline" | Done once for the record and sealed in [`runs/recorded/20260913T114823Z-nyom/`](runs/recorded/20260913T114823Z-nyom/README.md): from a 112-file `clean-start` tag with no `packages/erc4626-flows`, one message and nothing else gave gate 18/18 (exit 0), [`erc4626-flows` v0.1.1](https://substreams.dev/packages/erc4626-flows/v0.1.1) on the registry (module hash `22c9d75e…`), a live sink into `vaultflows_rec`, generated MCP tools and a [receipt](receipts/erc4626-flows-v0.1.1-20260913T114823Z-nyom.json) — 4 min 51 s to the receipt. Code generation via the official skills is disclosed in [AI-USAGE.md](AI-USAGE.md); the protocol is `docs/PROJECT.md` §5. Evidence is the run directory and the diff against the tag, not a recording hash. |
 | "Graph must be load-bearing; live data via Studio API key or Graph Market" | Same receipt and live probe as above. |
 | "Meaningful work with the data: reasoning, decisions, automation, or NL interface" | [`apps/vaultpilot/src/decision.ts`](apps/vaultpilot/src/decision.ts) turns two vaults' observations into a rotate/hold decision with a stated reason; [`packages/mcp-vaultflows/README.md`](packages/mcp-vaultflows/README.md) exposes semantic tools (`vault_flows`, `share_value_growth`, ...), not a raw-SQL passthrough. |
 | "Tooling submissions must be reusable infra, not a single end-user app" | [`packages/streamsmith/README.md`](packages/streamsmith/README.md) (promotion pipeline, works on any gated Substreams package) and [`packages/mcpgen/README.md`](packages/mcpgen/README.md) (generates a fail-closed MCP server from any proto contract + receipt, not just this one). |

@@ -115,17 +115,45 @@ A dated record of what was built, what it measured, and what is still open. Time
 - The self-managed sink into `vaultflows` keeps running as the fallback with its own receipt; neither
   deployment writes to the other's database.
 
+## Sept 13 — recorded one-prompt run
+
+- Run `20260913T114823Z-nyom`, in a separate directory staged per docs/RECORDING.md §A with no
+  `packages/erc4626-flows` in it. Baseline commit tagged `clean-start`: 112 tracked files — 5 spec files,
+  103 files of `streamsmith` and `mcpgen`, 4 workspace files — and a clean tree. `specs/vaultflows.proto`,
+  `specs/prompt.md` and `specs/receipt.schema.json` are byte-identical to this repository's;
+  `specs/streamsmith.yaml` and `specs/gate.yaml` differ only in the package version (v0.1.1, because
+  v0.1.0 is taken on the registry) and in the sink target (`vaultflows_rec`, self-managed), so the live
+  `vaultflows` and `vaultflows_hosted` databases were never reachable from that directory.
+- One message was typed — the path `specs/prompt.md`, sha256 `30cd5095…`, the value the run manifest
+  records as `promptHash` — and nothing after it.
+- Result: gate **18/18 passed, exit 0** (16 fail-severity, 2 warn-severity, both RPC cross-checks green);
+  `build.log` records a single `substreams build`, exit 0 in 27.1 s; `erc4626-flows` **v0.1.1** published
+  to substreams.dev (`packageHash b9089b3f…`, `.spkg` 826,487 bytes); self-managed `substreams-sink-sql`
+  into `vaultflows_rec` with both views applied; MCP server generated and its manifest sha256
+  `28078fe9…` bound back into the receipt (canonical receiptHash `5c7234c5…`).
+- The output module hash is `22c9d75e3161308ee9690d9fa1012eca10ac6ef3` against the reference package's
+  `8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a` — same contract, same parameters, same gate, independently
+  written code, which is the point of the exercise.
+- Timing from the run files: manifest `11:48:26.567Z` → receipt `11:53:17.927Z` (4 min 51 s), views
+  applied `11:58:17.370Z` (9 min 51 s end to end). At the deploy record the sink was still backfilling
+  from block 51,001,200: head 51,006,830, 1,041 flow rows, 177 vaults, 2 observations, 1,030 blocks.
+- Sealed into `runs/recorded/20260913T114823Z-nyom/` — run records, the generated package source
+  (no `target/`, no `.spkg`; its sha256 and size are in the folder README), the receipt, and the diff
+  stat and full patch against `clean-start` (60 files, 10,487 insertions). Absolute machine paths and the
+  ClickHouse hostname are replaced with placeholders; the folder README lists every substitution file by
+  file. No screen or terminal capture was taken, so no recording hash is claimed anywhere.
+
 ## Current state (Sept 13)
 **Read in this order:** this file (bottom-up), docs/TASKS.md (tracker with `[x]`/`[~]`/`[!]`), docs/SUBMISSION.md (gates), docs/RECORDING.md (recording protocol), README.md.
 
-Everything that does not require an operator account or funds is built, green and committed. The package is published (substreams.dev `erc4626-flows` v0.1.0, module hash 8e4892cf…) and runs through two deployments: hosted on The Graph Market (`depnywi036749442f3c55e7` → `vaultflows_hosted`, receipt receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json, caught up at single-digit block lag) and self-managed (`substreams-sink-sql` → `vaultflows`, pid file runs/live/cloud/sink.pid, steady at lag 200–250, receipt receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json with gate 18/18). The hosted deployment is the live pipeline: the shipped MCP server is generated from its receipt and answers off `vaultflows_hosted` with provenance, and Vaultpilot's decision service and redesigned UI read the same database (`--source cloud`; start command in apps/vaultpilot/README.md). The self-managed sink is the fallback. The contract is frozen at tag `contract-v1`; the blind one-prompt rehearsal passed (docs/build/rehearsal-1.md).
+Everything that does not require an operator account or funds is built, green and committed. The package is published (substreams.dev `erc4626-flows` v0.1.0, module hash 8e4892cf…) and runs through two deployments: hosted on The Graph Market (`depnywi036749442f3c55e7` → `vaultflows_hosted`, receipt receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json, caught up at single-digit block lag) and self-managed (`substreams-sink-sql` → `vaultflows`, pid file runs/live/cloud/sink.pid, steady at lag 200–250, receipt receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json with gate 18/18). The hosted deployment is the live pipeline: the shipped MCP server is generated from its receipt and answers off `vaultflows_hosted` with provenance, and Vaultpilot's decision service and redesigned UI read the same database (`--source cloud`; start command in apps/vaultpilot/README.md). The self-managed sink is the fallback. The contract is frozen at tag `contract-v1`; the blind one-prompt rehearsal passed (docs/build/rehearsal-1.md), and the recorded one-prompt run is done and sealed in runs/recorded/20260913T114823Z-nyom/ — gate 18/18, `erc4626-flows` v0.1.1 published (module hash 22c9d75e…), sink into `vaultflows_rec`, receipt receipts/erc4626-flows-v0.1.1-20260913T114823Z-nyom.json.
 
 **Pending operator steps** (all independent of each other):
 1. Fund the treasury wallet `0xcdC8B69799bCb135C04A1052b918787125571fDC` with ~50 USDC on Base, then run `pnpm --filter @ethonline26/vaultpilot demo:deposit --amount 25 --execute` into the lower-growth vault, then `demo:rotate --execute` if the differential exceeds 2 bps.
 2. Fund the wallet with a small ETH balance on Base for gas (transactions are not sponsored).
-3. Book the recording slot for Sept 12.
+3. Record the demo video per docs/RECORDING.md §C. The one-prompt run itself is already done and sealed in runs/recorded/20260913T114823Z-nyom/, so the video can cut to its artifacts rather than re-running it.
 4. Delete the superseded hosted deployment `depdehi448c87998ebb763b` from the Graph Market UI. It is the failed first attempt; no delete endpoint is called from this repository.
 
-**Next work once the wallet is funded:** deposit + rotation with real tx hashes, surfaced in the ledger and the UI. Sept 12: stage a fresh directory and the `vaultflows_rec` database per docs/RECORDING.md, then record the one-prompt run and the video. Sept 13 before 12:00 EDT: submit (Graph both tracks + Privy both tracks, Start Fresh).
+**Next work once the wallet is funded:** deposit + rotation with real tx hashes, surfaced in the ledger and the UI. Then the video. Sept 13 before 12:00 EDT: submit (Graph both tracks + Privy both tracks, Start Fresh).
 
 **Project conventions:** each workstream is specified by a brief in specs/briefs/ before it starts; money-moving commands run only on an explicit operator instruction; banned words in all copy: yield, APY, share price, TVL, risk.

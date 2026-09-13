@@ -75,7 +75,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 ## 7. Evidence, docs, video, submission (Sept 12–13)
 - [ ] T7.1 M A5 · Package + plugin + MCP READMEs.
 - [x] T7.2 M A15 · Root README: thesis (PROJECT.md §1), diagram (Mermaid + PNG), sponsor mapping with file refs, live endpoints.
-- [ ] T7.3 M OP+PRJ · Forensic one-prompt run: clean tag, `git status/HEAD/tag/date -u` on screen, asciinema + screen capture, transcript, manifest, diff, uncut hash. dep: T4.8, T2.6
+- [x] T7.3 M OP+PRJ · (run `20260913T114823Z-nyom`, Sept 13) Forensic one-prompt run from tag `clean-start` (112 files, no `packages/erc4626-flows`): one message, nothing after it → gate 18/18 exit 0, `erc4626-flows` v0.1.1 published (module hash `22c9d75e…`), self-managed sink into `vaultflows_rec`, MCP generated, receipt written; 4 min 51 s from run manifest to receipt. Sealed in `runs/recorded/20260913T114823Z-nyom/` with the run records, the generated package source, and the diff and patch against the tag. No screen or terminal capture was taken, so no recording hash is claimed; the directory and the diff are the evidence.
 - [ ] T7.4 M OP · Video 3:30 per PROJECT.md §7; 1080p; human voice; test-upload by Sept 12 night.
 - [~] T7.5 M PRJ · (AI-USAGE + specs/briefs current; feedback docs growing) `AI-USAGE.md` final; `specs/` complete; feedback docs final.
 - [ ] T7.6 M PRJ · `docs/STATUS.md` daily.
