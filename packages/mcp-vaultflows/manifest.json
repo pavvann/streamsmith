@@ -10,17 +10,17 @@
     "packageHash": "662fdd37f94927e9a1bacb5756d6142eb0ab8811b78db0b115475ea2e03093b0",
     "outputModule": "map_events",
     "outputModuleHash": "8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a",
-    "deploymentMode": "self-managed-sink",
-    "deploymentId": null,
+    "deploymentMode": "graph-market-hosted",
+    "deploymentId": "depnywi036749442f3c55e7",
     "chainId": 8453,
     "network": "base",
     "startBlock": 51001200
   },
   "receipt": {
-    "sha256": "f8b5d76c021ee5119c5b0f489565191a167aa9c9baee1ee5aefbb281eee434bd",
+    "sha256": "5df23e2384f6353a36c7fe448b4bd53cc0751161e7111301fdd1f166ec9d4978",
     "parametersHash": "baa6ae91bb4047064c246d4541b33c8cf91c6e6a867be766a16c5be9524100cd",
     "protoDescriptorHash": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9",
-    "sinkSchemaHash": "6d57b7cdba91fde52f33f6430f853fd9414b267b3330a65f7c7c0a3d725f650d"
+    "sinkSchemaHash": "89f106091e7bdd69b025018f24ecdea75d7f0a8acc9e0087eccd3d1287a20e48"
   },
   "inputs": {
     "proto": {

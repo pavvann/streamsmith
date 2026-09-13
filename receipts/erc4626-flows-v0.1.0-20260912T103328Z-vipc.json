@@ -151,5 +151,6 @@
     "mode": "from-proto",
     "database": "vaultflows_hosted",
     "hostFingerprint": "fbb35e8d115035d0ff8a45539d3a5e0c143701e3e40590b3769eed59823f6831"
-  }
+  },
+  "mcpManifestHash": "bf2e2ad3f61c46505d4d08e2c2e0d9935e33c917934651262666269a558eaeee"
 }

@@ -1,0 +1,6 @@
+{
+  "command": "pnpm --filter @ethonline26/mcpgen generate --receipt <repo>/receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json --proto <repo>/specs/vaultflows.proto --views <repo>/packages/erc4626-flows/sql/views.sql --out <repo>/packages/mcp-vaultflows",
+  "code": 0,
+  "stdout": "\n> @ethonline26/mcpgen@0.1.0 generate <repo>/packages/mcpgen\n> node bin/mcpgen.js generate --receipt fixtures/receipt.example.json --proto ../../specs/vaultflows.proto --views ../erc4626-flows/sql/views.sql --out ../mcp-vaultflows --receipt <repo>/receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json --proto <repo>/specs/vaultflows.proto --views <repo>/packages/erc4626-flows/sql/views.sql --out <repo>/packages/mcp-vaultflows\n\n{\"manifest\":\"<repo>/packages/mcp-vaultflows/manifest.json\"}\n",
+  "stderr": "mcpgen: receipt schema: <repo>/specs/receipt.schema.json\nmcpgen: receipt: erc4626-flows v0.1.0 (graph-market-hosted); 2 vault(s)\nmcpgen: proto: package vaultflows.v1; tables vault_flows, share_value_observations, vaults, share_transfers\nmcpgen: views: vault_flows_24h, share_value_growth\nmcpgen: semantics: <repo>/packages/mcpgen/semantics/default.yaml\nmcpgen: tools: vault_flows, share_value_observations, vaults, recent_share_migration, vault_flows_24h, share_value_growth, pipeline_status\nmcpgen: wrote 15 files to <repo>/packages/mcp-vaultflows\n"
+}

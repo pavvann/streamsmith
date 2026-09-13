@@ -2,7 +2,7 @@
   "name": "@ethonline26/mcp-vaultflows",
   "version": "0.1.0",
   "private": true,
-  "description": "Generated MCP server over the erc4626-flows Substreams sink (fail-closed against Deployment Receipt f8b5d76c021e).",
+  "description": "Generated MCP server over the erc4626-flows Substreams sink (fail-closed against Deployment Receipt 5df23e2384f6).",
   "type": "module",
   "engines": {
     "node": ">=22.18"
