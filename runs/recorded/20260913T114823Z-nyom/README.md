@@ -69,6 +69,8 @@ All timestamps are 2026-09-13. First to last is **9 min 51 s**; run manifest to 
 **4 min 51 s**. `sink.log` covers `11:51:13.535Z` to `12:06:25.978Z` (its own lines are stamped
 `+0530`) and ends with a graceful shutdown once the run was over.
 
+Operator-observed wall-clock from pasting the prompt to the receipt: about **40 minutes**; the run files do not stamp the authoring phase (reading the skills, writing the manifest, proto bindings and Rust), which is where most of that time went.
+
 This window covers the promotion pipeline — gate, publish, deploy, views, MCP, receipt. The
 authoring that preceded it is not timestamped by these files; what proves it is the diff:
 `git/diff-clean-start-HEAD.stat` and `git/one-prompt-run.patch` show every line the run added on top

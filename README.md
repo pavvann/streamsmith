@@ -53,7 +53,7 @@ A human typed one message, the path [`specs/prompt.md`](specs/prompt.md), and no
 | Module hash | `22c9d75e3161308ee9690d9fa1012eca10ac6ef3` — different code from the reference package's `8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a`, same contract and same gate |
 | Deployed | self-managed sink into ClickHouse `vaultflows_rec`; the live databases were untouched |
 | Receipt | [`…-v0.1.1-20260913T114823Z-nyom.json`](receipts/erc4626-flows-v0.1.1-20260913T114823Z-nyom.json), with `mcpManifestHash` bound to the MCP server the run generated |
-| Time | **4 min 51 s** from the run manifest to the receipt; **9 min 51 s** through applying the package's views |
+| Time | about **40 minutes** wall-clock from the prompt to the receipt (operator-observed; the authoring phase is not stamped by the run files); **4 min 51 s** from the run manifest to the receipt; **9 min 51 s** through applying the package's views |
 
 The folder holds the run records, the generated package source, and the full `git` diff and patch
 against `clean-start`, so the boundary between what was given and what was produced is checkable line

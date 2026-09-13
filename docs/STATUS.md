@@ -134,7 +134,7 @@ A dated record of what was built, what it measured, and what is still open. Time
 - The output module hash is `22c9d75e3161308ee9690d9fa1012eca10ac6ef3` against the reference package's
   `8e4892cfaf2785fe3ff76ba7c7691c8bd8db811a` — same contract, same parameters, same gate, independently
   written code, which is the point of the exercise.
-- Timing from the run files: manifest `11:48:26.567Z` → receipt `11:53:17.927Z` (4 min 51 s), views
+- Wall-clock from prompt to receipt about 40 minutes (operator-observed). Timing from the run files: manifest `11:48:26.567Z` → receipt `11:53:17.927Z` (4 min 51 s), views
   applied `11:58:17.370Z` (9 min 51 s end to end). At the deploy record the sink was still backfilling
   from block 51,001,200: head 51,006,830, 1,041 flow rows, 177 vaults, 2 observations, 1,030 blocks.
 - Sealed into `runs/recorded/20260913T114823Z-nyom/` — run records, the generated package source
