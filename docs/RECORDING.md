@@ -3,7 +3,7 @@
 Ground truth: the blind rehearsal (docs/build/rehearsal-1.md) built the package from the prompt alone in ~24 min productive time, gate 18/18 on the first gate attempt. Recording follows the same protocol with a human at the keyboard and the screen captured. Rules: 1080p, real microphone, no TTS, no speed-up (cuts are allowed), no music-only segments. Final video 3:00–3:30 (hard limits 2:00–4:00).
 
 ## A. Before pressing record (30 min)
-- [ ] Wallet funded (~50 USDC on Base at 0xcdC8B69799bCb135C04A1052b918787125571fDC); gas sponsorship App-pays on Base confirmed.
+- [ ] Wallet funded (~50 USDC on Base at 0xcdC8B69799bCb135C04A1052b918787125571fDC); plus a small ETH balance (~0.002 ETH) on Base for gas; transactions are not sponsored.
 - [ ] `pnpm demo:deposit --amount 25 --execute` run ONCE beforehand into the vault with the LOWER observed growth, so a real rotation is possible on camera. Save tx hash.
 - [ ] Fresh directory outside the repo (`streamsmith-recording`), built exactly as the rehearsal (specs/, packages/streamsmith, packages/mcpgen, workspace files, .env; NO packages/erc4626-flows). `git init`, commit, tag `clean-start`.
 - [ ] Package version for the recording: bump specs/streamsmith.yaml + manifest version to **v0.1.1** in the fresh dir (v0.1.0 is already published; registry refuses duplicates).

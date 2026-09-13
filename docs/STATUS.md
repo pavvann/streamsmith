@@ -122,7 +122,7 @@ Everything that does not require an operator account or funds is built, green an
 
 **Pending operator steps** (all independent of each other):
 1. Fund the treasury wallet `0xcdC8B69799bCb135C04A1052b918787125571fDC` with ~50 USDC on Base, then run `pnpm --filter @ethonline26/vaultpilot demo:deposit --amount 25 --execute` into the lower-growth vault, then `demo:rotate --execute` if the differential exceeds 2 bps.
-2. Confirm Privy gas sponsorship (App pays, on Base).
+2. Fund the wallet with a small ETH balance on Base for gas (transactions are not sponsored).
 3. Book the recording slot for Sept 12.
 4. Delete the superseded hosted deployment `depdehi448c87998ebb763b` from the Graph Market UI. It is the failed first attempt; no delete endpoint is called from this repository.
 
