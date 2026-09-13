@@ -1,0 +1,28 @@
+{
+  "manifestVersion": 1,
+  "runId": "20260913T114823Z-nyom",
+  "promptPath": "specs/prompt.md",
+  "promptHash": "30cd50952be8df76ad2d886eb8a334ec006db565f9f2fb140f0a313d05be02e0",
+  "specHashes": {
+    "specs/streamsmith.yaml": "4347e516a12cccbeb6e3e57bbd946756ed3987c34b8eff1a161bc25801df4ca0",
+    "specs/gate.yaml": "6985998b099186a82092915627f38dc3367e075205c6bc33923095e1792f6135",
+    "specs/vaultflows.proto": "4b384338de2d82c0610deb95ac9a02254162d0fbc4e5fc44316b5b5ba0817178",
+    "specs/receipt.schema.json": "1a8eaf36a4ef8d6f4cdb4865a391e3565d3a42e6fce86a6a0fe87b4a74bd0235",
+    "specs/prompt.md": "30cd50952be8df76ad2d886eb8a334ec006db565f9f2fb140f0a313d05be02e0"
+  },
+  "startedAt": "2026-09-13T11:48:26.567Z",
+  "toolVersions": {
+    "substreams": "substreams version 1.22.0 (Commit be35ad3, Commit Date 2026-08-24T13:58:05Z)",
+    "buf": "1.72.0",
+    "substreams-sink-sql": "substreams-sink-sql version 4.13.1 (Commit c05b15e, Commit Date 2026-02-26T21:06:08Z)",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "node": "v25.2.1",
+    "pnpm": "10.26.1"
+  },
+  "startingCommit": "453bbbc28e3904110d107c20f9123a9fa3c32d9f",
+  "startingTags": [
+    "clean-start"
+  ],
+  "startingTreeClean": false
+}

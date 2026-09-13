@@ -1,0 +1,18 @@
+$ substreams registry publish <recording-dir>/packages/erc4626-flows/erc4626-flows-v0.1.1.spkg --yes
+# exit 0
+⚠️ Detected Substreams Package warnings:
+   • Image (package.image) is not set
+📦 Package Details
+  Name: erc4626-flows
+  Version: v0.1.1
+  Description: Normalized ERC-4626 deposit and withdrawal facts plus fixed-interval convertToAssets observations for a configured set of Base vaults, emitted as a single from-proto sink message (vaultflows.v1.Events).
+  URL: https://github.com/pavvann/streamsmith
+  Network: base
+
+Package published successfully!
+
+View on the web at:  https://substreams.dev/packages/erc4626-flows/v0.1.1
+
+Start streaming with:
+
+    substreams gui erc4626-flows@v0.1.1

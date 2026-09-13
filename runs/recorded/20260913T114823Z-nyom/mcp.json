@@ -1,0 +1,12 @@
+{
+  "command": "pnpm --filter @ethonline26/mcpgen generate --receipt <recording-dir>/receipts/erc4626-flows-v0.1.1-20260913T114823Z-nyom.json --proto <recording-dir>/specs/vaultflows.proto --views <recording-dir>/packages/erc4626-flows/sql/views.sql --out <recording-dir>/packages/mcp-vaultflows",
+  "code": 0,
+  "durationMs": 1962,
+  "receiptPath": "receipts/erc4626-flows-v0.1.1-20260913T114823Z-nyom.json",
+  "out": "packages/mcp-vaultflows",
+  "manifest": "packages/mcp-vaultflows/manifest.json",
+  "mcpManifestHash": "28078fe9a36797e645c7f0aefb32b7eddb1e0e84df6bc9aca89b373750391822",
+  "receiptHash": "5c7234c5197d41027e40366c8bff461a5b85db40636f26b75928a5ce66fd33fb",
+  "stdoutTail": "> @ethonline26/mcpgen@0.1.0 generate <recording-dir>/packages/mcpgen\n> node bin/mcpgen.js generate --receipt fixtures/receipt.example.json --proto ../../specs/vaultflows.proto --views ../erc4626-flows/sql/views.sql --out ../mcp-vaultflows --receipt <recording-dir>/receipts/erc4626-flows-v0.1.1-20260913T114823Z-nyom.json --proto <recording-dir>/specs/vaultflows.proto --views <recording-dir>/packages/erc4626-flows/sql/views.sql --out <recording-dir>/packages/mcp-vaultflows\n\n{\"manifest\":\"<recording-dir>/packages/mcp-vaultflows/manifest.json\"}",
+  "createdAt": "2026-09-13T11:53:25.919Z"
+}

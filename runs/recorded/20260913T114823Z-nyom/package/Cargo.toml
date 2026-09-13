@@ -1,0 +1,29 @@
+[package]
+name = "erc4626-flows"
+version = "0.1.1"
+edition = "2021"
+description = "ERC-4626 vault flow facts and share-value observations for Base"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1"
+substreams = "0.7"
+substreams-ethereum = "0.11"
+prost = "0.13"
+prost-types = "0.13"
+ethabi = "17"
+hex = "0.4"
+# Abigen writes bare `num_bigint::Sign::…` paths into src/abi/erc4626.rs (uint256 argument encoding
+# for convertToAssets), so it has to be a direct dependency of this crate.
+num-bigint = "0.4"
+
+[build-dependencies]
+substreams-ethereum = "0.11"
+
+[profile.release]
+lto = true
+opt-level = "s"
+strip = "debuginfo"

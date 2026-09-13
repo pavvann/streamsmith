@@ -1,0 +1,11 @@
+TraceID: dc31813819082001dbb5d94ad91f2c9c
+This request will be processed in a single stage
+Blocks to process to prepare the stores in 2 stages: 0 (182000 already cached)
+Blocks to process in requested range: 1002 (0 already cached)
+
+📊 Usage Report
+ • Egress Bytes (uncompressed): 3.8 KiB
+ • Processed Blocks: 1,712 blocks
+ • Received Blocks: 4 blocks
+
+Completed successfully

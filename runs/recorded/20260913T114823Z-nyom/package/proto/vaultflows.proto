@@ -1,0 +1,179 @@
+// Public output contract for the `erc4626-flows` Substreams package (Base, chain id 8453).
+// This file is frozen before the recorded one-prompt run; the gate compares the normalized
+// descriptor hash of the built package against this file (specs/gate.yaml -> descriptor_hash_match).
+//
+// Conventions
+// - Addresses and hashes are lowercase hex strings with a 0x prefix (block_hash, tx_hash, vault, caller, owner,
+//   receiver, asset, from_owner, to_owner).
+// - *_raw fields are unsigned 256-bit integers rendered as decimal digit strings (proto3 has no uint256).
+// - *_normalized fields and execution_rate are non-negative decimal strings ("123.456", at most 18 fractional
+//   digits, no sign, no exponent) scaled by the relevant token decimals.
+// - A numeric string is NEVER empty. When a value is not computable (meta_valid false, call_ok false, or a zero
+//   divisor) it is the string "0" and the accompanying flag (meta_valid / call_ok) tells the consumer to ignore it.
+//   Reason: the ClickHouse from-proto sink panics on an empty string for a convertTo column.
+// - Nothing is interpolated between observations.
+// - Row ids are deterministic so replays and restarts are idempotent (the from-proto sink allows exactly one
+//   primary key per table; the id is also the first ORDER BY column).
+//     VaultFlow / ShareTransfer : "{chain_id}-{block_number}-{log_index}"   e.g. "8453-51092263-406"
+//     ShareValueObservation     : "{chain_id}-{block_number}-{vault}"       e.g. "8453-51093000-0x050c...56f0"
+//     VaultMeta                 : "{chain_id}-{vault}"                      e.g. "8453-0x050c...56f0"
+//   log_index is the receipt log index within the block (Firehose Log.blockIndex, the logIndex of eth_getLogs),
+//   which is unique per block, so tx_hash is not needed in the id.
+// - Call-status flags are flattened to scalar columns (call_ok, call_error) because the from-proto sink drops
+//   message-typed fields that are not google.protobuf.Timestamp or inline.
+// - There are no enum fields in this contract. `substreams-sink-sql` 4.13.1 `from-proto` panics on a populated
+//   proto3 enum field (`interface {} is protoreflect.EnumNumber, not int32`, ClickHouse
+//   accumulator_inserter.go), so `VaultFlow.direction` is a plain String column holding exactly
+//   "deposit" or "withdraw" (lowercase, never empty).
+// - Vocabulary: "execution rate" (assets per share implied by one flow), "share value" (assets per share
+//   observed by convertToAssets at a sampled block), "share migration" (transfer of shares between owners).
+
+syntax = "proto3";
+
+package vaultflows.v1;
+
+import "sf/substreams/sink/sql/schema/v1/schema.proto";
+
+// Output of the single sink module. Each repeated field maps to one ClickHouse table.
+message Events {
+  repeated VaultFlow vault_flows = 1;
+  repeated ShareValueObservation share_value_observations = 2;
+  repeated VaultMeta vaults = 3;
+  repeated ShareTransfer share_transfers = 4;
+}
+
+// One Deposit or Withdraw log on a vault in the configured vault list.
+message VaultFlow {
+  option (schema.table) = {
+    name: "vault_flows"
+    clickhouse_table_options: {
+      order_by_fields: [{ name: "id" }, { name: "vault" }, { name: "block_number" }]
+      partition_fields: [{ name: "_block_timestamp_", function: toYYYYMM }]
+    }
+  };
+
+  reserved 21;
+  reserved "call_status";
+
+  // "{chain_id}-{block_number}-{log_index}"
+  string id = 1 [(schema.field) = { primary_key: true }];
+  uint32 chain_id = 2;
+  uint64 block_number = 3;
+  string block_hash = 4;
+  uint64 block_timestamp = 5;  // unix seconds
+  string tx_hash = 6;
+  uint32 log_index = 7;        // receipt log index within the block (block-wide, not per-transaction)
+  string vault = 8;
+  string caller = 9;           // event `sender`: the address that called deposit/mint/withdraw/redeem
+  string owner = 10;           // whose shares were minted (deposit) or burned (withdraw)
+  string receiver = 11;        // who received assets on withdraw; equals owner on deposit
+  // Values exactly `deposit` (ERC-4626 Deposit(sender, owner, assets, shares)) or `withdraw`
+  // (ERC-4626 Withdraw(sender, receiver, owner, assets, shares)). Lowercase, never empty.
+  string direction = 12;
+  string assets_raw = 13 [(schema.field) = { convertTo: { uint256{} } }];
+  string shares_raw = 14 [(schema.field) = { convertTo: { uint256{} } }];
+  string assets_normalized = 15 [(schema.field) = { convertTo: { decimal128{ scale: 18 } } }];  // assets_raw / 10^asset_decimals; "0" when meta_valid is false
+  string shares_normalized = 16 [(schema.field) = { convertTo: { decimal128{ scale: 18 } } }];  // shares_raw / 10^share_decimals; "0" when meta_valid is false
+  uint32 asset_decimals = 17;  // 0 when meta_valid is false
+  uint32 share_decimals = 18;  // 0 when meta_valid is false
+  // assets_normalized / shares_normalized for this single flow, in asset units per whole share. Deposit-implied
+  // when direction is `deposit` (per EIP-4626 the Deposit `assets` includes any entry fee); withdraw-implied when
+  // `withdraw` (Withdraw `assets` is net of exit fee). "0" when shares_raw is zero or meta_valid is false.
+  string execution_rate = 19 [(schema.field) = { convertTo: { decimal128{ scale: 18 } } }];
+  // true when the vault passed the first-sight metadata probe (asset(), decimals(), asset.decimals(),
+  // totalAssets(), convertToAssets()) and the normalized fields are populated.
+  bool meta_valid = 20;
+  bool call_ok = 22;      // status of the metadata probe this row relied on: true when every call returned and decoded
+  string call_error = 23; // empty when call_ok; otherwise a short reason, e.g. "convertToAssets: reverted"
+}
+
+// Point-in-time read of a vault at a sampled block (block_number % sample_interval_blocks == 0).
+// One row per configured vault per sampled block, emitted even when the calls fail (call_ok = false).
+message ShareValueObservation {
+  option (schema.table) = {
+    name: "share_value_observations"
+    clickhouse_table_options: {
+      order_by_fields: [{ name: "id" }, { name: "vault" }, { name: "block_number" }]
+      partition_fields: [{ name: "_block_timestamp_", function: toYYYYMM }]
+    }
+  };
+
+  reserved 12;
+  reserved "call_status";
+
+  // "{chain_id}-{block_number}-{vault}"
+  string id = 1 [(schema.field) = { primary_key: true }];
+  uint32 chain_id = 2;
+  uint64 block_number = 3;
+  string block_hash = 4;
+  uint64 block_timestamp = 5;  // unix seconds
+  string vault = 6;
+  uint32 sample_interval_blocks = 7;
+  // convertToAssets(10^share_decimals) executed at this block's state. "0" when call_ok is false.
+  string assets_per_share_raw = 8 [(schema.field) = { convertTo: { uint256{} } }];
+  // assets_per_share_raw / 10^asset_decimals (assets per one whole share). "0" when call_ok is false.
+  string assets_per_share_normalized = 9 [(schema.field) = { convertTo: { decimal128{ scale: 18 } } }];
+  string total_assets_raw = 10 [(schema.field) = { convertTo: { uint256{} } }];  // totalAssets(); "0" when call_ok is false
+  string total_supply_raw = 11 [(schema.field) = { convertTo: { uint256{} } }];  // totalSupply(); "0" when call_ok is false
+  bool call_ok = 13;      // true only if convertToAssets, totalAssets and totalSupply all returned and decoded
+  string call_error = 14; // empty when call_ok; otherwise a short reason naming the failed call
+}
+
+// First-sight metadata of every address that emitted a matching Deposit/Withdraw. One row per vault
+// per chain, written when the probe first runs. Non-compliant addresses are recorded with compliant=false
+// and never produce VaultFlow rows.
+message VaultMeta {
+  option (schema.table) = {
+    name: "vaults"
+    clickhouse_table_options: {
+      order_by_fields: [{ name: "id" }]
+      partition_fields: [{ name: "_block_timestamp_", function: toYYYYMM }]
+    }
+  };
+
+  reserved 12;
+  reserved "call_status";
+
+  // "{chain_id}-{vault}"
+  string id = 1 [(schema.field) = { primary_key: true }];
+  uint32 chain_id = 2;
+  string vault = 3;
+  uint64 first_seen_block = 4;   // block at which the probe ran
+  string asset = 5;              // asset() result; empty if the probe failed (plain string column, empty is allowed)
+  uint32 asset_decimals = 6;     // 0 if the probe failed
+  uint32 share_decimals = 7;     // 0 if the probe failed
+  string name = 8;               // name() if decodable, else empty
+  string symbol = 9;             // symbol() if decodable, else empty
+  bool compliant = 10;           // heuristic: all probe calls succeeded and decoded
+  bool in_configured_list = 11;  // true when the address is in the package's vault parameter
+  bool call_ok = 13;      // true when every probe call returned and decoded (equals compliant in v0.1.0)
+  string call_error = 14; // empty when call_ok; otherwise the first failed call, e.g. "asset: reverted"
+}
+
+// ERC-20 Transfer of vault shares between two owners (share migration), excluding the mint on
+// Deposit (from = 0x0) and the burn on Withdraw (to = 0x0). Optional table; may be empty in v0.1.0.
+message ShareTransfer {
+  option (schema.table) = {
+    name: "share_transfers"
+    clickhouse_table_options: {
+      order_by_fields: [{ name: "id" }, { name: "vault" }, { name: "block_number" }]
+      partition_fields: [{ name: "_block_timestamp_", function: toYYYYMM }]
+    }
+  };
+
+  // "{chain_id}-{block_number}-{log_index}"
+  string id = 1 [(schema.field) = { primary_key: true }];
+  uint32 chain_id = 2;
+  uint64 block_number = 3;
+  string block_hash = 4;
+  uint64 block_timestamp = 5;
+  string tx_hash = 6;
+  uint32 log_index = 7;
+  string vault = 8;
+  string from_owner = 9;   // Transfer `from` (renamed: bare `to` is a ClickHouse keyword and the sink emits unquoted identifiers)
+  string to_owner = 10;    // Transfer `to`
+  string shares_raw = 11 [(schema.field) = { convertTo: { uint256{} } }];
+  string shares_normalized = 12 [(schema.field) = { convertTo: { decimal128{ scale: 18 } } }];  // "0" when meta_valid is false
+  uint32 share_decimals = 13;
+  bool meta_valid = 14;
+}

@@ -1,0 +1,102 @@
+specVersion: v0.1.0
+package:
+  name: erc4626-flows
+  version: v0.1.1
+  url: https://github.com/pavvann/streamsmith
+  description: >-
+    Normalized ERC-4626 deposit and withdrawal facts plus fixed-interval convertToAssets
+    observations for a configured set of Base vaults, emitted as a single from-proto sink
+    message (vaultflows.v1.Events).
+
+network: base
+
+imports:
+  # Pinax ERC-4626 Deposit/Withdraw extractor, matched by topic0 across every vault on the chain.
+  # Pinned by commit (specs/streamsmith.yaml imports.erc4626); sha256 72e1e7fd…6287b.
+  erc4626: https://raw.githubusercontent.com/pinax-network/substreams-evm/970a665e15619de8ad7f686bd89412a1030d46dc/spkg/erc4626-v0.1.0.spkg
+
+protobuf:
+  files:
+    - vaultflows.proto
+  importPaths:
+    - ./proto
+  descriptorSets:
+    # Resolves sf/substreams/sink/sql/schema/v1/schema.proto (the (schema.table)/(schema.field)
+    # annotations the from-proto sink reads). buf.build/streamingfast/substreams-sink-sql is retired.
+    - module: buf.build/streamingfast/substreams
+
+binaries:
+  default:
+    type: wasm/rust-v1
+    file: ./target/wasm32-unknown-unknown/release/erc4626_flows.wasm
+
+modules:
+  # Cross-block first-sight ledger: vault address -> block at which it was first observed.
+  - name: store_vault_seen
+    kind: store
+    updatePolicy: set_if_not_exists
+    valueType: int64
+    initialBlock: 51001200
+    inputs:
+      - map: erc4626:map_events
+
+  # Probes a vault the first time it is ever observed (deltas = the keys added in this block) and
+  # emits one VaultMeta row. The only module that pays the metadata eth_call round trip.
+  - name: map_vault_probe
+    kind: map
+    initialBlock: 51001200
+    inputs:
+      - params: string
+      - source: sf.substreams.v1.Clock
+      - store: store_vault_seen
+        mode: deltas
+    output:
+      type: proto:vaultflows.v1.Events
+
+  # Cache of the probe result, so map_flows normalizes without any eth_call of its own.
+  - name: store_vault_meta
+    kind: store
+    updatePolicy: set_if_not_exists
+    valueType: proto:vaultflows.v1.VaultMeta
+    initialBlock: 51001200
+    inputs:
+      - map: map_vault_probe
+
+  # Deposit / Withdraw facts for the configured vaults, normalized with the cached decimals.
+  - name: map_flows
+    kind: map
+    initialBlock: 51001200
+    inputs:
+      - params: string
+      - source: sf.substreams.v1.Clock
+      - map: erc4626:map_events
+      - store: store_vault_meta
+        mode: get
+    output:
+      type: proto:vaultflows.v1.Events
+
+  # convertToAssets / totalAssets / totalSupply at every block on the sampling grid.
+  - name: map_share_value_observations
+    kind: map
+    initialBlock: 51001200
+    inputs:
+      - params: string
+      - source: sf.substreams.v1.Clock
+    output:
+      type: proto:vaultflows.v1.Events
+
+  # The single sink module: merges the three producers into one vaultflows.v1.Events message.
+  - name: map_events
+    kind: map
+    initialBlock: 51001200
+    inputs:
+      - map: map_flows
+      - map: map_share_value_observations
+      - map: map_vault_probe
+    output:
+      type: proto:vaultflows.v1.Events
+
+params:
+  map_vault_probe: "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
+  map_flows: "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"
+  map_share_value_observations: "vaults[]=0x050ce30b927da55177a4914ec73480238bad56f0&vaults[]=0xbeef0e0834849acc03f0089f01f4f1eeb06873c9&interval=1800&chain_id=8453"

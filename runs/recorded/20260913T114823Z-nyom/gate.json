@@ -1,0 +1,269 @@
+{
+  "gateVersion": 1,
+  "runId": "20260913T114823Z-nyom",
+  "status": "passed",
+  "passed": true,
+  "exitCode": 0,
+  "ranges": [
+    "51092254:51092454",
+    "51092254:51092454",
+    "51092998:51093002"
+  ],
+  "assertions": [
+    {
+      "name": "spec_unmodified",
+      "kind": "spec_unmodified",
+      "severity": "fail",
+      "passed": true,
+      "detail": "match: specs/vaultflows.proto normalized descriptor sha256 ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9 vs expected ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9 (renderer self-check ok)"
+    },
+    {
+      "name": "descriptor_hash_match",
+      "kind": "descriptor_hash_match",
+      "severity": "fail",
+      "passed": true,
+      "detail": "match: spkg packages/erc4626-flows/erc4626-flows-v0.1.1.spkg = ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9; specs/vaultflows.proto = ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9"
+    },
+    {
+      "name": "params_match",
+      "kind": "params_match",
+      "severity": "fail",
+      "passed": true,
+      "detail": "network base; 3 params input(s) equal streamsmith.yaml params.value; map_events initialBlock 51001200"
+    },
+    {
+      "name": "rows_gt",
+      "kind": "rows_gt",
+      "severity": "fail",
+      "passed": true,
+      "detail": "vault_flows: 42 rows in primary (need >= 1, hint 42); vault_flows=42 share_value_observations=0 vaults=1 share_transfers=0; 34 lines, blocks 51092263..51092449"
+    },
+    {
+      "name": "known_vault_present",
+      "kind": "known_vault_present",
+      "severity": "fail",
+      "passed": true,
+      "detail": "0x050ce30b927da55177a4914ec73480238bad56f0: 40/40 rows with meta_valid && call_ok; 0xbeef0e0834849acc03f0089f01f4f1eeb06873c9: 2/2 rows with meta_valid && call_ok"
+    },
+    {
+      "name": "reference_flows_present",
+      "kind": "reference_flows_present",
+      "severity": "fail",
+      "passed": true,
+      "detail": "4 reference rows present in 42 vault_flows rows; chain_id 8453 on every row"
+    },
+    {
+      "name": "log_index_matches_rpc",
+      "kind": "log_index_matches_rpc",
+      "severity": "warn",
+      "passed": true,
+      "detail": "4 listed log_index values match the rows; 4 confirmed against eth_getTransactionReceipt (https://mainnet.base.org)"
+    },
+    {
+      "name": "execution_rate_sanity",
+      "kind": "execution_rate_sanity",
+      "severity": "fail",
+      "passed": true,
+      "detail": "42 rows within [1.0, 1.1] across 2 vaults"
+    },
+    {
+      "name": "observation_present",
+      "kind": "observation_present",
+      "severity": "fail",
+      "passed": true,
+      "detail": "2 vaults observed exactly once at block 51093000 (call_ok, interval 1800, hash/timestamp match); grid clean across 3 runs"
+    },
+    {
+      "name": "observation_matches_reference",
+      "kind": "observation_matches_reference",
+      "severity": "warn",
+      "passed": true,
+      "detail": "4 values match the listed eth_call reference at block 51093000; 2 vault(s) confirmed by live eth_call (https://mainnet.base.org)"
+    },
+    {
+      "name": "rpc_success_ratio_gte",
+      "kind": "rpc_success_ratio_gte",
+      "severity": "fail",
+      "passed": true,
+      "detail": "48/48 configured-vault rows have call_ok = 1.0000 (need >= 0.99)"
+    },
+    {
+      "name": "numeric_strings_valid",
+      "kind": "numeric_strings_valid",
+      "severity": "fail",
+      "passed": true,
+      "detail": "448 convertTo column values valid across primary,primary_rerun,observation"
+    },
+    {
+      "name": "ids_unique",
+      "kind": "ids_unique",
+      "severity": "fail",
+      "passed": true,
+      "detail": "92 ids unique and well-formed"
+    },
+    {
+      "name": "addresses_lowercase",
+      "kind": "addresses_lowercase",
+      "severity": "fail",
+      "passed": true,
+      "detail": "536 address/hash values lowercase 0x hex"
+    },
+    {
+      "name": "deterministic_rerun",
+      "kind": "deterministic_rerun",
+      "severity": "fail",
+      "passed": true,
+      "detail": "primary sha256 58bea072ab63a669… (34 lines) == primary_rerun sha256 58bea072ab63a669… (34 lines)"
+    },
+    {
+      "name": "output_decodes_against_contract",
+      "kind": "output_decodes_against_contract",
+      "severity": "fail",
+      "passed": true,
+      "detail": "70 lines decode as vaultflows.v1.Events with unknown fields rejected"
+    },
+    {
+      "name": "banned_words",
+      "kind": "banned_words",
+      "severity": "fail",
+      "passed": true,
+      "detail": "5 patterns, 0 matches in 5 files"
+    },
+    {
+      "name": "spkg_metadata",
+      "kind": "spkg_metadata",
+      "severity": "fail",
+      "passed": true,
+      "detail": "erc4626-flows v0.1.1 on base; map_events -> proto:vaultflows.v1.Events (module hash 22c9d75e3161308ee9690d9fa1012eca10ac6ef3)"
+    }
+  ],
+  "warnings": [],
+  "toolVersions": {
+    "substreams": "substreams version 1.22.0 (Commit be35ad3, Commit Date 2026-08-24T13:58:05Z)",
+    "buf": "1.72.0",
+    "substreams-sink-sql": "substreams-sink-sql version 4.13.1 (Commit c05b15e, Commit Date 2026-02-26T21:06:08Z)",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "node": "v25.2.1",
+    "pnpm": "10.26.1"
+  },
+  "runs": {
+    "primary": {
+      "command": "substreams run -e base-mainnet.streamingfast.io:443 packages/erc4626-flows/erc4626-flows-v0.1.1.spkg map_events -s 51092254 -t 51092454 --network base -o jsonl --limit-processed-blocks 0",
+      "file": "runs/20260913T114823Z-nyom/primary.jsonl",
+      "code": 0,
+      "durationMs": 10096,
+      "lines": 34,
+      "badLines": 0,
+      "rows": {
+        "vault_flows": 42,
+        "share_value_observations": 0,
+        "vaults": 1,
+        "share_transfers": 0
+      },
+      "blocks": [
+        51092263,
+        51092449
+      ],
+      "range": "51092254:51092454",
+      "stderrFile": "runs/20260913T114823Z-nyom/primary.stderr.log"
+    },
+    "primary_rerun": {
+      "command": "substreams run -e base-mainnet.streamingfast.io:443 packages/erc4626-flows/erc4626-flows-v0.1.1.spkg map_events -s 51092254 -t 51092454 --network base -o jsonl --limit-processed-blocks 0",
+      "file": "runs/20260913T114823Z-nyom/primary_rerun.jsonl",
+      "code": 0,
+      "durationMs": 9112,
+      "lines": 34,
+      "badLines": 0,
+      "rows": {
+        "vault_flows": 42,
+        "share_value_observations": 0,
+        "vaults": 1,
+        "share_transfers": 0
+      },
+      "blocks": [
+        51092263,
+        51092449
+      ],
+      "range": "51092254:51092454",
+      "stderrFile": "runs/20260913T114823Z-nyom/primary_rerun.stderr.log"
+    },
+    "observation": {
+      "command": "substreams run -e base-mainnet.streamingfast.io:443 packages/erc4626-flows/erc4626-flows-v0.1.1.spkg map_events -s 51092998 -t 51093002 --network base -o jsonl --limit-processed-blocks 0",
+      "file": "runs/20260913T114823Z-nyom/observation.jsonl",
+      "code": 0,
+      "durationMs": 20209,
+      "lines": 2,
+      "badLines": 0,
+      "rows": {
+        "vault_flows": 4,
+        "share_value_observations": 2,
+        "vaults": 0,
+        "share_transfers": 0
+      },
+      "blocks": [
+        51092998,
+        51093000
+      ],
+      "range": "51092998:51093002",
+      "stderrFile": "runs/20260913T114823Z-nyom/observation.stderr.log"
+    }
+  },
+  "package": {
+    "dir": "packages/erc4626-flows",
+    "manifest": "substreams.yaml",
+    "spkg": "packages/erc4626-flows/erc4626-flows-v0.1.1.spkg",
+    "name": "erc4626-flows",
+    "version": "v0.1.1",
+    "outputModule": "map_events",
+    "outputType": "proto:vaultflows.v1.Events",
+    "spkgSha256": "b9089b3f7eefb8db75b9c828e5a5b3d0bcafad00b8bfa53893add10dbcad0dca",
+    "network": "base",
+    "moduleHash": "22c9d75e3161308ee9690d9fa1012eca10ac6ef3",
+    "moduleHashes": {
+      "store_vault_seen": "ae5c9b91e1a2bc02ae1cae09fd8fa4c465b8edfc",
+      "map_vault_probe": "373470463d92c0949b3966795a60bca7260283b9",
+      "store_vault_meta": "43ccf80771941433a49e09274b0a9fab73c8b4ef",
+      "map_flows": "07a97254a6281c28a101c890206a0d97f03435e0",
+      "map_share_value_observations": "1ec5e9056028c5bcd9cf734d3485925fad4e4a45",
+      "map_events": "22c9d75e3161308ee9690d9fa1012eca10ac6ef3",
+      "erc4626:map_events": "9d3e4a81797e43b37f46443144913096d3a3080c"
+    }
+  },
+  "gateConfigPath": "specs/gate.yaml",
+  "gateConfigHash": "6985998b099186a82092915627f38dc3367e075205c6bc33923095e1792f6135",
+  "startedAt": "2026-09-13T11:48:41.619Z",
+  "finishedAt": "2026-09-13T11:49:58.108Z",
+  "endpoint": "base-mainnet.streamingfast.io:443",
+  "network": "base",
+  "authEnvPresent": true,
+  "build": {
+    "command": "substreams build",
+    "cwd": "packages/erc4626-flows",
+    "code": 0,
+    "durationMs": 27056,
+    "skipped": false,
+    "logFile": "runs/20260913T114823Z-nyom/build.log",
+    "expectedOutputs": {
+      "packages/erc4626-flows/erc4626-flows-v0.1.1.spkg": true,
+      "packages/erc4626-flows/target/wasm32-unknown-unknown/release/erc4626_flows.wasm": true
+    }
+  },
+  "descriptor": {
+    "contract": "specs/vaultflows.proto",
+    "protoPackage": "vaultflows.v1",
+    "expectedSpecSha256": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9",
+    "specHash": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9",
+    "specHashViaConvert": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9",
+    "rendererMatch": true,
+    "spkgPath": "packages/erc4626-flows/erc4626-flows-v0.1.1.spkg",
+    "spkgHash": "ce7f782321f4efef1adb472073977f1c0c051db6cc07402adb4cea586d04d5f9"
+  },
+  "rpc": {
+    "url": "https://mainnet.base.org",
+    "reachable": true,
+    "chainId": 8453,
+    "receipts": 4,
+    "calls": 2
+  }
+}

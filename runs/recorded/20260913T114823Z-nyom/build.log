@@ -1,0 +1,706 @@
+$ substreams build
+# cwd packages/erc4626-flows
+# exit 0 in 27056ms
+
+--- stdout ---
+🏗️  Building Substreams package from <recording-dir>/packages/erc4626-flows/substreams.yaml
+⚠️  No protobuf exclude paths configured
+   Consider adding 'google' and 'sf/substreams' to exclude paths if build fails
+⚠️  Warning: Some descriptor sets do not have a pinned version and will always trigger regeneration:
+   • buf.build/streamingfast/substreams (no version specified, resolves to latest)
+   To enable caching and faster builds, specify a semver (e.g., @v1.0.0) or commit ref (e.g., @f3ab5976b9ba4f9bac28b26271fca7d7)
+📋 Using existing buf.gen.yaml configuration
+📦 Generating protobuf code [90m(buf generate <erc4626-flows.tmp.spkg#format=bin> --include-imports)[0m
+🎯 Protobuf generation complete
+🦀 Rust binary detected
+✅ Rust/Cargo found
+🔧 Binary compilation complete
+
+📦 Package created successfully at erc4626-flows-v0.1.1.spkg
+✅ Build complete!
+
+--- stderr ---
+[1m[92m   Compiling[0m erc4626-flows v0.1.1 (<recording-dir>/packages/erc4626-flows)
+[1m[33mwarning[0m[1m: struct `Empty` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct Empty {
+  [1m[94m|[0m            [1m[33m^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: struct `UserInput` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:9:12
+  [1m[94m|[0m
+[1m[94m9[0m [1m[94m|[0m pub struct UserInput {
+  [1m[94m|[0m            [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `SystemOutput` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:106:12
+    [1m[94m|[0m
+[1m[94m106[0m [1m[94m|[0m pub struct SystemOutput {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `DiscoveryRequest` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:322:12
+    [1m[94m|[0m
+[1m[94m322[0m [1m[94m|[0m pub struct DiscoveryRequest {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `DiscoveryResponse` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:330:12
+    [1m[94m|[0m
+[1m[94m330[0m [1m[94m|[0m pub struct DiscoveryResponse {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `TextInput` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:23:16
+   [1m[94m|[0m
+[1m[94m23[0m [1m[94m|[0m     pub struct TextInput {
+   [1m[94m|[0m                [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Start` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:37:16
+   [1m[94m|[0m
+[1m[94m37[0m [1m[94m|[0m     pub struct Start {
+   [1m[94m|[0m                [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Hydrate` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:47:16
+   [1m[94m|[0m
+[1m[94m47[0m [1m[94m|[0m     pub struct Hydrate {
+   [1m[94m|[0m                [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Upload` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:59:16
+   [1m[94m|[0m
+[1m[94m59[0m [1m[94m|[0m     pub struct Upload {
+   [1m[94m|[0m                [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Selection` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:69:16
+   [1m[94m|[0m
+[1m[94m69[0m [1m[94m|[0m     pub struct Selection {
+   [1m[94m|[0m                [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Confirmation` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:77:16
+   [1m[94m|[0m
+[1m[94m77[0m [1m[94m|[0m     pub struct Confirmation {
+   [1m[94m|[0m                [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `DownloadedFiles` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:83:16
+   [1m[94m|[0m
+[1m[94m83[0m [1m[94m|[0m     pub struct DownloadedFiles {
+   [1m[94m|[0m                [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Entry` is never used[0m
+  [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:87:14
+   [1m[94m|[0m
+[1m[94m87[0m [1m[94m|[0m     pub enum Entry {
+   [1m[94m|[0m              [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Message` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:124:16
+    [1m[94m|[0m
+[1m[94m124[0m [1m[94m|[0m     pub struct Message {
+    [1m[94m|[0m                [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ImageWithText` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:132:16
+    [1m[94m|[0m
+[1m[94m132[0m [1m[94m|[0m     pub struct ImageWithText {
+    [1m[94m|[0m                [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `TextInput` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:191:16
+    [1m[94m|[0m
+[1m[94m191[0m [1m[94m|[0m     pub struct TextInput {
+    [1m[94m|[0m                [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `LocalFile` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:213:16
+    [1m[94m|[0m
+[1m[94m213[0m [1m[94m|[0m     pub struct LocalFile {
+    [1m[94m|[0m                [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Loading` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:229:16
+    [1m[94m|[0m
+[1m[94m229[0m [1m[94m|[0m     pub struct Loading {
+    [1m[94m|[0m                [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `DownloadFiles` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:237:16
+    [1m[94m|[0m
+[1m[94m237[0m [1m[94m|[0m     pub struct DownloadFiles {
+    [1m[94m|[0m                [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `DownloadFile` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:243:16
+    [1m[94m|[0m
+[1m[94m243[0m [1m[94m|[0m     pub struct DownloadFile {
+    [1m[94m|[0m                [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Entry` is never used[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:301:14
+    [1m[94m|[0m
+[1m[94m301[0m [1m[94m|[0m     pub enum Entry {
+    [1m[94m|[0m              [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Generator` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.codegen.conversation.v1.rs:338:16
+    [1m[94m|[0m
+[1m[94m338[0m [1m[94m|[0m     pub struct Generator {
+    [1m[94m|[0m                [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `SingleBlockRequest` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.firehose.v2.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct SingleBlockRequest {
+  [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `SingleBlockResponse` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.firehose.v2.rs:46:12
+   [1m[94m|[0m
+[1m[94m46[0m [1m[94m|[0m pub struct SingleBlockResponse {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Request` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.firehose.v2.rs:54:12
+   [1m[94m|[0m
+[1m[94m54[0m [1m[94m|[0m pub struct Request {
+   [1m[94m|[0m            [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `InfoRequest` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.firehose.v2.rs:96:12
+   [1m[94m|[0m
+[1m[94m96[0m [1m[94m|[0m pub struct InfoRequest {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockNumber` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.firehose.v2.rs:15:16
+   [1m[94m|[0m
+[1m[94m15[0m [1m[94m|[0m     pub struct BlockNumber {
+   [1m[94m|[0m                [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockHashAndNumber` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.firehose.v2.rs:21:16
+   [1m[94m|[0m
+[1m[94m21[0m [1m[94m|[0m     pub struct BlockHashAndNumber {
+   [1m[94m|[0m                [1m[33m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Cursor` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.firehose.v2.rs:29:16
+   [1m[94m|[0m
+[1m[94m29[0m [1m[94m|[0m     pub struct Cursor {
+   [1m[94m|[0m                [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Reference` is never used[0m
+  [1m[94m--> [0msrc/pb/sf.firehose.v2.rs:35:14
+   [1m[94m|[0m
+[1m[94m35[0m [1m[94m|[0m     pub enum Reference {
+   [1m[94m|[0m              [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `FieldOptions` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct FieldOptions {
+  [1m[94m|[0m            [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Keys` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.index.v1.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct Keys {
+  [1m[94m|[0m            [1m[33m^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ProcessRangeRequest` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct ProcessRangeRequest {
+  [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ProcessRangeResponse` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:50:12
+   [1m[94m|[0m
+[1m[94m50[0m [1m[94m|[0m pub struct ProcessRangeResponse {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockScopedData` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:71:12
+   [1m[94m|[0m
+[1m[94m71[0m [1m[94m|[0m pub struct BlockScopedData {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Update` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:79:12
+   [1m[94m|[0m
+[1m[94m79[0m [1m[94m|[0m pub struct Update {
+   [1m[94m|[0m            [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ModuleStats` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:93:12
+   [1m[94m|[0m
+[1m[94m93[0m [1m[94m|[0m pub struct ModuleStats {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ExternalCallMetric` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:113:12
+    [1m[94m|[0m
+[1m[94m113[0m [1m[94m|[0m pub struct ExternalCallMetric {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Completed` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:131:12
+    [1m[94m|[0m
+[1m[94m131[0m [1m[94m|[0m pub struct Completed {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Failed` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:141:12
+    [1m[94m|[0m
+[1m[94m141[0m [1m[94m|[0m pub struct Failed {
+    [1m[94m|[0m            [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockRange` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:151:12
+    [1m[94m|[0m
+[1m[94m151[0m [1m[94m|[0m pub struct BlockRange {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ModuleOutput` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:185:12
+    [1m[94m|[0m
+[1m[94m185[0m [1m[94m|[0m pub struct ModuleOutput {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Operations` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:210:12
+    [1m[94m|[0m
+[1m[94m210[0m [1m[94m|[0m pub struct Operations {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Type` is never used[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:58:14
+   [1m[94m|[0m
+[1m[94m58[0m [1m[94m|[0m     pub enum Type {
+   [1m[94m|[0m              [1m[33m^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Data` is never used[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.internal.v2.rs:201:14
+    [1m[94m|[0m
+[1m[94m201[0m [1m[94m|[0m     pub enum Data {
+    [1m[94m|[0m              [1m[33m^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Request` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct Request {
+  [1m[94m|[0m            [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Response` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:47:12
+   [1m[94m|[0m
+[1m[94m47[0m [1m[94m|[0m pub struct Response {
+   [1m[94m|[0m            [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockUndoSignal` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:81:12
+   [1m[94m|[0m
+[1m[94m81[0m [1m[94m|[0m pub struct BlockUndoSignal {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockScopedData` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:89:12
+   [1m[94m|[0m
+[1m[94m89[0m [1m[94m|[0m pub struct BlockScopedData {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `SessionInit` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:106:12
+    [1m[94m|[0m
+[1m[94m106[0m [1m[94m|[0m pub struct SessionInit {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `InitialSnapshotComplete` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:118:12
+    [1m[94m|[0m
+[1m[94m118[0m [1m[94m|[0m pub struct InitialSnapshotComplete {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `InitialSnapshotData` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:124:12
+    [1m[94m|[0m
+[1m[94m124[0m [1m[94m|[0m pub struct InitialSnapshotData {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `MapModuleOutput` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:136:12
+    [1m[94m|[0m
+[1m[94m136[0m [1m[94m|[0m pub struct MapModuleOutput {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `StoreModuleOutput` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:151:12
+    [1m[94m|[0m
+[1m[94m151[0m [1m[94m|[0m pub struct StoreModuleOutput {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `OutputDebugInfo` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:161:12
+    [1m[94m|[0m
+[1m[94m161[0m [1m[94m|[0m pub struct OutputDebugInfo {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ModulesProgress` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:174:12
+    [1m[94m|[0m
+[1m[94m174[0m [1m[94m|[0m pub struct ModulesProgress {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ProcessedBytes` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:189:12
+    [1m[94m|[0m
+[1m[94m189[0m [1m[94m|[0m pub struct ProcessedBytes {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Error` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:197:12
+    [1m[94m|[0m
+[1m[94m197[0m [1m[94m|[0m pub struct Error {
+    [1m[94m|[0m            [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Job` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:211:12
+    [1m[94m|[0m
+[1m[94m211[0m [1m[94m|[0m pub struct Job {
+    [1m[94m|[0m            [1m[33m^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Stage` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:225:12
+    [1m[94m|[0m
+[1m[94m225[0m [1m[94m|[0m pub struct Stage {
+    [1m[94m|[0m            [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ModuleStats` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:235:12
+    [1m[94m|[0m
+[1m[94m235[0m [1m[94m|[0m pub struct ModuleStats {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ExternalCallMetric` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:276:12
+    [1m[94m|[0m
+[1m[94m276[0m [1m[94m|[0m pub struct ExternalCallMetric {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockRange` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:335:12
+    [1m[94m|[0m
+[1m[94m335[0m [1m[94m|[0m pub struct BlockRange {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Message` is never used[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v2.rs:55:14
+   [1m[94m|[0m
+[1m[94m55[0m [1m[94m|[0m     pub enum Message {
+   [1m[94m|[0m              [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Request` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.rpc.v3.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct Request {
+  [1m[94m|[0m            [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `EstimateRequest` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct EstimateRequest {
+  [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `EstimateResponse` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:23:12
+   [1m[94m|[0m
+[1m[94m23[0m [1m[94m|[0m pub struct EstimateResponse {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `EstimateProgress` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:40:12
+   [1m[94m|[0m
+[1m[94m40[0m [1m[94m|[0m pub struct EstimateProgress {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Estimate` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:48:12
+   [1m[94m|[0m
+[1m[94m48[0m [1m[94m|[0m pub struct Estimate {
+   [1m[94m|[0m            [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Sampling` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:76:12
+   [1m[94m|[0m
+[1m[94m76[0m [1m[94m|[0m pub struct Sampling {
+   [1m[94m|[0m            [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `SampledSegment` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:92:12
+   [1m[94m|[0m
+[1m[94m92[0m [1m[94m|[0m pub struct SampledSegment {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Response` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:116:12
+    [1m[94m|[0m
+[1m[94m116[0m [1m[94m|[0m pub struct Response {
+    [1m[94m|[0m            [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockScopedDatas` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:143:12
+    [1m[94m|[0m
+[1m[94m143[0m [1m[94m|[0m pub struct BlockScopedDatas {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Message` is never used[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:31:14
+   [1m[94m|[0m
+[1m[94m31[0m [1m[94m|[0m     pub enum Message {
+   [1m[94m|[0m              [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Message` is never used[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.rpc.v4.rs:124:14
+    [1m[94m|[0m
+[1m[94m124[0m [1m[94m|[0m     pub enum Message {
+    [1m[94m|[0m              [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `DeployRequest` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct DeployRequest {
+  [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Parameter` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:15:12
+   [1m[94m|[0m
+[1m[94m15[0m [1m[94m|[0m pub struct Parameter {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `UpdateRequest` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:38:12
+   [1m[94m|[0m
+[1m[94m38[0m [1m[94m|[0m pub struct UpdateRequest {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `InfoRequest` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:60:12
+   [1m[94m|[0m
+[1m[94m60[0m [1m[94m|[0m pub struct InfoRequest {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ListRequest` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:100:12
+    [1m[94m|[0m
+[1m[94m100[0m [1m[94m|[0m pub struct ListRequest {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ListResponse` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:104:12
+    [1m[94m|[0m
+[1m[94m104[0m [1m[94m|[0m pub struct ListResponse {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `RemoveRequest` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:126:12
+    [1m[94m|[0m
+[1m[94m126[0m [1m[94m|[0m pub struct RemoveRequest {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `PauseRequest` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:138:12
+    [1m[94m|[0m
+[1m[94m138[0m [1m[94m|[0m pub struct PauseRequest {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `StopRequest` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:152:12
+    [1m[94m|[0m
+[1m[94m152[0m [1m[94m|[0m pub struct StopRequest {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ResumeRequest` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.sink.service.v1.rs:166:12
+    [1m[94m|[0m
+[1m[94m166[0m [1m[94m|[0m pub struct ResumeRequest {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `PgWebFrontend` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.sink.sql.service.v1.rs:75:12
+   [1m[94m|[0m
+[1m[94m75[0m [1m[94m|[0m pub struct PgWebFrontend {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `PgWebFrontend` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.sink.sql.v1.rs:75:12
+   [1m[94m|[0m
+[1m[94m75[0m [1m[94m|[0m pub struct PgWebFrontend {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Modules` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct Modules {
+  [1m[94m|[0m            [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Binary` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:14:12
+   [1m[94m|[0m
+[1m[94m14[0m [1m[94m|[0m pub struct Binary {
+   [1m[94m|[0m            [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Module` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:22:12
+   [1m[94m|[0m
+[1m[94m22[0m [1m[94m|[0m pub struct Module {
+   [1m[94m|[0m            [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Package` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:248:12
+    [1m[94m|[0m
+[1m[94m248[0m [1m[94m|[0m pub struct Package {
+    [1m[94m|[0m            [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `NetworkParams` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:278:12
+    [1m[94m|[0m
+[1m[94m278[0m [1m[94m|[0m pub struct NetworkParams {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `PackageMetadata` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:286:12
+    [1m[94m|[0m
+[1m[94m286[0m [1m[94m|[0m pub struct PackageMetadata {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `ModuleMetadata` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:298:12
+    [1m[94m|[0m
+[1m[94m298[0m [1m[94m|[0m pub struct ModuleMetadata {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Clock` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:308:12
+    [1m[94m|[0m
+[1m[94m308[0m [1m[94m|[0m pub struct Clock {
+    [1m[94m|[0m            [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockRef` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:319:12
+    [1m[94m|[0m
+[1m[94m319[0m [1m[94m|[0m pub struct BlockRef {
+    [1m[94m|[0m            [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `StoreDeltas` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:327:12
+    [1m[94m|[0m
+[1m[94m327[0m [1m[94m|[0m pub struct StoreDeltas {
+    [1m[94m|[0m            [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `BlockFilter` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:44:16
+   [1m[94m|[0m
+[1m[94m44[0m [1m[94m|[0m     pub struct BlockFilter {
+   [1m[94m|[0m                [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `QueryFromParams` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:64:16
+   [1m[94m|[0m
+[1m[94m64[0m [1m[94m|[0m     pub struct QueryFromParams {
+   [1m[94m|[0m                [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `KindMap` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:68:16
+   [1m[94m|[0m
+[1m[94m68[0m [1m[94m|[0m     pub struct KindMap {
+   [1m[94m|[0m                [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `KindBlockIndex` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:144:16
+    [1m[94m|[0m
+[1m[94m144[0m [1m[94m|[0m     pub struct KindBlockIndex {
+    [1m[94m|[0m                [1m[33m^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Input` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:150:16
+    [1m[94m|[0m
+[1m[94m150[0m [1m[94m|[0m     pub struct Input {
+    [1m[94m|[0m                [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Output` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:231:16
+    [1m[94m|[0m
+[1m[94m231[0m [1m[94m|[0m     pub struct Output {
+    [1m[94m|[0m                [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Kind` is never used[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:237:14
+    [1m[94m|[0m
+[1m[94m237[0m [1m[94m|[0m     pub enum Kind {
+    [1m[94m|[0m              [1m[33m^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Query` is never used[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:54:18
+   [1m[94m|[0m
+[1m[94m54[0m [1m[94m|[0m         pub enum Query {
+   [1m[94m|[0m                  [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Source` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:158:20
+    [1m[94m|[0m
+[1m[94m158[0m [1m[94m|[0m         pub struct Source {
+    [1m[94m|[0m                    [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Map` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:165:20
+    [1m[94m|[0m
+[1m[94m165[0m [1m[94m|[0m         pub struct Map {
+    [1m[94m|[0m                    [1m[33m^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Params` is never constructed[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:212:20
+    [1m[94m|[0m
+[1m[94m212[0m [1m[94m|[0m         pub struct Params {
+    [1m[94m|[0m                    [1m[33m^^^^^^[0m
+
+[1m[33mwarning[0m[1m: enum `Input` is never used[0m
+   [1m[94m--> [0msrc/pb/sf.substreams.v1.rs:218:18
+    [1m[94m|[0m
+[1m[94m218[0m [1m[94m|[0m         pub enum Input {
+    [1m[94m|[0m                  [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Block` is never constructed[0m
+ [1m[94m--> [0msrc/pb/sf.substreams.v1.test.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct Block {
+  [1m[94m|[0m            [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `MapResult` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.test.rs:13:12
+   [1m[94m|[0m
+[1m[94m13[0m [1m[94m|[0m pub struct MapResult {
+   [1m[94m|[0m            [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Boolean` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.test.rs:21:12
+   [1m[94m|[0m
+[1m[94m21[0m [1m[94m|[0m pub struct Boolean {
+   [1m[94m|[0m            [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: struct `Array` is never constructed[0m
+  [1m[94m--> [0msrc/pb/sf.substreams.v1.test.rs:27:12
+   [1m[94m|[0m
+[1m[94m27[0m [1m[94m|[0m pub struct Array {
+   [1m[94m|[0m            [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m: `erc4626-flows` (lib) generated 113 warnings
+[1m[92m    Finished[0m `release` profile [optimized] target(s) in 20.65s
+

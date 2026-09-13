@@ -1,0 +1,29 @@
+{
+  "packageName": "erc4626-flows",
+  "packageVersion": "v0.1.1",
+  "spkgPath": "<recording-dir>/packages/erc4626-flows/erc4626-flows-v0.1.1.spkg",
+  "spkgBytes": 826487,
+  "packageHash": "b9089b3f7eefb8db75b9c828e5a5b3d0bcafad00b8bfa53893add10dbcad0dca",
+  "dryRun": false,
+  "commands": [
+    "substreams registry publish <recording-dir>/packages/erc4626-flows/erc4626-flows-v0.1.1.spkg --yes"
+  ],
+  "runId": "20260913T114823Z-nyom",
+  "createdAt": "2026-09-13T11:50:29.951Z",
+  "outputModule": "map_events",
+  "moduleHash": "22c9d75e3161308ee9690d9fa1012eca10ac6ef3",
+  "moduleHashes": {
+    "store_vault_seen": "ae5c9b91e1a2bc02ae1cae09fd8fa4c465b8edfc",
+    "map_vault_probe": "373470463d92c0949b3966795a60bca7260283b9",
+    "store_vault_meta": "43ccf80771941433a49e09274b0a9fab73c8b4ef",
+    "map_flows": "07a97254a6281c28a101c890206a0d97f03435e0",
+    "map_share_value_observations": "1ec5e9056028c5bcd9cf734d3485925fad4e4a45",
+    "map_events": "22c9d75e3161308ee9690d9fa1012eca10ac6ef3",
+    "erc4626:map_events": "9d3e4a81797e43b37f46443144913096d3a3080c"
+  },
+  "publishOutput": "⚠️ Detected Substreams Package warnings:\n   • Image (package.image) is not set\n📦 Package Details\n  Name: erc4626-flows\n  Version: v0.1.1\n  Description: Normalized ERC-4626 deposit and withdrawal facts plus fixed-interval convertToAssets observations for a configured set of Base vaults, emitted as a single from-proto sink message (vaultflows.v1.Events).\n  URL: https://github.com/pavvann/streamsmith\n  Network: base\n\nPackage published successfully!\n\nView on the web at:  https://substreams.dev/packages/erc4626-flows/v0.1.1\n\nStart streaming with:\n\n    substreams gui erc4626-flows@v0.1.1",
+  "registryPublishedAt": "2026-09-13T11:50:35.707Z",
+  "webUrl": "https://substreams.dev/packages/erc4626-flows/v0.1.1",
+  "packageUrl": "https://api.substreams.dev/v1/packages/erc4626-flows/v0.1.1",
+  "urlVerified": true
+}

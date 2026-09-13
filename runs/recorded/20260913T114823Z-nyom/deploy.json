@@ -1,0 +1,61 @@
+{
+  "deploymentMode": "self-managed-sink",
+  "deploymentId": "self-managed:Mac:59781:20260913T114823Z-nyom",
+  "spkg": "packages/erc4626-flows/erc4626-flows-v0.1.1.spkg",
+  "outputModule": "map_events",
+  "network": "base",
+  "endpoint": "base-mainnet.streamingfast.io:443",
+  "startBlock": 51001200,
+  "state": "running",
+  "sink": {
+    "kind": "clickhouse",
+    "mode": "from-proto",
+    "database": "vaultflows_rec",
+    "hostFingerprint": "fbb35e8d115035d0ff8a45539d3a5e0c143701e3e40590b3769eed59823f6831"
+  },
+  "deployedAt": "2026-09-13T11:51:12.792Z",
+  "runId": "20260913T114823Z-nyom",
+  "pid": 59781,
+  "pidFile": "<recording-dir>/runs/20260913T114823Z-nyom/sink.pid",
+  "logFile": "<recording-dir>/runs/20260913T114823Z-nyom/sink.log",
+  "cursorFile": "<recording-dir>/runs/20260913T114823Z-nyom/clickhouse-cursor.txt",
+  "command": "substreams-sink-sql from-proto clickhouse://sink:***@<clickhouse-host>:9440/vaultflows_rec?secure=true packages/erc4626-flows/erc4626-flows-v0.1.1.spkg map_events -e base-mainnet.streamingfast.io:443 --network base -s 51001200 --final-blocks-only --clickhouse-cursor-file-path <recording-dir>/runs/20260913T114823Z-nyom/clickhouse-cursor.txt --clickhouse-sink-info-folder <recording-dir>/runs/20260913T114823Z-nyom/sinkinfo",
+  "notes": [
+    "pid 59781 alive",
+    "clickhouse _blocks_ max(number): 51006830",
+    "row counts: {\"vault_flows\":1041,\"share_value_observations\":2,\"vaults\":177,\"share_transfers\":0,\"_blocks_\":1030}"
+  ],
+  "packageHash": "b9089b3f7eefb8db75b9c828e5a5b3d0bcafad00b8bfa53893add10dbcad0dca",
+  "views": {
+    "file": "packages/erc4626-flows/sql/views.sql",
+    "present": true,
+    "statements": 2,
+    "applied": [
+      "CREATE OR REPLACE VIEW vault_flows_24h AS WITH (SELECT max(block_timestamp) FROM vault_flows WHERE _deleted_ = 0) AS observed_end SELECT vault, toUInt64(ifNull(observed_end, 0)) AS window_end_timestamp, toUInt64(ifNull(observed_end, 0) - 86400) AS window_start_timestamp, countIf(direction = 'deposit') AS deposit_count, countIf(direction = 'withdraw') AS withdraw_count, sumIf(assets_normalized, direction = 'deposit') AS assets_in_normalized, sumIf(assets_normalized, direction = 'withdraw') AS assets_out_normalized, sumIf(assets_normalized, direction = 'deposit') - sumIf(assets_normalized, direction = 'withdraw') AS net_assets_normalized, countIf(meta_valid = false) AS flows_without_metadata FROM vault_flows WHERE _deleted_ = 0 AND block_timestamp >= observed_end - 86400 GROUP BY vault",
+      "CREATE OR REPLACE VIEW share_value_growth AS SELECT vault, min(block_number) AS first_block_number, argMin(block_timestamp, block_number) AS first_block_timestamp, argMin(assets_per_share_normalized, block_number) AS first_assets_per_share_normalized, max(block_number) AS last_block_number, argMax(block_timestamp, block_number) AS last_block_timestamp, argMax(assets_per_share_normalized, block_number) AS last_assets_per_share_normalized, if( argMin(assets_per_share_normalized, block_number) > 0, toFloat64(argMax(assets_per_share_normalized, block_number)) / toFloat64(argMin(assets_per_share_normalized, block_number)) - 1, NULL ) AS growth, toFloat64(argMax(block_timestamp, block_number) - argMin(block_timestamp, block_number)) / 3600 AS observed_hours, count() AS observation_count FROM share_value_observations WHERE _deleted_ = 0 AND call_ok = true /*@window*/ GROUP BY vault"
+    ],
+    "views": [
+      "share_value_growth",
+      "vault_flows_24h"
+    ],
+    "appliedAt": "2026-09-13T11:58:17.370Z",
+    "sha256": "b7add48ddbb5897acfcf1246a0cc77032c519118a590cbdf0c9907a83203edff"
+  },
+  "cursor": {
+    "present": true,
+    "mtime": "2026-09-13T11:53:13.172Z",
+    "raw": "mLbHDRpmmNPG6g3R8j4b76WwLpc_DF9uVQvjLRhGj42i-XLDi8v1UzRzOh7Vk6j1iEfjGVv_296YESp7ppJZuIPul75l5Sc_Eigok4vrr7fnKqD7PwpPcLsxV-6Oao7RXj3XYgz8c7YK5oHuOvWPMRFhN8F0L2OwjjoF8I0GcfAUuCYwlzypIcbWgv_C94NJ-eVxF-Ch"
+  },
+  "headBlock": 51006830,
+  "rowCounts": {
+    "vault_flows": 1041,
+    "share_value_observations": 2,
+    "vaults": 177,
+    "share_transfers": 0,
+    "_blocks_": 1030
+  },
+  "chainHead": 51255523,
+  "lagBlocks": 248693,
+  "lagSeconds": 497386,
+  "checkedAt": "2026-09-13T11:53:14.257Z"
+}

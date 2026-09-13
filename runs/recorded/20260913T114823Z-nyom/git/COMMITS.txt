@@ -1,0 +1,20 @@
+Recording directory: a standalone git repository outside this one, with no remote.
+
+clean-start  453bbbc28e3904110d107c20f9123a9fa3c32d9f  tag clean-start
+             "Clean start: contract, gate and tooling only"
+             112 tracked files, clean tree.
+
+HEAD         37ac4dd4579b343e2d2919f4e3d55ea5f917fe48
+             "One-prompt run: generated package and run evidence"
+             60 files changed, 10487 insertions(+), 0 deletions(-)
+
+Reproduce the exports in this folder from that repository:
+
+    git diff clean-start HEAD --stat
+    git format-patch clean-start..HEAD --stdout
+
+diff-clean-start-HEAD.stat  is the first command's output, unmodified.
+one-prompt-run.patch        is the second command's output, with the recording
+                            directory's absolute path replaced by <recording-dir>
+                            and the ClickHouse Cloud hostname replaced by
+                            <clickhouse-host>. See ../README.md, "What was scrubbed".

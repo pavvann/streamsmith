@@ -9,6 +9,8 @@ dist/
 .context/
 runs/**/raw/
 *.log
+# the recorded one-prompt run's logs are evidence, not build noise
+!runs/recorded/**/*.log
 .DS_Store
 vendor/
 .substreams.env
