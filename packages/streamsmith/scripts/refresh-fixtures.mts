@@ -1,7 +1,7 @@
 // Regenerate the fixtures that are copies of real artifacts. Run after specs/vaultflows.proto changes, after a
 // rebuild of packages/erc4626-flows/erc4626-flows-v0.1.0.spkg, or after a new live run lands in runs/live/.
 //
-//   pnpm --filter @ethonline26/streamsmith fixtures
+//   pnpm --filter @streamsmith/streamsmith fixtures
 //
 // Read-only with respect to the rest of the repo: it never rebuilds anything (no cargo, no `substreams build`),
 // it only compiles the contract with buf and reads the existing spkg with `substreams info`.

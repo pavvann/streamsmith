@@ -5,7 +5,7 @@ This repository, branch main. Do NOT commit; do NOT git checkout/switch/stash; p
 Repro (real, safe, read-only; creds in the repo .env — `set -a; source .env; set +a`):
 ```
 export CLICKHOUSE_URL="$CH_CLOUD_URL" CLICKHOUSE_USER=sink CLICKHOUSE_PASSWORD="$CH_CLOUD_SINK_PASSWORD" CLICKHOUSE_DATABASE=vaultflows
-pnpm -s --filter @ethonline26/streamsmith streamsmith deploy status --root "$PWD" --rpc-url https://mainnet.base.org --json
+pnpm -s --filter @streamsmith/streamsmith streamsmith deploy status --root "$PWD" --rpc-url https://mainnet.base.org --json
 # -> streamsmith: Unexpected end of JSON input   (exit 1)
 # without --json: streamsmith: Unexpected token 's', "streamsmit"... is not valid JSON
 ```

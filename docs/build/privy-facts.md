@@ -374,7 +374,7 @@ Earn webhook payloads include `wallet_id` and `vault_id`. Verify signatures per 
 5. **Gas sponsorship** → **App pays** → enable **Base** (mainnet). Otherwise the business wallet
    needs ETH on Base.
 6. Copy `apps/vaultpilot/.env.example` to `apps/vaultpilot/.env`, fill it, run
-   `pnpm --filter @ethonline26/vaultpilot spike`. The spike creates the wallet, policy, signer,
+   `pnpm --filter @streamsmith/vaultpilot spike`. The spike creates the wallet, policy, signer,
    reads positions, and runs two denial tests (unapproved vault id; over-cap amount). It never
    deposits real funds.
 7. After the spike prints the wallet address, send ~50 USDC on Base to it for the execution proof.

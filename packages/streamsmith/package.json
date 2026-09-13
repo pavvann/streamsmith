@@ -1,5 +1,5 @@
 {
-  "name": "@ethonline26/streamsmith",
+  "name": "@streamsmith/streamsmith",
   "version": "0.1.0",
   "private": true,
   "description": "Streamsmith: promotion pipeline for Substreams packages \u2014 gate, publish, deploy, receipt, manifest, case study.",

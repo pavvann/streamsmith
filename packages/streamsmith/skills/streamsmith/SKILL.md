@@ -43,19 +43,19 @@ gate → publish → deploy → receipt → MCP.
 Run from the repo root. `--run-id` defaults to `runs/CURRENT`.
 
 ```bash
-pnpm --filter @ethonline26/streamsmith streamsmith new-run          # mint runs/<id>/, write runs/CURRENT
-pnpm --filter @ethonline26/streamsmith streamsmith gate             # specs/gate.yaml, exit 0/10/20/30
-pnpm --filter @ethonline26/streamsmith streamsmith publish --dry-run
-pnpm --filter @ethonline26/streamsmith streamsmith deploy hosted --spkg-url <url> --ch-server <host>   # --params only if explicit; --update + --deployment-id to reconfigure
-pnpm --filter @ethonline26/streamsmith streamsmith deploy self-managed --spkg <file>   # --final-blocks-only on by default; sink-info folder + cursor file default under runs/<id>/
-pnpm --filter @ethonline26/streamsmith streamsmith deploy views      # applies packages/erc4626-flows/sql/views.sql; --views resolves against --root, missing explicit file is an error
-pnpm --filter @ethonline26/streamsmith streamsmith deploy status --clickhouse-url <url>   # works with no deploy.json: head from _blocks_, RPC chain head, lag, row counts
-pnpm --filter @ethonline26/streamsmith streamsmith schema-render --spkg <file> --database <db>   # the sink's DDL + sinkSchemaHash, offline
-pnpm --filter @ethonline26/streamsmith streamsmith receipt --spkg <file> --schema-sql <file> [--deploy-json <deploy-status.json>]
-pnpm --filter @ethonline26/streamsmith streamsmith receipt --spkg <file> --schema-from-spkg --database <db>   # same receipt with no database in reach
-pnpm --filter @ethonline26/streamsmith streamsmith mcp               # delegates to @ethonline26/mcpgen
-pnpm --filter @ethonline26/streamsmith streamsmith manifest start|finish
-pnpm --filter @ethonline26/streamsmith streamsmith casestudy
+pnpm --filter @streamsmith/streamsmith streamsmith new-run          # mint runs/<id>/, write runs/CURRENT
+pnpm --filter @streamsmith/streamsmith streamsmith gate             # specs/gate.yaml, exit 0/10/20/30
+pnpm --filter @streamsmith/streamsmith streamsmith publish --dry-run
+pnpm --filter @streamsmith/streamsmith streamsmith deploy hosted --spkg-url <url> --ch-server <host>   # --params only if explicit; --update + --deployment-id to reconfigure
+pnpm --filter @streamsmith/streamsmith streamsmith deploy self-managed --spkg <file>   # --final-blocks-only on by default; sink-info folder + cursor file default under runs/<id>/
+pnpm --filter @streamsmith/streamsmith streamsmith deploy views      # applies packages/erc4626-flows/sql/views.sql; --views resolves against --root, missing explicit file is an error
+pnpm --filter @streamsmith/streamsmith streamsmith deploy status --clickhouse-url <url>   # works with no deploy.json: head from _blocks_, RPC chain head, lag, row counts
+pnpm --filter @streamsmith/streamsmith streamsmith schema-render --spkg <file> --database <db>   # the sink's DDL + sinkSchemaHash, offline
+pnpm --filter @streamsmith/streamsmith streamsmith receipt --spkg <file> --schema-sql <file> [--deploy-json <deploy-status.json>]
+pnpm --filter @streamsmith/streamsmith streamsmith receipt --spkg <file> --schema-from-spkg --database <db>   # same receipt with no database in reach
+pnpm --filter @streamsmith/streamsmith streamsmith mcp               # delegates to @streamsmith/mcpgen
+pnpm --filter @streamsmith/streamsmith streamsmith manifest start|finish
+pnpm --filter @streamsmith/streamsmith streamsmith casestudy
 ```
 
 `streamsmith --help` prints every flag. Add `--json` to any command for machine output.
@@ -76,7 +76,7 @@ pnpm --filter @ethonline26/streamsmith streamsmith casestudy
    It binds `packageHash` (sha256 of the exact .spkg bytes — artifact identity, **not** source identity),
    `outputModuleHash` (the reproducible identity, from `substreams info`), `protoDescriptorHash`, `parametersHash`,
    `sinkSchemaHash`, the deployment, and the gate result.
-6. `mcp` — shells out to `pnpm --filter @ethonline26/mcpgen generate …` and writes `mcpManifestHash` back into the
+6. `mcp` — shells out to `pnpm --filter @streamsmith/mcpgen generate …` and writes `mcpManifestHash` back into the
    receipt. Streamsmith never generates MCP code itself.
 7. `manifest finish` / `casestudy` — the AI-usage record for the submission.
 

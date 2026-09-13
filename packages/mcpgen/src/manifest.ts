@@ -7,7 +7,7 @@ import type { ViewSpec } from "./views.ts";
 import { columnSetHash } from "../runtime/schemahash.ts";
 import type { ExpectedColumn, Manifest, OutputColumn, ParamSpec, ToolSpec } from "../runtime/types.ts";
 
-export const GENERATOR_NAME = "@ethonline26/mcpgen";
+export const GENERATOR_NAME = "@streamsmith/mcpgen";
 export const GENERATOR_VERSION = "0.1.0";
 
 export const POLICY: Manifest["policy"] = {

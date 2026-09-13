@@ -46,7 +46,7 @@ describe("fixture receipt", () => {
 describe("generator", () => {
   it("is deterministic: two runs produce byte-identical manifest.json and sources", async () => {
     const [a, b] = [await tmp(), await tmp()];
-    const common = { receipt: FIXTURE_RECEIPT, proto: SPEC_PROTO, views: VIEWS_SQL, name: "@ethonline26/mcp-vaultflows" };
+    const common = { receipt: FIXTURE_RECEIPT, proto: SPEC_PROTO, views: VIEWS_SQL, name: "@streamsmith/mcp-vaultflows" };
     const ra = await generate({ ...common, out: a });
     const rb = await generate({ ...common, out: b });
     for (const rel of ["manifest.json", "src/tools.generated.ts", "src/server.ts", "package.json", "README.md"]) {

@@ -1,4 +1,4 @@
-# Privy spike (Sept 10, 2026, 20:30 IST) — `pnpm --filter @ethonline26/vaultpilot spike`
+# Privy spike (Sept 10, 2026, 20:30 IST) — `pnpm --filter @streamsmith/vaultpilot spike`
 
 Result: **pass** (wallet, policy, signer, positions, denials). No funds moved.
 

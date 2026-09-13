@@ -16,7 +16,7 @@ contract, whose SQL is read-only and parameterized, and which **refuses to answe
 matches the receipt. `packages/mcp-vaultflows` is the checked-in output for `fixtures/receipt.example.json`.
 
 ```bash
-pnpm --filter @ethonline26/mcpgen generate          # fixture receipt -> packages/mcp-vaultflows
+pnpm --filter @streamsmith/mcpgen generate          # fixture receipt -> packages/mcp-vaultflows
 # or explicitly
 node bin/mcpgen.js generate --receipt <receipt.json> --proto specs/vaultflows.proto \
      --views packages/erc4626-flows/sql/views.sql --out packages/mcp-vaultflows [--semantics semantics/default.yaml]

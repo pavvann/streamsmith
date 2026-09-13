@@ -23,10 +23,10 @@ changed contract changes `descriptorHash.expectedSpecSha256` and the gate fails 
 
 ```bash
 pnpm install
-pnpm --filter @ethonline26/streamsmith streamsmith --help
-pnpm --filter @ethonline26/streamsmith typecheck
-pnpm --filter @ethonline26/streamsmith test
-pnpm --filter @ethonline26/streamsmith fixtures   # re-copy fixtures from the real proto / spkg / live runs
+pnpm --filter @streamsmith/streamsmith streamsmith --help
+pnpm --filter @streamsmith/streamsmith typecheck
+pnpm --filter @streamsmith/streamsmith test
+pnpm --filter @streamsmith/streamsmith fixtures   # re-copy fixtures from the real proto / spkg / live runs
 ```
 
 Node >= 20, run from the repo root. `--run-id` defaults to `runs/CURRENT` (written by `new-run`) or
@@ -47,7 +47,7 @@ vendored: `substreams` (1.22.0), `buf` (1.72.0), optionally `substreams-sink-sql
 | `schema-dump` | `SHOW CREATE TABLE` for the receipt's tables, normalized, for `sinkSchemaHash` |
 | `schema-render` | the same DDL rendered **offline** from the spkg's proto descriptors — no database, no network — and its sha256; `--database` / `--engine cloud\|oss` select the two deployment-dependent parts |
 | `receipt` \| `receipt verify` | assembles / validates the receipt against `specs/receipt.schema.json`. `sinkSchemaHash` comes from `--schema-sql` (a live dump), `--schema-hash`, or `--schema-from-spkg` (rendered offline) |
-| `mcp` | runs `pnpm --filter @ethonline26/mcpgen generate …`, binds `mcpManifestHash` into the receipt |
+| `mcp` | runs `pnpm --filter @streamsmith/mcpgen generate …`, binds `mcpManifestHash` into the receipt |
 | `manifest start\|finish`, `casestudy` | the AI-usage record for the submission |
 | `hash descriptor\|spkg\|sql\|params\|file` | the individual hashes, for debugging a mismatch |
 
@@ -100,7 +100,7 @@ See `.env.example`. Summary:
   `runs/<id>/deploy.json`-shaped file works); `outputModuleHash`/`moduleHashes` come from `substreams info <spkg>
   --json` on the spkg being receipted, independent of `--deploy-json`.
 - **`gate`** — `passed`, the block `ranges` that were run, every assertion with its `detail`, and tool versions.
-- **`mcpManifestHash`** — sha256 of the manifest `@ethonline26/mcpgen` generated, written back by `streamsmith mcp`.
+- **`mcpManifestHash`** — sha256 of the manifest `@streamsmith/mcpgen` generated, written back by `streamsmith mcp`.
 
 ### `sinkSchemaHash` without a database
 
@@ -130,7 +130,7 @@ a self-hosted server keeps, and is not pinned against a live dump.
 
 ## The fail-closed contract the MCP implements
 
-`checkReceiptAgainstLive(receipt, live, policy)` (exported from `@ethonline26/streamsmith/receipt`) is the pure
+`checkReceiptAgainstLive(receipt, live, policy)` (exported from `@streamsmith/streamsmith/receipt`) is the pure
 check the generated MCP server runs **before every answer**. It refuses when:
 
 - the live `.spkg` hash, sink schema hash, output module hash, descriptor hash or parameters hash differs from the
@@ -153,7 +153,7 @@ src/deploy/             portal.ts, hosted.ts, selfManaged.ts, clickhouse.ts, vie
 src/schema/render.ts    the from-proto sink's ClickHouse DDL, rendered offline from the spkg's descriptors
 src/schema/jsonschema.ts  the JSON Schema validator the receipt is checked against
 src/receipt.ts          assemble, validate, hash, and the fail-closed check
-src/mcp.ts              delegation to @ethonline26/mcpgen
+src/mcp.ts              delegation to @streamsmith/mcpgen
 skills/streamsmith/     the Claude Code skill; .claude-plugin/plugin.json packages it
 fixtures/               fixtures/live/ holds real endpoint output; `pnpm fixtures` refreshes everything
 ```

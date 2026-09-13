@@ -80,8 +80,8 @@ Ask: *"Using mcp-vaultflows, compare observed-window share-value growth for the 
 
 **Type:**
 ```
-pnpm --filter @ethonline26/vaultpilot demo:denied
-pnpm --filter @ethonline26/vaultpilot agent:once --source cloud
+pnpm --filter @streamsmith/vaultpilot demo:denied
+pnpm --filter @streamsmith/vaultpilot agent:once --source cloud
 ```
 Then the dashboard at localhost:3000.
 

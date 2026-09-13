@@ -113,16 +113,16 @@ substreams run -e base-mainnet.streamingfast.io:443 erc4626-flows-v0.1.0.spkg ma
 
 ```bash
 pnpm install
-pnpm --filter @ethonline26/streamsmith streamsmith --help
-pnpm --filter @ethonline26/streamsmith typecheck
-pnpm --filter @ethonline26/streamsmith test
-pnpm --filter @ethonline26/streamsmith fixtures
+pnpm --filter @streamsmith/streamsmith streamsmith --help
+pnpm --filter @streamsmith/streamsmith typecheck
+pnpm --filter @streamsmith/streamsmith test
+pnpm --filter @streamsmith/streamsmith fixtures
 ```
 
 ### `mcpgen` — generates the fail-closed MCP server ([README](packages/mcpgen/README.md))
 
 ```bash
-pnpm --filter @ethonline26/mcpgen generate
+pnpm --filter @streamsmith/mcpgen generate
 ```
 
 ### `mcp-vaultflows` — the generated MCP server ([README](packages/mcp-vaultflows/README.md))

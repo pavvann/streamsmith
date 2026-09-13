@@ -97,7 +97,7 @@ Source: `docs/diagram.mmd` (kept byte-identical to the block above).
 
 ## The fail-closed contract
 
-`checkReceiptAgainstLive` (exported from `@ethonline26/streamsmith/receipt`, run by every generated
+`checkReceiptAgainstLive` (exported from `@streamsmith/streamsmith/receipt`, run by every generated
 MCP server on startup and every 60 seconds) refuses to answer rather than serve unverified data. The
 exact refusal reasons, verbatim from `packages/mcp-vaultflows/README.md`:
 

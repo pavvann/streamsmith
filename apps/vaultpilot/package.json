@@ -1,5 +1,5 @@
 {
-  "name": "@ethonline26/vaultpilot",
+  "name": "@streamsmith/vaultpilot",
   "version": "0.0.1",
   "private": true,
   "description": "Vaultpilot: Privy business wallet + policy-scoped agent signer operating Privy Earn (Morpho on Base).",

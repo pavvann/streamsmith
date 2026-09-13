@@ -58,7 +58,7 @@ Commands
               [--mcp-manifest FILE] [--deploy-json FILE] [--force]
   receipt verify FILE                  validate a receipt file against specs/receipt.schema.json
   mcp         [--receipt FILE] [--out packages/mcp-vaultflows] [--proto specs/vaultflows.proto] [--views FILE]
-                                       runs \`pnpm --filter @ethonline26/mcpgen generate …\`, binds mcpManifestHash into the receipt
+                                       runs \`pnpm --filter @streamsmith/mcpgen generate …\`, binds mcpManifestHash into the receipt
   manifest start|finish [--receipt FILE] [--recording FILE]
   casestudy   [--name N] [--id S1.1] [--title T] [--skills a,b] [--model M] [--result R] [--receipt FILE]
   hash descriptor FILE | spkg FILE | sql FILE | params | file FILE

@@ -7,7 +7,7 @@ import { exists, readJson, writeJson } from "./util/fsx.ts";
 import { sha256File } from "./util/hash.ts";
 import { loadReceipt, loadReceiptSchema, validateReceipt, receiptHash, type Receipt } from "./receipt.ts";
 
-export const MCPGEN_FILTER = "@ethonline26/mcpgen";
+export const MCPGEN_FILTER = "@streamsmith/mcpgen";
 export const DEFAULT_MCP_OUT = "packages/mcp-vaultflows";
 
 export interface McpOptions {

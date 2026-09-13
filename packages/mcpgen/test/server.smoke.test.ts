@@ -49,7 +49,7 @@ describe("generated server over stdio", () => {
       { jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "pipeline_status", arguments: {} } },
     ]);
     const byId = new Map(responses.map((r) => [r.id, r]));
-    expect((byId.get(1)!.result!.serverInfo as { name: string }).name).toBe("@ethonline26/mcp-vaultflows");
+    expect((byId.get(1)!.result!.serverInfo as { name: string }).name).toBe("@streamsmith/mcp-vaultflows");
 
     const tools = byId.get(2)!.result!.tools as Array<{ name: string; inputSchema: Record<string, unknown>; annotations: Record<string, unknown> }>;
     expect(tools.map((t) => t.name)).toEqual(["vault_flows", "share_value_observations", "vaults", "recent_share_migration", "vault_flows_24h", "share_value_growth", "pipeline_status"]);

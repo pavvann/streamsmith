@@ -24,7 +24,7 @@ const USAGE = `usage:
 
 Emits a runnable, fail-closed MCP server package into --out and prints {"manifest": "<absolute path>"} as the last
 stdout line. Defaults: --semantics ${DEFAULT_SEMANTICS}; --receipt-schema <dir of --proto>/receipt.schema.json when
-present; --name @ethonline26/<basename of --out>.`;
+present; --name @streamsmith/<basename of --out>.`;
 
 export interface GenerateOptions {
   receipt: string;
@@ -87,7 +87,7 @@ export async function generate(o: GenerateOptions): Promise<{ manifestPath: stri
       semantics: { name: basename(semanticsPath), text: semanticsText },
     },
   });
-  const packageName = o.name ?? `@ethonline26/${basename(outDir)}`;
+  const packageName = o.name ?? `@streamsmith/${basename(outDir)}`;
   const res = await emitPackage({ outDir, packageName, manifest, receiptJsonText: receiptText, sdkVersionRange: SDK_RANGE, zodVersionRange: ZOD_RANGE });
   log(`tools: ${manifest.tools.map((t) => t.name).join(", ")}`);
   log(`wrote ${res.files.length} files to ${outDir}`);

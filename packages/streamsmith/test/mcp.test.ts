@@ -32,7 +32,7 @@ describe("streamsmith mcp", () => {
     try {
       const a = mcpgenArgs(repo.ctx, { runId: "r", receiptPath: "receipts/x.json", protoPath: "specs/vaultflows.proto", viewsPath: "packages/erc4626-flows/sql/views.sql" });
       expect(a.cmd).toBe("pnpm");
-      expect(a.args).toEqual(["--filter", "@ethonline26/mcpgen", "generate", "--receipt", join(repo.root, "receipts/x.json"), "--proto", join(repo.root, "specs/vaultflows.proto"), "--views", join(repo.root, "packages/erc4626-flows/sql/views.sql"), "--out", join(repo.root, "packages/mcp-vaultflows")]);
+      expect(a.args).toEqual(["--filter", "@streamsmith/mcpgen", "generate", "--receipt", join(repo.root, "receipts/x.json"), "--proto", join(repo.root, "specs/vaultflows.proto"), "--views", join(repo.root, "packages/erc4626-flows/sql/views.sql"), "--out", join(repo.root, "packages/mcp-vaultflows")]);
     } finally {
       await repo.cleanup();
     }
@@ -44,7 +44,7 @@ describe("streamsmith mcp", () => {
       const receiptPath = await receiptIn(repo);
       const manifestBody = JSON.stringify({ tools: ["vault_flows", "share_value_growth", "recent_share_migration", "pipeline_status"] });
       repo.runner.fake.add({
-        match: (c, a) => c === "pnpm" && a[0] === "--filter" && a[1] === "@ethonline26/mcpgen" && a[2] === "generate",
+        match: (c, a) => c === "pnpm" && a[0] === "--filter" && a[1] === "@streamsmith/mcpgen" && a[2] === "generate",
         onCall: async (_c, a) => {
           const out = a[a.indexOf("--out") + 1]!;
           await mkdir(out, { recursive: true });
@@ -58,7 +58,7 @@ describe("streamsmith mcp", () => {
       expect(r.record.receiptPath).toBe(receiptPath);
       const call = repo.runner.fake.calls.find((c) => c.cmd === "pnpm")!;
       expect(call.opts.cwd).toBe(repo.root);
-      expect(call.args.slice(0, 5)).toEqual(["--filter", "@ethonline26/mcpgen", "generate", "--receipt", join(repo.root, receiptPath)]);
+      expect(call.args.slice(0, 5)).toEqual(["--filter", "@streamsmith/mcpgen", "generate", "--receipt", join(repo.root, receiptPath)]);
       const updated = await loadReceipt(join(repo.root, receiptPath));
       expect(updated.mcpManifestHash).toBe(sha256Hex(manifestBody));
       expect(updated.outputModuleHash).toBe(MAP_EVENTS_HASH);
