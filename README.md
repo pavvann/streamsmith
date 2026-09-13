@@ -11,24 +11,30 @@ Receipt and its own ClickHouse Cloud database:
 
 | | Deployment | Database | Receipt |
 |---|---|---|---|
-| Hosted | The Graph Market, `depnywi036749442f3c55e7` | `vaultflows_hosted` | [`…-20260912T103328Z-vipc.json`](receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json) — `deploymentMode: graph-market-hosted` |
+| Live | The Graph Market, `depnywi036749442f3c55e7` | `vaultflows_hosted` | [`…-20260912T103328Z-vipc.json`](receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json) — `deploymentMode: graph-market-hosted` |
 | Fallback | self-managed `substreams-sink-sql` | `vaultflows` | [`…-20260910T234439Z-1fr9.json`](receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json) — `deploymentMode: self-managed-sink` |
 
-The hosted deployment was created on Sept 12 and is backfilling from its start block 51,001,200; its
-rendered and dumped sink schemas are byte-identical (sha256
+The hosted deployment has caught up. On Sept 13 its sink head was block 51,249,575 against a chain
+head of 51,249,585 — **10 blocks / ~20 s behind**, well inside the 300-block freshness limit the
+generated MCP enforces — so it is the pipeline behind the shipped `mcp-vaultflows` server and the
+Vaultpilot dashboard. The self-managed sink into `vaultflows` keeps running as the documented
+fallback; neither deployment writes to the other's database. The hosted database's rendered and
+dumped sink schemas are byte-identical (sha256
 `89f106091e7bdd69b025018f24ecdea75d7f0a8acc9e0087eccd3d1287a20e48`) and both views answer against it
-(`runs/20260912T103328Z-vipc/`). Until it reaches the chain head, the fail-closed MCP refuses its
-data with `stale_data` — by design — so the tools and the dashboard still read the self-managed
-database (`runs/live/cloud/mcp-live-probe-hosted.txt` records both halves of that behaviour).
+(`runs/20260912T103328Z-vipc/`).
 
-At the last recorded probe of the self-managed sink the head was block 51,148,236 against a chain
-head of 51,148,464 — 228 blocks / ~456 s behind — and the generated `mcp-vaultflows` server's
-`share_value_growth` tool reported both configured Base vaults growing in observed-window share
-value by about **0.037%** over a 79-hour, 43-observation window (blocks 51,004,800 → 51,147,000),
-with `pipeline_status` confirming the receipt matched the live schema
-(`runs/live/cloud/mcp-live-probe.txt`). The gate behind both receipts passes on this same live data,
-including an RPC cross-check against `eth_getTransactionReceipt`/`convertToAssets` at the cited
-blocks.
+Against that database the generated server's `share_value_growth` tool reported both configured Base
+vaults growing in observed-window share value by about **0.064%** over a 135-hour, 94-observation
+window (blocks 51,004,800 → 51,247,800), and `vault_flows_24h` answered with a window ending 21 s
+behind the wall clock: 3,385 deposits / 1,053 withdrawals on the Gauntlet vault and 890 / 911 on the
+Steakhouse vault, with no flow row missing decoded metadata. `pipeline_status` confirmed the receipt
+matched the manifest and the live column set matched the receipt's schema hash. The same transcript
+records the fail-closed half: a receipt copy with one hash changed refuses with `receipt_mismatch`
+while the schema and the lag are still fine, and a zero lag allowance refuses with `stale_data`
+while the receipt and the schema are still fine
+(`runs/live/cloud/mcp-live-probe-hosted.txt`). The gate behind both receipts passes on this same
+live data, including an RPC cross-check against `eth_getTransactionReceipt`/`convertToAssets` at the
+cited blocks.
 
 ## Architecture
 
@@ -128,7 +134,7 @@ that satisfies it. Where a bullet is not yet satisfied, that is stated instead o
 | Bullet | Evidence |
 |---|---|
 | "Must compose 2+ Graph products OR build meaningfully on a standardized schema" | Imports Pinax's `erc4626` Substreams package and layers a documented, versioned ERC-4626 output contract on top of it: [`specs/vaultflows.proto`](specs/vaultflows.proto); module graph in [`packages/erc4626-flows/README.md`](packages/erc4626-flows/README.md#modules) (`erc4626:map_events` → `map_flows`/`map_share_value_observations` → `map_events`). |
-| "Live data only (Subgraph Studio / The Graph Market). Mocked/local/static = DQ" | Hosted on The Graph Market: deployment `depnywi036749442f3c55e7`, [receipt](receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json) with `deploymentMode: graph-market-hosted`, evidence in [`runs/20260912T103328Z-vipc/`](runs/20260912T103328Z-vipc/README.md) and [`runs/live/cloud/mcp-live-probe-hosted.txt`](runs/live/cloud/mcp-live-probe-hosted.txt). Fallback self-managed sink on the same Graph endpoint: [receipt](receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json) (`endpoint: base-mainnet.streamingfast.io:443`, `headBlock 51148236`, `lagBlocks 228`) with a live query result in [`runs/live/cloud/mcp-live-probe.txt`](runs/live/cloud/mcp-live-probe.txt). |
+| "Live data only (Subgraph Studio / The Graph Market). Mocked/local/static = DQ" | Hosted on The Graph Market and serving the live tools: deployment `depnywi036749442f3c55e7`, [receipt](receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json) with `deploymentMode: graph-market-hosted` and `mcpManifestHash` bound to the shipped MCP, deploy and views evidence in [`runs/20260912T103328Z-vipc/`](runs/20260912T103328Z-vipc/README.md), and a live stdio probe at a 10-block lag with both refusals in [`runs/live/cloud/mcp-live-probe-hosted.txt`](runs/live/cloud/mcp-live-probe-hosted.txt). Fallback self-managed sink on the same Graph endpoint: [receipt](receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json) (`endpoint: base-mainnet.streamingfast.io:443`, `headBlock 51148236`, `lagBlocks 228`) with a live query result in [`runs/live/cloud/mcp-live-probe.txt`](runs/live/cloud/mcp-live-probe.txt). |
 | "Show what became easier because of the shared schema" | [`packages/erc4626-flows/README.md`](packages/erc4626-flows/README.md#compose-it) "Compose it": any package can `import` the module unmodified or `use:` a submodule directly, params overridable with `-p`. |
 | "Public repo + 2–4 min video" | Repo is public. **Video not recorded yet — left out; see Limitations.** |
 
@@ -163,14 +169,13 @@ that satisfies it. Where a bullet is not yet satisfied, that is stated instead o
 
 ## Limitations
 
-- **The hosted deployment is still backfilling.** `depnywi036749442f3c55e7` is deployed, healthy
-  and writing to `vaultflows_hosted`, and its receipt is the one that records
-  `deploymentMode: graph-market-hosted`. It started on Sept 12 from block 51,001,200 and had not
-  reached the chain head when this was written, so the MCP and the Vaultpilot dashboard still read
-  the self-managed database `vaultflows`; switching them over is an environment change once lag
-  falls under the 300-block freshness limit. The first hosted attempt
-  (`depdehi448c87998ebb763b`) crash-looped on a parameters-format error — root cause, why a
-  reconfigure could not repair it, and the fix are in
+- **Two deployments, one of them a fallback.** `depnywi036749442f3c55e7` on The Graph Market is the
+  live pipeline: it caught up on Sept 13 and now serves the MCP and the dashboard from
+  `vaultflows_hosted`. The self-managed `substreams-sink-sql` process into `vaultflows` is still
+  running as the fallback and keeps its own receipt, so a figure quoted from one database is not
+  interchangeable with the other — the receipt hash in each response says which one answered. The
+  first hosted attempt (`depdehi448c87998ebb763b`) crash-looped on a parameters-format error — root
+  cause, why a reconfigure could not repair it, and the fix are in
   [`docs/build/sink-spike.md` §7.2](docs/build/sink-spike.md).
 - **10% wrapper fee.** Both Privy Earn vaults are fee wrappers around the underlying Morpho vaults,
   and each wrapper keeps 10% of generated returns. The pipeline observes the underlying vault, so

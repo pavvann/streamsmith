@@ -44,7 +44,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 - [~] T3.7 M A5+A6 · (tables from proto annotations; views.sql → A6) Sink `schema.sql` (from-proto): `vault_flows`, `share_value_observations`, `vaults`; deterministic ids; ORDER BY per SQL skill; views `vault_flows_24h`, `share_value_growth`.
 - [x] T3.8 M A4c · (18 assertions pass on live data) Gate script (`packages/streamsmith/scripts/gate`) executes `specs/gate.yaml`; deterministic exit codes.
 - [x] T3.9 M PRJ · (published 22:00 IST: substreams.dev/packages/erc4626-flows/v0.1.0; registry sha 7b97d8a1… ≠ local 662fdd37… (repack), module hash 8e4892cf… identical) Publish `erc4626-flows` v0.1.0 to registry (reference build, may be superseded by generated build). Accept: importable via `use`.
-- [x] T3.10 M A1 · (both modes deployed: self-managed sink → `vaultflows` steady at lag 200–250; hosted → `vaultflows_hosted`, backfilling from 51001200) Deploy (hosted or self-managed per T1.9); backfill; verify live head. **Kill checkpoint Sept 10 12:00 IST: one custom row in sink.**
+- [x] T3.10 M A1 · (both modes deployed: hosted → `vaultflows_hosted`, caught up on Sept 13 at a 10-block lag and now the live pipeline; self-managed sink → `vaultflows` steady at lag 200–250 as the fallback) Deploy (hosted or self-managed per T1.9); backfill; verify live head. **Kill checkpoint Sept 10 12:00 IST: one custom row in sink.**
 - [ ] T3.11 M A1 · Reconcile one vault end to end vs `convertToAssets` at cited blocks. Accept: within rounding.
 - [ ] T3.12 S A1 · Package README: semantics, params, caveats (fee spread, virtual offset, heuristic validation), composition example.
 
@@ -61,7 +61,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked · **M**u
 ## 5. MCP for vault flows (Sept 11)
 - [x] T5.1 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Generate `packages/mcp-vaultflows`; tools `vault_flows`, `share_value_growth`, `recent_share_migration` (if T3.6), `pipeline_status`.
 - [x] T5.2 M A6b · (mcpgen 73 tests green; generated server typechecks; 7 tools; refusal chain) Hand-tune descriptions/SQL for the demo question; windows; limits.
-- [x] T5.3 M PRJ · (live: pipeline_status ok, share_value_growth + vault_flows_24h answer with provenance; refusal paths verified earlier as stale_data/check_unavailable)  Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
+- [x] T5.3 M PRJ · (live against the hosted deployment on Sept 13, runs/live/cloud/mcp-live-probe-hosted.txt: pipeline_status verified at 10 blocks of lag, share_value_growth / vault_flows_24h / vaults answer with provenance; refusals verified in the same package — receipt_mismatch on a tampered receipt copy and stale_data on a forced lag limit)  Register in Claude Code/Desktop; verify demo question end to end; verify refusal on forced stale lag and on schema mismatch.
+- [x] T5.4 M A19b · (manifest sha256 bf2e2ad3… bound into the hosted receipt as mcpManifestHash; receiptHash b34d21c8…; runs/20260912T103328Z-vipc/mcp.json) Regenerate `packages/mcp-vaultflows` from the hosted receipt and cut the shipped server and the Vaultpilot cloud source over to `vaultflows_hosted`, with the self-managed database as the fallback. dep: T1.6, T5.3
 
 ## 6. Vaultpilot (Sept 11)
 - [x] T6.1 M A3 · (live: wallet + policy + agent signer created; daily cap app-side) Server (TS): Privy client, business wallet, agent authorization key as additional signer, policy JSON (earn → 2 vault ids, per-action cap, daily aggregation), revocation path documented.

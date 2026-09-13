@@ -48,10 +48,13 @@ and `observation_matches_reference` against `convertToAssets` at block 51093000)
 `receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json` — `deploymentMode: graph-market-hosted`,
 validates against `specs/receipt.schema.json`.
 
-It carries no `mcpManifestHash`: no MCP server has been generated from it yet, because at the time
-of the run the hosted sink was still catching up from its start block and the freshness gate
-(`maxLagBlocks` 300) refuses. `runs/live/cloud/mcp-live-probe-hosted.txt` records what a server
-generated from this receipt does answer, and what it refuses.
+`mcpManifestHash` was bound into it on Sept 13, once the hosted sink had caught up: `streamsmith mcp`
+regenerated `packages/mcp-vaultflows` from this receipt and wrote the manifest's sha256
+(`bf2e2ad3f61c46505d4d08e2c2e0d9935e33c917934651262666269a558eaeee`) back into it, giving
+receiptHash `b34d21c85084fb906e4e90c0d3da4a12f6f7ae0428b319c0e30009dd20e9a5f1`. The record of that
+step is `mcp.json` (and the generator's full output in `mcp.log.json`) in this directory.
+`runs/live/cloud/mcp-live-probe-hosted.txt` records what the resulting server answers, and what it
+refuses.
 
 ## Catch-up at the time of the run
 
@@ -66,3 +69,7 @@ The hosted pod started at 10:25:28Z from block 51,001,200. Measured over a 5-min
 4,503 blocks in 301 s = ~898 blocks/min processed; the chain advanced 150 blocks in the same window,
 so the gap closes at ~868 blocks/min net and reaching the 300-block freshness limit takes about
 3.4 h from 10:57Z.
+
+It did: by 2026-09-13T08:35Z the sink head was 51,249,575 against a chain head of 51,249,585 — a lag
+of 10 blocks. The deployment has been the pipeline behind the shipped MCP server and the Vaultpilot
+dashboard since.

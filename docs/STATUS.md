@@ -86,15 +86,39 @@ A dated record of what was built, what it measured, and what is still open. Time
   `eth_blockNumber` at https://mainnet.base.org): 10:52:25Z head 51,026,764 lag 183,735 → 10:57:26Z head
   51,031,267 lag 179,382. The sink processes ~898 blocks/min and closes the gap at ~868 blocks/min net,
   so reaching the 300-block freshness limit takes about 3.4 h from 10:57Z.
-- **Open:** the hosted sink had not caught up when this was written, so `packages/mcp-vaultflows` and the
-  dashboard still read `vaultflows`. Switching them is an environment change
-  (`CLICKHOUSE_DATABASE` / `CH_CLOUD_DATABASE`, `MCP_MANIFEST_PATH`, `MCP_RECEIPT_PATH`) plus a regenerated
-  MCP from the hosted receipt, once lag is under 300 blocks.
+- **Open when written, closed on Sept 13:** the hosted sink had not caught up yet, so
+  `packages/mcp-vaultflows` and the dashboard still read `vaultflows`. See the Sept 13 entry.
 
-## Current state (Sept 11, ~13:00)
-**Read in this order:** this file (bottom-up), docs/TASKS.md (tracker with `[x]`/`[~]`/`[!]`), docs/SUBMISSION.md (gates), docs/RECORDING.md (Sept 12 protocol), README.md.
+## Sept 13 — hosted deployment is the live pipeline
 
-Everything that does not require an operator account or funds is built, green and committed. The package is published (substreams.dev `erc4626-flows` v0.1.0, module hash 8e4892cf…) and runs through two deployments: hosted on The Graph Market (`depnywi036749442f3c55e7` → `vaultflows_hosted`, receipt receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json, backfilling) and self-managed (`substreams-sink-sql` → `vaultflows`, pid file runs/live/cloud/sink.pid, steady at lag 200–250, receipt receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json with gate 18/18). The MCP answers live with provenance off the self-managed database; Vaultpilot's decision service and redesigned UI run against the same data (`--source cloud`; start command in apps/vaultpilot/README.md); the contract is frozen at tag `contract-v1`; the blind one-prompt rehearsal passed (docs/build/rehearsal-1.md).
+- The hosted sink reached the chain head. Measured through the shipped tools: sink head 51,249,575
+  against chain head 51,249,585, a lag of 10 blocks / ~20 s, inside the 300-block freshness limit.
+- `packages/mcp-vaultflows` regenerated with `streamsmith mcp` from the hosted receipt: the manifest now
+  carries `deploymentMode: graph-market-hosted`, `deploymentId: depnywi036749442f3c55e7` and
+  `sinkSchemaHash 89f10609…`, and its sha256 `bf2e2ad3…` is bound back into
+  `receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json` as `mcpManifestHash` (receiptHash
+  `b34d21c8…`, still valid against `specs/receipt.schema.json`). Tool set, argument schemas and the
+  column-set hash are unchanged; the record of the run is `runs/20260912T103328Z-vipc/mcp.json`.
+- Live stdio probe of that package against `vaultflows_hosted` as the read-only user
+  (`runs/live/cloud/mcp-live-probe-hosted.txt`): `pipeline_status` verified with the receipt matching the
+  manifest and the live column set matching the receipt's schema hash; `share_value_growth` both vaults
+  ≈ +0.064% over a 135-hour, 94-observation window; `vault_flows_24h` with a window ending 21 s behind the
+  wall clock; the metadata probe answering for both receipt-pinned vaults. Two refusals recorded with the
+  same package: a receipt copy with one hash zeroed gives `receipt_mismatch` while the schema check and the
+  lag are still fine, and a zero lag allowance gives `stale_data` while the receipt and schema are still
+  fine.
+- Vaultpilot's cloud source switched to the hosted pipeline (`CH_CLOUD_DATABASE=vaultflows_hosted` plus the
+  manifest and receipt paths, in the app's gitignored `.env`). Dry run `agent:once --source cloud`: pipeline
+  verified, head 51,249,692, lag 2, stamp `mode graph-market-hosted` with the receipt hashes; both vaults
+  observed for 136 h / 95 observations with growth 6.468 and 6.4636 bps; decision **hold**, reason
+  `no_position` — the business wallet still holds nothing in either approved vault. Nothing was executed.
+- The self-managed sink into `vaultflows` keeps running as the fallback with its own receipt; neither
+  deployment writes to the other's database.
+
+## Current state (Sept 13)
+**Read in this order:** this file (bottom-up), docs/TASKS.md (tracker with `[x]`/`[~]`/`[!]`), docs/SUBMISSION.md (gates), docs/RECORDING.md (recording protocol), README.md.
+
+Everything that does not require an operator account or funds is built, green and committed. The package is published (substreams.dev `erc4626-flows` v0.1.0, module hash 8e4892cf…) and runs through two deployments: hosted on The Graph Market (`depnywi036749442f3c55e7` → `vaultflows_hosted`, receipt receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json, caught up at single-digit block lag) and self-managed (`substreams-sink-sql` → `vaultflows`, pid file runs/live/cloud/sink.pid, steady at lag 200–250, receipt receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json with gate 18/18). The hosted deployment is the live pipeline: the shipped MCP server is generated from its receipt and answers off `vaultflows_hosted` with provenance, and Vaultpilot's decision service and redesigned UI read the same database (`--source cloud`; start command in apps/vaultpilot/README.md). The self-managed sink is the fallback. The contract is frozen at tag `contract-v1`; the blind one-prompt rehearsal passed (docs/build/rehearsal-1.md).
 
 **Pending operator steps** (all independent of each other):
 1. Fund the treasury wallet `0xcdC8B69799bCb135C04A1052b918787125571fDC` with ~50 USDC on Base, then run `pnpm --filter @ethonline26/vaultpilot demo:deposit --amount 25 --execute` into the lower-growth vault, then `demo:rotate --execute` if the differential exceeds 2 bps.

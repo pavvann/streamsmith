@@ -63,9 +63,10 @@ Source: `docs/diagram.mmd` (kept byte-identical to the block above).
    (`receipts/erc4626-flows-v0.1.0-20260910T234439Z-1fr9.json`). A deployment that is already running
    is recorded with `streamsmith deploy hosted --attach`, which uses read-only Portal calls only —
    `Deploy`, `UpdateDeploymentConfig` and `CreateDeployment` all restart or duplicate a running pod,
-   so none of them may be used to produce evidence about one. See Limitations in the root README for
-   the hosted deployment's backfill status and `docs/build/sink-spike.md` §7.2 for the start-command
-   failure that made a fresh deployment necessary.
+   so none of them may be used to produce evidence about one. The hosted deployment is the one the MCP
+   server and the dashboard read; the self-managed sink is the fallback. See Limitations in the root
+   README, and `docs/build/sink-spike.md` §7.2 for the start-command failure that made a fresh
+   deployment necessary.
 6. **Receipt.** The central artifact, validated against `specs/receipt.schema.json` before it is
    written. See "What each hash binds" below.
 7. **MCP.** `packages/mcpgen` reads the proto contract, the receipt and the applied views

@@ -27,23 +27,31 @@ store preparation from the original 6-week start block was 3.6M blocks (2 stages
 moving the start block to 51001200 (182,000 blocks, then cached). The `map_events` module hash changed with
 the contract, so the first run after the change paid store preparation again (82,646 blocks, 138 s).
 
-## Hosted deployment (Sept 12, 2026)
+## Hosted deployment — the live pipeline (Sept 12–13, 2026)
 
 A second, hosted pipeline for the same package runs on The Graph Market
 (deployment `depnywi036749442f3c55e7`, Portal API HostedService), writing to a separate ClickHouse
-Cloud database `vaultflows_hosted` on the same service. The self-managed sink in this directory
-keeps running into `vaultflows` and stays the documented fallback; neither writes to the other's
-database.
+Cloud database `vaultflows_hosted` on the same service. It caught up with the chain head on Sept 13
+and is now the pipeline behind the shipped MCP server and the Vaultpilot dashboard. The
+self-managed sink in this directory keeps running into `vaultflows` as the documented fallback;
+neither writes to the other's database.
 
 The hosted deployment's evidence lives in `runs/20260912T103328Z-vipc/` (see its README): views,
-a read-only deploy record, the schema hash, the gate report and the receipt
-`receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json` (`deploymentMode: graph-market-hosted`).
+a read-only deploy record, the schema hash, the gate report, the `streamsmith mcp` record
+(`mcp.json`, `mcp.log.json`) and the receipt
+`receipts/erc4626-flows-v0.1.0-20260912T103328Z-vipc.json` (`deploymentMode: graph-market-hosted`,
+`mcpManifestHash` bound to the regenerated `packages/mcp-vaultflows`).
 
-`cloud/mcp-live-probe-hosted.txt` is an MCP probe against the hosted database with a server
-generated from that receipt. It shows `deploymentMode: graph-market-hosted` with the receipt
-matching the manifest and the live column set matching the receipt's schema hash, and it shows the
-data tools refusing with `stale_data` while the hosted sink is still catching up from its start
-block. The committed `packages/mcp-vaultflows` and the Vaultpilot dashboard therefore still read
-`vaultflows`; the switch to `vaultflows_hosted` is an environment change
-(`CLICKHOUSE_DATABASE` / `CH_CLOUD_DATABASE`, `MCP_MANIFEST_PATH`, `MCP_RECEIPT_PATH`) once lag
-falls below 300 blocks.
+`cloud/mcp-live-probe-hosted.txt` is a stdio probe of that shipped package against the hosted
+database as the read-only user. Under the shipped freshness limit of 300 blocks it answers at a lag
+of 10 blocks — `pipeline_status` verified, `share_value_growth` over a 135-hour window,
+`vault_flows_24h` ending 21 s behind the wall clock, and the metadata probe for both
+receipt-pinned vaults — and it records the two refusals the same package produces: a receipt copy
+with one hash changed (`receipt_mismatch`) and a zero lag allowance (`stale_data`).
+
+`cloud/mcp-live-probe.txt` is the earlier probe of the self-managed database, kept as the
+fallback's evidence.
+
+Which database a client reads is environment, not code: `CLICKHOUSE_DATABASE` for the MCP server,
+`CH_CLOUD_DATABASE` plus `MCP_MANIFEST_PATH` / `MCP_RECEIPT_PATH` for Vaultpilot's cloud source.
+Both now point at the hosted pipeline.
